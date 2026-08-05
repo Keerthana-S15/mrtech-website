@@ -8,10 +8,16 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load Firebase Admin SDK key
-const serviceAccount = JSON.parse(
-  readFileSync(path.join(__dirname, "../serviceAccountKey.json"), "utf8")
-);
+// Support both local development (file) AND hosting platforms like Render (environment variable)
+let serviceAccount;
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else {
+  serviceAccount = JSON.parse(
+    readFileSync(path.join(__dirname, "../serviceAccountKey.json"), "utf8")
+  );
+}
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -20,7 +26,6 @@ admin.initializeApp({
 
 // Connect to Firestore
 const db = admin.firestore();
-
 console.log("✅ Firebase Admin initialized successfully");
 
 export { db };
