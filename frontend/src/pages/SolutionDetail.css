@@ -1,0 +1,246 @@
+/* ====================================
+   SHARED SOLUTION DETAIL PAGE STYLES
+   ==================================== */
+
+.solution-detail-page {
+  background: var(--color-bg, #F9FAFB);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero Section */
+.solution-hero {
+  background: linear-gradient(135deg, #1E3A8A, #0b72e7);
+  color: #fff;
+  padding: 60px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.solution-hero__content {
+  max-width: 960px;
+}
+
+.solution-hero__icon {
+  font-size: 60px;
+  margin-bottom: 16px;
+  opacity: 0.95;
+}
+
+.solution-hero__content h1 {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.solution-hero__content p {
+  font-size: 18px;
+  opacity: 0.95;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.solution-hero__back {
+  display: inline-block;
+  padding: 10px 20px;
+  border: 1.5px solid #fff;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.solution-hero__back:hover {
+  background: #fff;
+  color: #1E3A8A;
+}
+
+/* Content Container */
+.solution-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+/* Content Blocks */
+.solution-block {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.solution-block:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
+}
+
+.solution-block h2 {
+  color: #0f172a;
+  margin-bottom: 14px;
+  font-size: 22px;
+  font-weight: 700;
+  border-left: 4px solid #1E3A8A;
+  padding-left: 12px;
+}
+
+.solution-block p {
+  color: #334155;
+  line-height: 1.7;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.solution-block ul {
+  margin: 0;
+  padding-left: 24px;
+  color: #334155;
+  line-height: 1.7;
+  list-style-type: none;
+}
+
+.solution-block ul li {
+  margin: 10px 0;
+  position: relative;
+  padding-left: 8px;
+}
+
+.solution-block ul li::before {
+  content: "✓";
+  position: absolute;
+  left: -20px;
+  color: #1E3A8A;
+  font-weight: 700;
+}
+
+.solution-block ul li strong {
+  color: #1E3A8A;
+  font-weight: 600;
+}
+
+/* Nested lists */
+.solution-block ul ul {
+  margin-top: 8px;
+  padding-left: 20px;
+}
+
+.solution-block ul ul li {
+  font-size: 15px;
+  margin: 6px 0;
+}
+
+.solution-block ul ul li::before {
+  content: "→";
+  color: #0b72e7;
+}
+
+/* Icons in lists */
+.solution-block ul li svg {
+  color: #1E3A8A;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Call to Action Buttons */
+.solution-cta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 40px 0;
+}
+
+.solution-btn {
+  text-decoration: none;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.solution-btn--primary {
+  background: #F97316;
+  color: #fff;
+  border: 2px solid #F97316;
+}
+
+.solution-btn--primary:hover {
+  background: #fb8c32;
+  border-color: #fb8c32;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.solution-btn--secondary {
+  background: #fff;
+  color: #1E3A8A;
+  border: 2px solid #e5e7eb;
+}
+
+.solution-btn--secondary:hover {
+  background: #f3f4f6;
+  border-color: #1E3A8A;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .solution-hero__icon {
+    font-size: 48px;
+  }
+
+  .solution-hero__content h1 {
+    font-size: 32px;
+  }
+
+  .solution-hero__content p {
+    font-size: 16px;
+  }
+
+  .solution-block h2 {
+    font-size: 20px;
+  }
+
+  .solution-block p,
+  .solution-block ul li {
+    font-size: 15px;
+  }
+
+  .solution-cta {
+    flex-direction: column;
+  }
+
+  .solution-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .solution-hero {
+    padding: 40px 16px;
+  }
+
+  .solution-hero__content h1 {
+    font-size: 28px;
+  }
+
+  .solution-block {
+    padding: 20px;
+  }
+
+  .solution-block h2 {
+    font-size: 18px;
+  }
+}

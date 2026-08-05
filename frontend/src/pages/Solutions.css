@@ -1,0 +1,162 @@
+/* Section wrapper */
+.solutions {
+  background: var(--color-bg);
+  padding: 60px 20px;
+}
+
+.solutions-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.solutions-title {
+  text-align: center;
+  font-size: 2rem;
+  margin: 0 0 30px;
+  color: var(--color-text);
+  font-weight: 800;
+}
+.solutions-title span { color: var(--color-primary); }
+
+/* ===== Grid — EXACTLY 3 per row on desktop ===== */
+.solutions-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ===== Card ===== */
+.sol-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease,
+    background .25s ease,
+    border-color .25s ease;
+  position: relative;
+  border: 2px solid transparent;       /* for blue outline on hover */
+  cursor: default;
+}
+
+/* Angled colored header */
+.sol-top {
+  position: relative;
+  height: 84px;
+  background: linear-gradient(135deg, var(--color-primary), #3b82f6);
+}
+.sol-top::after {
+  content: "";
+  position: absolute;
+  right: 0; bottom: -22px;
+  width: 60%;
+  height: 60px;
+  background: #fff;
+  transform: skewY(-10deg);
+  border-bottom-left-radius: 12px;
+}
+
+/* Icon chip */
+.sol-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+  color: var(--color-primary);
+  font-size: 26px;
+}
+
+/* Body */
+.sol-body {
+  padding: 22px 22px 24px;
+}
+
+.sol-body h3 {
+  margin: 16px 0 8px;
+  color: var(--color-primary);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.sol-body p {
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  min-height: 72px; /* keep heights even */
+}
+
+/* Read more link */
+.sol-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #0ea5e9;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sol-link .arrow { font-size: 1.2rem; line-height: 1; }
+.sol-link:hover { text-decoration: underline; }
+
+/* ===== Hover effect — like the reference card ===== */
+.sol-card:hover {
+  background: #fffaf8;                       /* light warm tint */
+  border-color: #1877f2;                     /* bright blue outline */
+  transform: rotate(-0.6deg) translateY(-6px);
+  box-shadow:
+    0 18px 40px rgba(24, 119, 242, 0.18),    /* blue glow */
+    0 10px 20px rgba(0,0,0,0.10);
+  cursor: pointer;
+}
+.sol-card:hover .sol-top { filter: brightness(0.96); }
+
+/* ===== Stats strip ===== */
+.stats {
+  background: linear-gradient(135deg, #0d47a1, #0b74d1);
+  color: #fff;
+  padding: 28px 16px;
+  margin-top: 40px;
+  border-radius: 8px;
+}
+
+.stats-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-number {
+  font-weight: 800;
+  font-size: 2.4rem;
+  line-height: 1.1;
+}
+
+.stat-label {
+  margin-top: 6px;
+  font-size: 1.05rem;
+  opacity: 0.95;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1100px) {
+  .solutions-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .solutions-grid { grid-template-columns: 1fr; }
+  .stat-number { font-size: 2rem; }
+  .stats-inner { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .stats-inner { grid-template-columns: 1fr; }
+}

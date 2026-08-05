@@ -1,0 +1,106 @@
+/* Section */
+.about {
+  background: var(--color-bg);
+  padding: 60px 20px;
+}
+
+.about h2 {
+  text-align: center;
+  font-size: 2rem;
+  margin: 0 0 30px;
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+/* Grid */
+.about-cards {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Card */
+.about-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 22px 26px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  position: relative;
+  transition: transform .25s ease, box-shadow .25s ease;
+  text-align: center;                 /* center icon + title */
+  overflow: hidden;
+  min-height: 300px;
+}
+
+/* make sure no old blue strip / pseudo shapes show up */
+.about-card::before,
+.about-card::after { content: none !important; }
+
+/* Icon chip — strict circle size */
+.about-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);   /* blue circle */
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;                    /* icon size */
+  margin: 0 auto 14px;                /* centered above title */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Title */
+.about-card h3 {
+  margin: 6px 0 12px;
+  color: var(--color-primary);        /* same blue as Solutions */
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+/* Body text */
+.about-card p,
+.about-card ul {
+  color: #374151;                     /* Solutions text color */
+  font-size: 0.95rem;
+  line-height: 1.55;
+  text-align: left;                   /* keep readable */
+  margin: 0;
+}
+.about-card ul { padding-left: 18px; list-style: disc; }
+.about-card li { margin-bottom: 6px; }
+
+/* Hover (match Solutions) */
+.about-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.15);
+}
+
+/* ✅ Bottom CTA */
+.about-cta{
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.about-btn{
+  background: var(--color-secondary);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 12px 28px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.12);
+  transition: filter .2s ease, transform .1s ease;
+}
+.about-btn:hover{ filter: brightness(.95); }
+.about-btn:active{ transform: translateY(1px); }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .about-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .about-cards { grid-template-columns: 1fr; }
+  .about-card { max-width: 360px; margin: 0 auto; }
+}

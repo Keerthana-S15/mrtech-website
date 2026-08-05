@@ -1,0 +1,185 @@
+/* Uses your :root theme vars from index.css
+   --color-primary:#1E3A8A; --color-secondary:#F97316; --color-bg:#F9FAFB;
+   --color-accent1:#10B981; --color-accent2:#A855F7; --color-text:#111827;
+*/
+
+/* ===== Overall page (no forced full height) ===== */
+.c-wrap{
+  background: var(--color-bg);
+  min-height: auto;
+  padding-bottom: 0;
+}
+
+/* ===== Header ===== */
+.c-hero{
+  text-align:center;
+  padding: 28px 16px 10px;
+  color: var(--color-text);
+}
+.c-hero h1{
+  margin: 0 0 6px;
+  font-size: 2.2rem;
+  color: var(--color-primary);
+  font-weight: 800;
+}
+.c-hero p{
+  margin: 0;
+  color: color-mix(in oklab, var(--color-text) 65%, #fff);
+}
+
+/* ===== Grid (equal-height cards) ===== */
+.c-grid{
+  max-width: 1060px;
+  margin: 8px auto 56px;            /* ⬅️ more breathing space above footer */
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;              /* tallest card sets row height */
+}
+
+/* ===== Card base ===== */
+.c-card{
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 8px 18px rgba(0,0,0,.07);
+
+  /* equal-height behaviour */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.c-card-title{
+  display:flex; align-items:center; gap:8px;
+  margin: 0 0 14px;
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: .95rem;
+}
+.c-emoji{ font-size: 16px; }
+
+/* ===== LEFT — Company info ===== */
+.c-company{
+  margin: 0 0 8px;
+  font-weight: 800;
+  font-size: .95rem;
+  color: #0f172a;
+}
+.c-tagline{
+  margin: 0 0 12px;
+  font-size: .86rem;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+/* stacked rows: label then value */
+.c-row{ margin: 14px 0 18px; }
+.c-label{
+  position: relative;
+  padding-left: 24px;
+  font-weight: 800;
+  font-size: .88rem;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+.c-label::before{
+  content: "";
+  position: absolute;
+  left: 0; top: 2px;
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  background-size: 12px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+}
+.c-email{ color: var(--color-primary); }
+.c-email::before{
+  background-color: color-mix(in oklab, var(--color-primary) 12%, #fff);
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='12' height='12' fill='%231E3A8A'><path d='M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 3.8-8 5.1-8-5.1V6l8 5 8-5v1.8z'/></svg>");
+}
+.c-phone{ color: var(--color-accent1); }
+.c-phone::before{
+  background-color: color-mix(in oklab, var(--color-accent1) 12%, #fff);
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='12' height='12' fill='%2310B981'><path d='M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C11.9 21 3 12.1 3 1c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1.1l-2.2 2.1z'/></svg>");
+}
+.c-office{ color: var(--color-secondary); }
+.c-office::before{
+  background-color: color-mix(in oklab, var(--color-secondary) 12%, #fff);
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='12' height='12' fill='%23F97316'><path d='M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z'/></svg>");
+}
+
+.c-value{
+  margin-left: 24px;
+  font-size: .9rem;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
+/* CTA pinned to bottom */
+.c-cta{
+  margin-top: auto;
+  align-self: flex-start;
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  color: #2b1a01;
+  font-weight: 800;
+  text-decoration: none;
+  border: 2px solid var(--color-secondary);
+  box-shadow: 0 8px 16px rgba(0,0,0,.12);
+}
+
+/* ===== RIGHT — form fills card height nicely ===== */
+.c-form{
+  display: flex;
+  flex-direction: column;
+}
+.c-form-grid{
+  flex: 1 1 auto;
+  display: grid;
+  gap: 10px;
+  grid-auto-rows: min-content;
+}
+.c-form-grid input,
+.c-form-grid select,
+.c-form-grid textarea{
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,0,0,.14);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-text);
+  font-size: .95rem;
+  outline: none;
+}
+.c-form-grid input,
+.c-form-grid select{ height: 40px; }
+.c-form-grid textarea{ min-height: 100px; resize: vertical; }
+.c-form-grid input:focus,
+.c-form-grid select:focus,
+.c-form-grid textarea:focus{
+  border-color: color-mix(in oklab, var(--color-primary) 70%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
+}
+.c-send{
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px){
+  .c-grid{ grid-template-columns: 1fr; margin-bottom: 36px; } /* extra space on mobile too */
+}

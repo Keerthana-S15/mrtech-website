@@ -1,0 +1,212 @@
+/* ===== HERO uses a full background image with a dark overlay ===== */
+.hero {
+  position: relative;
+  padding: 40px 20px;
+  min-height: calc(100vh - 70px);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover; /* image comes from inline style */
+}
+
+/* Dark overlay for readability */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Content wrapper above the overlay */
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr; /* keep right column for balance */
+  gap: 28px;
+  align-items: center;
+}
+
+/* ===== LEFT CONTENT ===== */
+.hero-title {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 0 0 20px 0;
+  background: linear-gradient(90deg, var(--color-secondary), var(--color-accent1), var(--color-accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-sub {
+  color: #e5e7eb;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+/* ===== BUTTONS (stacked, equal width & height) ===== */
+.hero-buttons{
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+
+  /* one responsive width for ALL buttons (equal length) */
+  width: clamp(260px, 32vw, 360px);
+  max-width: 100%;
+}
+
+/* base button reset so Link and button look identical */
+.btn{
+  box-sizing: border-box;       /* include border in size */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;               /* keep height consistent */
+  padding: 14px 22px;
+  min-height: 48px;             /* ✅ same height for all */
+  width: 100%;                  /* fill container (same length) */
+
+  border-radius: 28px;
+  border: 2px solid transparent;/* ✅ same border width for all */
+  text-decoration: none;
+  cursor: pointer;
+
+  transition: filter .2s ease, transform .1s ease, background .2s ease, border-color .2s ease;
+}
+.btn:active{ transform: translateY(1px); }
+.btn .btn-icon{ font-size: 1.05rem; }
+
+/* primary (orange) */
+.btn-primary{
+  background: var(--color-secondary);
+  color: #fff;
+  /* keep border transparent so height matches outlined ones */
+  border-color: transparent;
+  box-shadow: 0 6px 14px rgba(0,0,0,.18);
+}
+.btn-primary:hover{ filter: brightness(.95); }
+
+/* outline style (grey/white) */
+.btn-outline{
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255,255,255,.95); /* same 2px border */
+}
+.btn-outline:hover{ background: rgba(255,255,255,.08); }
+
+/* placeholder for right hero side (image area) */
+.hero-right{ min-height: 240px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px){
+  .hero-title{ font-size: 2.2rem; }
+}
+
+@media (max-width: 780px){
+  .hero-inner{ grid-template-columns: 1fr; gap: 24px; }
+  .hero-right{ display: none; }
+
+  /* mobile: button group full-width */
+  .hero-buttons{ width: 100%; }
+  .btn{ width: 100%; }
+}
+
+
+
+
+/* Popup overlay background */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* Popup box */
+.popup-content {
+  background: #fff;
+  padding: 30px 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+  animation: popup-appear 0.3s ease;
+}
+
+.popup-content h2 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+/* Input fields */
+.popup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.popup-form label {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-weight: 500;
+  color: #333;
+}
+
+.popup-form input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.popup-form .btn-primary {
+  margin-top: 15px;
+  background: linear-gradient(135deg, #007bff, #00bcd4);
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: #666;
+}
+
+@keyframes popup-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

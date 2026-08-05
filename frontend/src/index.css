@@ -1,0 +1,15 @@
+:root {
+  --color-primary: #00313C;   /* brand/nav */
+  --color-secondary: #F97316; /* buttons/cta */
+  --color-bg: #F9FAFB;        /* page bg */
+  --color-accent1: #10B981;   /* icons/cards */
+  --color-accent2: #A855F7;   /* special highlight */
+  --color-text: #111827;      /* body text */
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}

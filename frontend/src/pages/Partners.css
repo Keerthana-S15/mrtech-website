@@ -1,0 +1,158 @@
+/* Uses your global :root vars:
+   --color-primary, --color-secondary, --color-bg, --color-accent1, --color-accent2, --color-text
+   (defined in index.css) */
+
+/* Page wrapper */
+.partners-wrap{
+  min-height: calc(100vh - 80px);
+}
+
+/* Section container */
+.partners-hero{
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 20px 72px;            /* +8px bottom room so CTAs don’t feel cramped */
+  text-align: center;
+  color: var(--color-text);
+}
+
+/* Title + subtitle */
+.partners-hero h1{
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin: 0 0 8px;
+}
+.subtitle{
+  max-width: 760px;
+  margin: 0 auto 28px;
+  color: color-mix(in oklab, var(--color-text) 60%, white);
+}
+
+/* Cards grid */
+.cards{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 22px;
+  margin-top: 12px;
+}
+
+/* Card */
+.card{
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.10);
+  padding: 20px 18px;
+  text-align: left;
+  border: 1px solid color-mix(in oklab, var(--color-primary) 10%, transparent);
+}
+
+/* Icon pill per card */
+.card-icon{
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display:grid; place-items:center;
+  margin-bottom: 10px;
+  color: #fff;
+  background: color-mix(in oklab, var(--color-primary) 75%, var(--color-accent2));
+}
+.card:nth-child(2) .card-icon{
+  background: color-mix(in oklab, var(--color-accent1) 85%, white);
+  color: var(--color-primary);
+}
+.card:nth-child(3) .card-icon{
+  background: color-mix(in oklab, var(--color-secondary) 85%, white);
+  color: #713f12;
+}
+
+/* Headings per category */
+.card-title{ margin: 2px 0 10px; font-size: 1.06rem; font-weight: 800; }
+.card-title.tech{   color: var(--color-primary); }
+.card-title.health{ color: var(--color-accent1); }
+.card-title.agri{   color: var(--color-secondary); }
+
+/* Diamond bullets */
+.bullets{
+  list-style: none; padding: 0; margin: 0;
+  color: color-mix(in oklab, var(--color-text) 70%, white);
+  font-weight: 600;
+}
+.bullets li{
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0;
+}
+.bullets li::before{
+  content: "◆";
+  font-size: .7rem;
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+/* CTA row */
+.cta-row{
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  /* 👉 add clear space between the two orange buttons */
+  gap: 28px 28px;                    /* row & column gap for flex */
+  margin-top: 36px;                  /* space above the buttons */
+}
+
+.cta-btn{
+  background: var(--color-secondary);
+  color: #2b1a01;
+  text-decoration: none;
+  padding: 12px 22px;                /* a tad wider for breathing room */
+  border-radius: 999px;
+  font-weight: 800;
+  border: 2px solid var(--color-secondary);
+  display: inline-flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 16px rgba(0,0,0,.12);
+  transition: transform .15s ease, filter .15s ease;
+}
+.cta-btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+.cta-btn:active{ transform: translateY(0); }
+
+/* keep both CTAs the same orange per your current design */
+.cta-btn.outline{
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+/* Responsive */
+@media (max-width: 1000px){
+  .cards{ grid-template-columns: 1fr; }
+  .partners-hero{ padding-bottom: 56px; }
+  .cta-row{ gap: 16px; }            /* a bit tighter on small screens */
+}
+/* === CTA buttons: give clear space below the cards === */
+
+/* Add bottom space to the cards section */
+.cards{
+  margin-bottom: 28px;            /* pushes CTAs down */
+}
+
+/* Specifically push the CTA row further down from the cards */
+.cards + .cta-row{
+  margin-top: 44px;               /* gap between cards and buttons */
+}
+
+/* Keep the two buttons nicely separated and with breathing room */
+.cta-row{
+  gap: 28px;                      /* space between the two buttons */
+  padding-bottom: 12px;           /* a little room below the buttons */
+  justify-content: center;        /* stays centered */
+}
+
+/* On wide screens, drop them a bit more for a premium look */
+@media (min-width: 1100px){
+  .cards + .cta-row{ margin-top: 56px; }
+}
+
+/* On small screens, reduce the drop so page doesn’t feel too tall */
+@media (max-width: 700px){
+  .cards{ margin-bottom: 16px; }
+  .cards + .cta-row{ margin-top: 26px; }
+  .cta-row{ gap: 16px; }
+}

@@ -1,0 +1,211 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Main layout */
+.auth-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+/* LEFT SIDE */
+.auth-left {
+  width: 45%;
+  background: #003b44;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+}
+
+.left-content {
+  text-align: center;
+  color: white;
+  max-width: 380px;
+}
+
+.logo-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 20px;
+}
+
+.logo-img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+}
+
+.brand-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.brand-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 30px;
+}
+
+.features {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  font-size: 16px;
+}
+
+.tick {
+  color: orange;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* RIGHT SIDE */
+.auth-right {
+  flex: 1;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.form-box {
+  width: 100%;
+  max-width: 460px;
+}
+
+.form-title {
+  font-size: 34px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #003b44;
+}
+
+.form-subtitle {
+  font-size: 14px;
+  color: gray;
+  margin-bottom: 25px;
+}
+
+/* Inputs */
+.input-group {
+  margin-bottom: 18px;
+}
+
+.input-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #003b44;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  outline: none;
+  font-size: 14px;
+}
+
+/* =========================================
+   OTP ROW - MAIN FIX (FOR BOTH EMAIL & PHONE)
+   ========================================= */
+.otp-row {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.otp-row input {
+  flex: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+/* OTP Button */
+.otp-btn {
+  padding: 14px 18px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background: #003b44 !important;
+  color: white !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  width: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.otp-btn:hover {
+  opacity: 0.9;
+}
+
+/* Signup Button */
+.signup-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: orange;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.signup-btn:hover {
+  opacity: 0.9;
+}
+
+.bottom-text {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.bottom-text a {
+  color: #003b44;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bottom-text a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .auth-container {
+    flex-direction: column;
+  }
+
+  .auth-left {
+    width: 100%;
+    min-height: 320px;
+  }
+
+  .auth-right {
+    width: 100%;
+  }
+}
