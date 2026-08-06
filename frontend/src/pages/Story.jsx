@@ -1,17 +1,12 @@
 import React, { useState } from "react";
 import "./Story.css";
 
+// ✅ FIX: Files are named slide-1.JPG (uppercase), not slide-1.jpg (lowercase).
+// Windows doesn't care about case, but Render's Linux server does — this is
+// why images worked on localhost but showed blank on the live site.
 const slides = Array.from({ length: 27 }, (_, i) =>
-  `${process.env.PUBLIC_URL}/images/story/slide-${i + 1}.jpg`
+  `${process.env.PUBLIC_URL}/images/story/slide-${i + 1}.JPG`
 );
-
-/**
- * NOTE:
- * - Export your PPTX slides as JPG/PNG from PowerPoint:
- *   File → Export → Change File Type → JPEG/PNG → "All Slides".
- * - Put them in: public/images/story/  as  slide-1.jpg, slide-2.jpg, ...
- * - If a file is missing the image just won’t load, but the page still works.
- */
 
 const milestones = [
   {
@@ -42,7 +37,7 @@ const milestones = [
     year: "2021",
     title: "COVID-19 Contributions",
     text:
-      "Supported vaccination camps; briefed leadership on G-Care’s role in combating COVID-19 and continuity of services."
+      "Supported vaccination camps; briefed leadership on G-Care's role in combating COVID-19 and continuity of services."
   },
   {
     year: "2022",
@@ -75,7 +70,6 @@ export default function Story() {
           >
             Download PPTX
           </a>
-          {/* If you later export a PDF, place /docs/gcare-journey.pdf and link it here */}
         </div>
       </section>
 

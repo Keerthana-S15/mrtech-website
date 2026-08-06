@@ -229,7 +229,8 @@ export default function Home() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:3000/api/send-otp", {
+      // ✅ FIX: relative path instead of hardcoded http://localhost:3000
+      const res = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -256,7 +257,8 @@ export default function Home() {
     e.preventDefault();
     
     try {
-      const res = await fetch("http://localhost:3000/api/verify-otp", {
+      // ✅ FIX: relative path
+      const res = await fetch("/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -610,14 +610,13 @@
 // src/pages/Checkout.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext"; // 👈 Import useCart
+import { useCart } from "../context/CartContext";
 import "./Checkout.css";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cartItems, clearCart, getTotalPrice } = useCart(); // 👈 Get cart data from context
+  const { cartItems, clearCart, getTotalPrice } = useCart();
 
-  // Form states
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [shippingInfo, setShippingInfo] = useState({
@@ -642,13 +641,11 @@ const Checkout = () => {
   const [upiId, setUpiId] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  // 👇 Calculate totals from real cart data
   const subtotal = getTotalPrice();
   const shipping = subtotal > 5000 ? 0 : 100;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
-  // 👇 Redirect if cart is empty
   React.useEffect(() => {
     if (cartItems.length === 0) {
       alert("Your cart is empty!");
@@ -656,7 +653,6 @@ const Checkout = () => {
     }
   }, [cartItems, navigate]);
 
-  // Handle form submission
   const handleShippingSubmit = (e) => {
     e.preventDefault();
     if (validateShipping()) {
@@ -720,7 +716,6 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // Prepare order data
       const orderData = {
         customerName: shippingInfo.fullName,
         email: shippingInfo.email,
@@ -742,25 +737,20 @@ const Checkout = () => {
         totalAmount: total,
       };
 
-      console.log("Sending order data:", orderData);
-
-      // 🚀 Call Backend API
-      const response = await fetch("http://localhost:3000/api/orders", {
+      // ✅ FIX: relative path instead of hardcoded http://localhost:3000
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),
       });
 
       const result = await response.json();
-      console.log("Backend response:", result);
 
       if (result.success) {
         alert("Order placed successfully! 🎉");
         
-        // Clear cart after successful order
         clearCart();
         
-        // Navigate to order confirmation
         navigate("/order-confirmation", {
           state: {
             orderId: result.orderId,
@@ -1105,8 +1095,8 @@ const Checkout = () => {
                   <div className="review-card">
                     <p><strong>{paymentMethod === "COD" ? "Cash on Delivery" : paymentMethod === "Card" ? "Credit/Debit Card" : "UPI Payment"}</strong></p>
                     {paymentMethod === "Card" && <p>Card ending in ****{cardDetails.cardNumber.slice(-4)}</p>}
-                    {paymentMethod === "UPI" && <p>UPI ID: {upiId}</p>
-                   }</div>
+                    {paymentMethod === "UPI" && <p>UPI ID: {upiId}</p>}
+                  </div>
                 </div>
 
                 {/* Items Summary */}

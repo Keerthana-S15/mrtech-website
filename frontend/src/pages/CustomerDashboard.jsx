@@ -28,9 +28,8 @@ export default function CustomerDashboard() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const API_BASE_URL = "http://localhost:3000/api";
+  const API_BASE_URL = "/api";
 
-  // ✅ Get user data from localStorage
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("userData"));
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -42,14 +41,12 @@ export default function CustomerDashboard() {
     }
   }, [navigate]);
 
-  // ✅ Fetch all data when user is available
   useEffect(() => {
     if (userData && userData.email) {
       fetchAllData();
     }
   }, [userData]);
 
-  // 🔥 Fetch all customer data (orders, stats, notifications)
   const fetchAllData = async () => {
     setError(null);
     await Promise.all([
@@ -59,7 +56,6 @@ export default function CustomerDashboard() {
     ]);
   };
 
-  // 📦 Fetch user's orders with better error handling
   const fetchOrders = async () => {
     if (!userData?.email) return;
     
@@ -77,7 +73,6 @@ export default function CustomerDashboard() {
       
       if (data.success) {
         setOrders(data.orders || []);
-        console.log(`✅ Loaded ${data.orders?.length || 0} orders`);
       } else {
         setError(data.message || "Failed to fetch orders");
       }
@@ -90,7 +85,6 @@ export default function CustomerDashboard() {
     }
   };
 
-  // 📊 Fetch customer statistics with improved calculation
   const fetchStats = async () => {
     if (!userData?.email) return;
     
@@ -107,13 +101,11 @@ export default function CustomerDashboard() {
       
       if (data.success) {
         setStats(data.stats);
-        console.log("✅ Stats loaded:", data.stats);
       } else {
         console.error("Failed to fetch stats:", data.message);
       }
     } catch (error) {
       console.error("❌ Error fetching stats:", error);
-      // Set default stats on error
       setStats({
         totalOrders: 0,
         totalSpent: 0,
@@ -126,7 +118,6 @@ export default function CustomerDashboard() {
     }
   };
 
-  // 🔔 Fetch recent orders for notifications
   const fetchRecentOrdersForNotifications = async () => {
     if (!userData?.email) return;
     
@@ -140,22 +131,19 @@ export default function CustomerDashboard() {
       const data = await response.json();
       
       if (data.success && data.orders) {
-        // Convert recent orders to notification format
         const orderNotifications = data.orders.map((order, index) => ({
           id: order.orderId,
           message: `Order #${order.orderId} is ${order.orderStatus}`,
           time: getTimeAgo(order.createdAt),
-          unread: index < 2, // Mark first 2 as unread
+          unread: index < 2,
           orderStatus: order.orderStatus,
           type: getNotificationType(order.orderStatus)
         }));
         
         setNotifications(orderNotifications);
-        console.log(`✅ Loaded ${orderNotifications.length} notifications`);
       }
     } catch (error) {
       console.error("❌ Error fetching notifications:", error);
-      // Fallback to welcome notification
       setNotifications([
         { 
           id: 1, 
@@ -168,7 +156,6 @@ export default function CustomerDashboard() {
     }
   };
 
-  // 🎨 Get notification type based on order status
   const getNotificationType = (status) => {
     switch (status) {
       case "delivered": return "success";
@@ -178,7 +165,6 @@ export default function CustomerDashboard() {
     }
   };
 
-  // 🕒 Helper function to get time ago
   const getTimeAgo = (dateString) => {
     if (!dateString) return "Unknown";
     
@@ -207,16 +193,11 @@ export default function CustomerDashboard() {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  // 🎯 Handle Track Order with proper navigation
   const handleTrackOrder = (orderId) => {
-    console.log("Tracking order:", orderId);
     navigate("/track-order", { state: { orderId: orderId } });
   };
 
-  // 📋 Handle View Order Details
   const handleViewDetails = (order) => {
-    console.log("Viewing order details:", order);
-    // You can navigate to a dedicated order details page or show a modal
     navigate("/order-details", { state: { order: order } });
   };
 
@@ -229,7 +210,6 @@ export default function CustomerDashboard() {
     );
   }
 
-  // Filter orders based on search and status
   const filteredOrders = orders.filter((order) => {
     const matchesSearch = order.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.items?.some(item => item.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -260,7 +240,6 @@ export default function CustomerDashboard() {
 
   return (
     <div className="customer-dashboard-new">
-      {/* Top Navigation Bar */}
       <nav className="dashboard-navbar">
         <div className="navbar-left">
           <div className="brand">
@@ -309,7 +288,6 @@ export default function CustomerDashboard() {
         </div>
       </nav>
 
-      {/* Notifications Dropdown */}
       {showNotifications && (
         <div className="notifications-dropdown">
           <div className="notifications-header">
@@ -345,7 +323,6 @@ export default function CustomerDashboard() {
       )}
 
       <div className="dashboard-container">
-        {/* Success Message */}
         {successMessage && (
           <div className="success-alert">
             <FaCheckCircle />
@@ -354,7 +331,6 @@ export default function CustomerDashboard() {
           </div>
         )}
 
-        {/* Error Alert */}
         {error && (
           <div className="error-alert">
             <FaExclamationCircle />
@@ -363,7 +339,6 @@ export default function CustomerDashboard() {
           </div>
         )}
 
-        {/* Hero Welcome Section */}
         <section className="welcome-section">
           <div className="welcome-content">
             <h1>Welcome back, {userData.fullName.split(' ')[0]}! 👋</h1>
@@ -376,7 +351,6 @@ export default function CustomerDashboard() {
           </div>
         </section>
 
-        {/* Statistics Cards */}
         <section className="stats-section">
           <div className="stat-card-new blue-card">
             <div className="stat-icon-wrapper blue">
@@ -443,7 +417,6 @@ export default function CustomerDashboard() {
           </div>
         </section>
 
-        {/* Quick Actions Grid */}
         <section className="quick-actions-section">
           <h2 className="section-title">Quick Actions</h2>
           <div className="quick-actions-grid">
@@ -481,7 +454,6 @@ export default function CustomerDashboard() {
           </div>
         </section>
 
-        {/* Orders Section */}
         <section className="orders-section-new">
           <div className="orders-header">
             <div>
