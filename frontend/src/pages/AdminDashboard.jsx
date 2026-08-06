@@ -14,21 +14,18 @@ export default function AdminDashboard() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedStat, setSelectedStat] = useState(null);
   
-  // ✅ NEW: Added description field to formData
   const [formData, setFormData] = useState({
     name: "",
     category: "",
     stock: "",
     price: "",
     sku: "",
-    description: "", // ✅ NEW
+    description: "",
   });
 
-  // ✅ NEW: Image upload state
   const [productImage, setProductImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Fetch orders + products
   useEffect(() => {
     fetchOrders();
     fetchProducts();
@@ -36,7 +33,7 @@ export default function AdminDashboard() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/products");
+      const res = await fetch("/api/products");
       const data = await res.json();
       if (data.success) setProducts(data.products);
     } catch (err) {
@@ -46,7 +43,7 @@ export default function AdminDashboard() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/orders");
+      const response = await fetch("/api/orders");
       const data = await response.json();
       if (data.success) {
         const formatted = data.orders.map((o) => ({
@@ -75,13 +72,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ NEW: Handle image selection
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setProductImage(file);
-      
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -90,31 +84,29 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ UPDATED: Add / Update product with image and description
   const handleSaveProduct = async (e) => {
     e.preventDefault();
     try {
-      // ✅ NEW: Use FormData for image upload
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
       formDataToSend.append("category", formData.category);
       formDataToSend.append("price", formData.price);
       formDataToSend.append("stock", formData.stock);
       formDataToSend.append("sku", formData.sku);
-      formDataToSend.append("description", formData.description); // ✅ NEW
+      formDataToSend.append("description", formData.description);
       
       if (productImage) {
-        formDataToSend.append("image", productImage); // ✅ NEW
+        formDataToSend.append("image", productImage);
       }
 
       const url = editingProduct
-        ? `http://localhost:3000/api/products/${editingProduct.id}`
-        : "http://localhost:3000/api/products";
+        ? `/api/products/${editingProduct.id}`
+        : "/api/products";
       const method = editingProduct ? "PUT" : "POST";
       
       const res = await fetch(url, {
         method,
-        body: formDataToSend, // ✅ CHANGED: Send FormData instead of JSON
+        body: formDataToSend,
       });
       
       const data = await res.json();
@@ -122,9 +114,9 @@ export default function AdminDashboard() {
         alert(editingProduct ? "✅ Product updated!" : "✅ Product added!");
         setShowForm(false);
         setEditingProduct(null);
-        setFormData({ name: "", category: "", stock: "", price: "", sku: "", description: "" }); // ✅ UPDATED
-        setProductImage(null); // ✅ NEW
-        setImagePreview(null); // ✅ NEW
+        setFormData({ name: "", category: "", stock: "", price: "", sku: "", description: "" });
+        setProductImage(null);
+        setImagePreview(null);
         fetchProducts();
       } else alert("❌ " + data.error);
     } catch (err) {
@@ -132,11 +124,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ Delete product
   const handleDeleteProduct = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/products/${id}`, {
+      const res = await fetch(`/api/products/${id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -149,10 +140,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ Update order status (connected to backend by orderId)
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
+      const res = await fetch(`/api/orders/${orderId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderStatus: newStatus }),
@@ -178,10 +168,9 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ Excel Export Function
   const handleExportExcel = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/products");
+      const res = await fetch("/api/products");
       const data = await res.json();
 
       if (data.success && data.products.length > 0) {
@@ -192,7 +181,7 @@ export default function AdminDashboard() {
             Stock: p.stock,
             Price: p.price,
             SKU: p.sku,
-            Description: p.description || "", // ✅ NEW
+            Description: p.description || "",
           }))
         );
         const workbook = XLSX.utils.book_new();
@@ -213,7 +202,6 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
-  // Dashboard stats
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
@@ -226,7 +214,6 @@ export default function AdminDashboard() {
     delivered: "status-delivered",
   };
 
-  // Customer data
   const customers = Object.values(
     orders.reduce((acc, o) => {
       if (!acc[o.customer]) {
@@ -255,7 +242,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-      {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <div className="admin-logo">
@@ -290,7 +276,6 @@ export default function AdminDashboard() {
         </button>
       </aside>
 
-      {/* Main Content */}
       <main className="admin-main">
         <header className="admin-header">
           <div>
@@ -303,7 +288,6 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Dashboard */}
         {currentTab === "dashboard" && (
           <div className="admin-content">
             <div className="stats-grid">
@@ -388,7 +372,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Orders Tab */}
         {currentTab === "orders" && (
           <div className="admin-content">
             <div className="admin-card">
@@ -484,7 +467,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Products Tab */}
         {currentTab === "products" && (
           <div className="admin-content">
             <div className="admin-card">
@@ -496,9 +478,9 @@ export default function AdminDashboard() {
                     onClick={() => {
                       setShowForm(true);
                       setEditingProduct(null);
-                      setFormData({ name: "", category: "", stock: "", price: "", sku: "", description: "" }); // ✅ UPDATED
-                      setProductImage(null); // ✅ NEW
-                      setImagePreview(null); // ✅ NEW
+                      setFormData({ name: "", category: "", stock: "", price: "", sku: "", description: "" });
+                      setProductImage(null);
+                      setImagePreview(null);
                     }}
                   >
                     ➕ Add Product
@@ -512,7 +494,7 @@ export default function AdminDashboard() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Image</th> {/* ✅ NEW */}
+                      <th>Image</th>
                       <th>SKU</th>
                       <th>Product Name</th>
                       <th>Category</th>
@@ -524,7 +506,6 @@ export default function AdminDashboard() {
                   <tbody>
                     {products.map((p) => (
                       <tr key={p.id}>
-                        {/* ✅ NEW: Image column */}
                         <td>
                           {p.image ? (
                             <img
@@ -569,9 +550,9 @@ export default function AdminDashboard() {
                                 stock: p.stock,
                                 price: p.price,
                                 sku: p.sku,
-                                description: p.description || "", // ✅ NEW
+                                description: p.description || "",
                               });
-                              setImagePreview(p.image); // ✅ NEW
+                              setImagePreview(p.image);
                               setShowForm(true);
                             }}
                           >
@@ -591,7 +572,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* ✅ UPDATED: Product Form Modal with Image and Description */}
             {showForm && (
               <div className="modal-overlay" onClick={() => setShowForm(false)}>
                 <div className="modal-content wide" onClick={(e) => e.stopPropagation()}>
@@ -653,7 +633,6 @@ export default function AdminDashboard() {
                         required
                       />
 
-                      {/* ✅ NEW: Description Field */}
                       <textarea
                         placeholder="Product Description"
                         value={formData.description}
@@ -671,7 +650,6 @@ export default function AdminDashboard() {
                         }}
                       />
 
-                      {/* ✅ NEW: Image Upload Field */}
                       <div style={{ marginBottom: 15 }}>
                         <label
                           htmlFor="product-image"
@@ -698,7 +676,6 @@ export default function AdminDashboard() {
                             fontSize: 14
                           }}
                         />
-                        {/* ✅ NEW: Image Preview */}
                         {imagePreview && (
                           <div style={{ marginTop: 15, textAlign: "center" }}>
                             <img
@@ -726,7 +703,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Customers Tab */}
         {currentTab === "customers" && (
           <div className="admin-content">
             <div className="admin-card">
@@ -757,7 +733,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Settings Tab */}
         {currentTab === "settings" && (
           <div className="admin-content">
             <div className="admin-card">
