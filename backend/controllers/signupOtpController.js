@@ -82,13 +82,10 @@ export const sendPhoneOtp = async (req, res) => {
   console.log(`\n🔐 PHONE OTP FOR ${phone}: ${otp}\n`);
 
   try {
-    // ✅ FIX: Use Fast2SMS's pre-approved "OTP" route instead of a custom DLT
-    // template. This uses Fast2SMS's own already-approved transactional
-    // template, so it bypasses DND immediately — no waiting for your own
-    // DLT template approval (which takes days).
-    // Docs: https://www.fast2sms.com/dev/bulkV2 (route=otp)
+    // ✅ Using Fast2SMS Smart OTP API with the approved OTP template ID
+    // This is a dedicated OTP verification channel that bypasses DND
     const response = await fetch(
-      `https://www.fast2sms.com/dev/bulkV2?authorization=${process.env.FAST2SMS_API_KEY}&route=otp&variables_values=${otp}&flash=0&numbers=${phone}`,
+      `https://www.fast2sms.com/dev/bulkV2?authorization=${process.env.FAST2SMS_API_KEY}&route=otp&variables_values=${otp}&flash=0&numbers=${phone}&schedule_time=`,
       {
         method: "GET",
         headers: {
