@@ -8,7 +8,6 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// ── Send Email OTP ────────────────────────────────────────────
 export const sendEmailOtp = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
@@ -44,7 +43,6 @@ export const sendEmailOtp = async (req, res) => {
   }
 };
 
-// ── Verify Email OTP ──────────────────────────────────────────
 export const verifyEmailOtp = (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp)
@@ -66,7 +64,6 @@ export const verifyEmailOtp = (req, res) => {
   res.json({ success: true, message: "Email verified successfully" });
 };
 
-// ── Send Phone OTP ────────────────────────────────────────────
 export const sendPhoneOtp = async (req, res) => {
   let { phone } = req.body;
   if (!phone) return res.status(400).json({ error: "Phone number is required" });
@@ -75,27 +72,21 @@ export const sendPhoneOtp = async (req, res) => {
   if (phone.length !== 10)
     return res.status(400).json({ error: "Enter valid 10-digit number" });
 
-  const otp = generateOTP();
-  const expiry = Date.now() + 5 * 60 * 1000;
-  otpStore[`phone_${phone}`] = { otp, expiry };
-
-  console.log(`\n🔐 PHONE OTP FOR ${phone}: ${otp}\n`);
-
   try {
-    // ✅ Using Fast2SMS Smart OTP API with the approved OTP template ID
-    // This is a dedicated OTP verification channel that bypasses DND
-    const response = await fetch(
-      `https://www.fast2sms.com/dev/bulkV2?authorization=${process.env.FAST2SMS_API_KEY}&route=otp&variables_values=${otp}&flash=0&numbers=${phone}&schedule_time=`,
-      {
-        method: "GET",
-        headers: {
-          "cache-control": "no-cache",
-        },
-      }
-    );
+    const response = await fetch("https://www.fast2sms.com/dev/otp/send", {
+      method: "POST",
+      headers: {
+        Authorization: process.env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        otp_id: process.env.FAST2SMS_OTP_ID,
+        mobile: phone,
+      }),
+    });
 
     const data = await response.json();
-    console.log("✅ Fast2SMS Full Response:", JSON.stringify(data, null, 2));
+    console.log("✅ Fast2SMS Smart OTP Send Response:", JSON.stringify(data, null, 2));
 
     if (data.return === true) {
       console.log(`✅ SMS sent successfully to ${phone}!`);
@@ -112,26 +103,36 @@ export const sendPhoneOtp = async (req, res) => {
   }
 };
 
-// ── Verify Phone OTP ──────────────────────────────────────────
-export const verifyPhoneOtp = (req, res) => {
+export const verifyPhoneOtp = async (req, res) => {
   let { phone, otp } = req.body;
   if (!phone || !otp)
     return res.status(400).json({ error: "Phone and OTP required" });
 
   phone = phone.replace(/^(\+91|0)/, "").trim();
 
-  const stored = otpStore[`phone_${phone}`];
-  if (!stored)
-    return res.status(400).json({ error: "OTP not found. Request again." });
+  try {
+    const response = await fetch("https://www.fast2sms.com/dev/otp/verify", {
+      method: "POST",
+      headers: {
+        Authorization: process.env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mobile: phone,
+        otp: otp.toString(),
+      }),
+    });
 
-  if (Date.now() > stored.expiry) {
-    delete otpStore[`phone_${phone}`];
-    return res.status(400).json({ error: "OTP expired. Request again." });
+    const data = await response.json();
+    console.log("✅ Fast2SMS Smart OTP Verify Response:", JSON.stringify(data, null, 2));
+
+    if (data.return === true) {
+      res.json({ success: true, message: "Phone verified successfully" });
+    } else {
+      res.status(400).json({ error: data.message || "Invalid or expired OTP" });
+    }
+  } catch (error) {
+    console.error("❌ Fast2SMS Verify Error:", error);
+    res.status(500).json({ error: "Failed to verify OTP. Try again." });
   }
-
-  if (stored.otp !== otp.toString())
-    return res.status(400).json({ error: "Invalid OTP. Try again." });
-
-  delete otpStore[`phone_${phone}`];
-  res.json({ success: true, message: "Phone verified successfully" });
 };
