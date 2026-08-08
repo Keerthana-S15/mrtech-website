@@ -31,7 +31,7 @@ export default function LocationMap({ onLocationSelect }) {
   const [addressText, setAddressText] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Search addresses using free Nominatim API (OpenStreetMap)
+  // Search addresses via our OWN backend (which proxies Nominatim) — avoids CORS issues
   const searchAddress = async (text) => {
     setQuery(text);
     if (text.length < 3) {
@@ -40,17 +40,8 @@ export default function LocationMap({ onLocationSelect }) {
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          text
-        )}&format=json&addressdetails=1&limit=5&countrycodes=in`,
-        {
-          headers: {
-            // Nominatim usage policy asks for an identifying header
-            "Accept-Language": "en",
-          },
-        }
-      );
+      const res = await fetch(`/api/geocode/search?q=${encodeURIComponent(text)}`);
+      if (!res.ok) throw new Error("Search request failed");
       const data = await res.json();
       setSuggestions(data);
     } catch (err) {
@@ -79,8 +70,9 @@ export default function LocationMap({ onLocationSelect }) {
     setPosition(newPosition);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${newPosition[0]}&lon=${newPosition[1]}&format=json`
+        `/api/geocode/reverse?lat=${newPosition[0]}&lon=${newPosition[1]}`
       );
+      if (!res.ok) throw new Error("Reverse geocode request failed");
       const data = await res.json();
       const address = data.display_name || "Selected location";
       setAddressText(address);
