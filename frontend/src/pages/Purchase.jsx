@@ -1536,7 +1536,6 @@
 // export default Purchase;
 
 
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -1559,7 +1558,7 @@ const getProductOptions = (product) => {
   const isActualTestTube = name.includes("test tube") && !name.includes("stand");
 
   if (isActualTestTube) {
-    return { ml: ML_SIZE_OPTIONS, color: TEST_TUBE_COLORS };
+    return { color: TEST_TUBE_COLORS };
   }
   if (name.includes("syringe")) {
     return { ml: ML_SIZE_OPTIONS };
