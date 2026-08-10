@@ -1537,7 +1537,6 @@
 
 
 
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -1551,11 +1550,15 @@ const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Sky Blue"];
 
 // Returns the option config for a given product:
 // { ml: [...] }               -> Syringe: only ml dropdown
-// { ml: [...], color: [...] } -> Test Tube: both ml + color dropdowns
-// {}                          -> everything else: no size/color options at all
+// { ml: [...], color: [...] } -> Test Tube (the actual tube, NOT the stand): both ml + color dropdowns
+// {}                          -> everything else (including Test Tube Stand): no options at all
 const getProductOptions = (product) => {
   const name = product.name?.toLowerCase() || "";
-  if (name.includes("test tube")) {
+
+  // "Test Tube Stand" contains "test tube" too, so explicitly exclude anything with "stand"
+  const isActualTestTube = name.includes("test tube") && !name.includes("stand");
+
+  if (isActualTestTube) {
     return { ml: ML_SIZE_OPTIONS, color: TEST_TUBE_COLORS };
   }
   if (name.includes("syringe")) {
@@ -1790,7 +1793,7 @@ const Purchase = () => {
                       </div>
                     </div>
 
-                    {/* ml dropdown — Syringe & Test Tube */}
+                    {/* ml dropdown — Syringe & Test Tube only */}
                     {mlOptions && (
                       <div style={{ marginBottom: 8 }}>
                         <label style={{ fontSize: 12, color: "#666", display: "block", marginBottom: 4 }}>
@@ -2078,7 +2081,7 @@ const Purchase = () => {
                     </div>
                   </div>
 
-                  {/* ml dropdown in modal — Syringe & Test Tube */}
+                  {/* ml dropdown in modal — Syringe & Test Tube only */}
                   {getProductOptions(selectedProduct).ml && (
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
