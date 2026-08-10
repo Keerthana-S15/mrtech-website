@@ -1545,7 +1545,7 @@ import "./Purchase.css";
 const ML_SIZE_OPTIONS = ["2ml", "3ml", "5ml", "10ml"];
 
 // Test Tube also comes in different cap colors — edit this list to match your actual stock colors
-const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Sky Blue"];
+const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red","Gray", "Sky Blue"];
 
 // Returns the option config for a given product:
 // { ml: [...] }               -> Syringe: only ml dropdown
