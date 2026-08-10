@@ -1542,7 +1542,7 @@ import { useCart } from "../context/CartContext";
 import "./Purchase.css";
 
 // ml sizes for products sold by volume
-const ML_SIZE_OPTIONS = ["5ml", "10ml", "20ml", "50ml", "100ml"];
+const ML_SIZE_OPTIONS = ["2ml", "3ml", "5ml", "10ml"];
 
 // Test Tube also comes in different cap colors — edit this list to match your actual stock colors
 const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Sky Blue"];
