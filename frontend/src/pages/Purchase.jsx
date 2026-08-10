@@ -919,15 +919,22 @@
 
 // export default Purchase;
 
-
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Purchase.css";
 
-// Common size options shown for every product. Feel free to edit this list.
-const SIZE_OPTIONS = ["Standard", "5ml", "10ml", "20ml", "50ml", "100ml"];
+// ml sizes should only apply to items that actually come in liquid volumes.
+// Every other product gets NO size option at all (no dropdown, no "Standard" label).
+const ML_SIZE_OPTIONS = ["5ml", "10ml", "20ml", "50ml", "100ml"];
+
+const getSizeOptions = (product) => {
+  const name = product.name?.toLowerCase() || "";
+  if (name.includes("syringe") || name.includes("test tube")) {
+    return ML_SIZE_OPTIONS;
+  }
+  return []; // no size option for these products
+};
 
 const Purchase = () => {
   const { cartItems, addToCart, removeFromCart, updateQuantity, getTotalItems, getTotalPrice } = useCart();
@@ -937,7 +944,8 @@ const Purchase = () => {
   const [showCart, setShowCart] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // ✅ NEW: tracks which size is currently chosen per product (keyed by product.id)
+  // tracks which size is currently chosen per product (keyed by product.id) —
+  // only relevant for products that actually have size options (Syringe / Test Tube)
   const [selectedSizes, setSelectedSizes] = useState({});
 
   useEffect(() => {
@@ -970,33 +978,45 @@ const Purchase = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Get the size currently selected for a product (defaults to "Standard")
-  const getSelectedSize = (productId) => selectedSizes[productId] || "Standard";
+  // Returns the currently selected size for a product, or null if the product has no size options
+  const getSelectedSize = (product) => {
+    const options = getSizeOptions(product);
+    if (options.length === 0) return null;
+    return selectedSizes[product.id] || options[0];
+  };
 
   const setSize = (productId, size) => {
     setSelectedSizes((prev) => ({ ...prev, [productId]: size }));
   };
 
-  // Build a unique cart-line id combining product id + size, so different
-  // sizes of the same product are tracked as separate cart entries.
-  const buildCartId = (productId, size) => `${productId}::${size}`;
+  // Build a unique cart-line id. Products with sizes get "id::size" so different
+  // sizes are tracked separately; products with no size option just use their own id.
+  const buildCartId = (productId, size) => (size ? `${productId}::${size}` : productId);
 
   const handleAddToCart = (product) => {
-    const size = getSelectedSize(product.id);
+    const size = getSelectedSize(product);
+
+    if (!size) {
+      // No size options for this product — add as-is, nothing extra attached
+      addToCart(product);
+      return;
+    }
+
     const cartProduct = {
       ...product,
       id: buildCartId(product.id, size),
       baseProductId: product.id,
       size: size,
-      name: size === "Standard" ? product.name : `${product.name} - ${size}`,
+      name: `${product.name} - ${size}`,
     };
     addToCart(cartProduct);
   };
 
-  // How many units of THIS product + THIS selected size are already in the cart
-  const getCartQuantity = (productId) => {
-    const size = getSelectedSize(productId);
-    const item = cartItems.find((i) => i.id === buildCartId(productId, size));
+  // How many units of THIS product (+ selected size, if any) are already in the cart
+  const getCartQuantity = (product) => {
+    const size = getSelectedSize(product);
+    const cartId = buildCartId(product.id, size);
+    const item = cartItems.find((i) => i.id === cartId);
     return item ? item.quantity : 0;
   };
 
@@ -1057,8 +1077,10 @@ const Purchase = () => {
         <div className="products-grid">
           {filteredProducts.length > 0 ? (
             filteredProducts.map((product) => {
-              const qtyInCart = getCartQuantity(product.id);
-              const currentSize = getSelectedSize(product.id);
+              const qtyInCart = getCartQuantity(product);
+              const currentSize = getSelectedSize(product);
+              const sizeOptions = getSizeOptions(product);
+              const cartId = buildCartId(product.id, currentSize);
 
               return (
                 <div key={product.id} className="product-card">
@@ -1115,36 +1137,38 @@ const Purchase = () => {
                       </div>
                     </div>
 
-                    {/* ✅ NEW: Size selector — pick a size, quantity below tracks that size */}
-                    <div style={{ marginBottom: 8 }}>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          color: "#666",
-                          display: "block",
-                          marginBottom: 4,
-                        }}
-                      >
-                        Size
-                      </label>
-                      <select
-                        value={currentSize}
-                        onChange={(e) => setSize(product.id, e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          borderRadius: 6,
-                          border: "1px solid #ccc",
-                          fontSize: 13,
-                        }}
-                      >
-                        {SIZE_OPTIONS.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Size selector — only shown for products that actually have size options (Syringe / Test Tube) */}
+                    {sizeOptions.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <label
+                          style={{
+                            fontSize: 12,
+                            color: "#666",
+                            display: "block",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Size
+                        </label>
+                        <select
+                          value={currentSize}
+                          onChange={(e) => setSize(product.id, e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            borderRadius: 6,
+                            border: "1px solid #ccc",
+                            fontSize: 13,
+                          }}
+                        >
+                          {sizeOptions.map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     {qtyInCart === 0 ? (
                       <button
@@ -1168,9 +1192,7 @@ const Purchase = () => {
                       >
                         <button
                           aria-label="Decrease quantity"
-                          onClick={() =>
-                            updateQuantity(buildCartId(product.id, currentSize), qtyInCart - 1)
-                          }
+                          onClick={() => updateQuantity(cartId, qtyInCart - 1)}
                           style={{
                             width: 36,
                             height: 36,
@@ -1192,7 +1214,7 @@ const Purchase = () => {
                           aria-label="Increase quantity"
                           onClick={() => {
                             if (qtyInCart < product.stock) {
-                              updateQuantity(buildCartId(product.id, currentSize), qtyInCart + 1);
+                              updateQuantity(cartId, qtyInCart + 1);
                             }
                           }}
                           disabled={qtyInCart >= product.stock}
@@ -1384,31 +1406,33 @@ const Purchase = () => {
                     </div>
                   </div>
 
-                  {/* Size selector in modal too */}
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
-                      Size
-                    </label>
-                    <select
-                      value={getSelectedSize(selectedProduct.id)}
-                      onChange={(e) => setSize(selectedProduct.id, e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        borderRadius: 8,
-                        border: "1px solid #ccc",
-                        fontSize: 14,
-                      }}
-                    >
-                      {SIZE_OPTIONS.map((size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Size selector in modal — only shown for products that actually have size options */}
+                  {getSizeOptions(selectedProduct).length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
+                        Size
+                      </label>
+                      <select
+                        value={getSelectedSize(selectedProduct)}
+                        onChange={(e) => setSize(selectedProduct.id, e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: 8,
+                          border: "1px solid #ccc",
+                          fontSize: 14,
+                        }}
+                      >
+                        {getSizeOptions(selectedProduct).map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-                  {getCartQuantity(selectedProduct.id) === 0 ? (
+                  {getCartQuantity(selectedProduct) === 0 ? (
                     <button
                       style={{
                         width: "100%",
@@ -1442,8 +1466,8 @@ const Purchase = () => {
                         aria-label="Decrease quantity"
                         onClick={() =>
                           updateQuantity(
-                            buildCartId(selectedProduct.id, getSelectedSize(selectedProduct.id)),
-                            getCartQuantity(selectedProduct.id) - 1
+                            buildCartId(selectedProduct.id, getSelectedSize(selectedProduct)),
+                            getCartQuantity(selectedProduct) - 1
                           )
                         }
                         style={{
@@ -1461,20 +1485,20 @@ const Purchase = () => {
                         −
                       </button>
                       <span style={{ color: "white", fontWeight: 600, fontSize: 17 }}>
-                        {getCartQuantity(selectedProduct.id)}
+                        {getCartQuantity(selectedProduct)}
                       </span>
                       <button
                         aria-label="Increase quantity"
                         onClick={() => {
-                          const current = getCartQuantity(selectedProduct.id);
+                          const current = getCartQuantity(selectedProduct);
                           if (current < selectedProduct.stock) {
                             updateQuantity(
-                              buildCartId(selectedProduct.id, getSelectedSize(selectedProduct.id)),
+                              buildCartId(selectedProduct.id, getSelectedSize(selectedProduct)),
                               current + 1
                             );
                           }
                         }}
-                        disabled={getCartQuantity(selectedProduct.id) >= selectedProduct.stock}
+                        disabled={getCartQuantity(selectedProduct) >= selectedProduct.stock}
                         style={{
                           width: 44,
                           height: 44,
@@ -1484,11 +1508,11 @@ const Purchase = () => {
                           fontSize: 22,
                           fontWeight: 600,
                           cursor:
-                            getCartQuantity(selectedProduct.id) >= selectedProduct.stock
+                            getCartQuantity(selectedProduct) >= selectedProduct.stock
                               ? "not-allowed"
                               : "pointer",
                           opacity:
-                            getCartQuantity(selectedProduct.id) >= selectedProduct.stock ? 0.5 : 1,
+                            getCartQuantity(selectedProduct) >= selectedProduct.stock ? 0.5 : 1,
                           borderRadius: 8,
                         }}
                       >
