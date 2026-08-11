@@ -1539,784 +1539,37 @@
 
 
 
-
-// import React, { useState, useEffect } from "react";
-// import { Link } from "react-router-dom";
-// import { useCart } from "../context/CartContext";
-// import "./Purchase.css";
-
-// // ml sizes for products sold by volume
-// const ML_SIZE_OPTIONS = ["2ml", "3ml", "5ml", "10ml"];
-
-// // Test Tube also comes in different cap colors — edit this list to match your actual stock colors
-// const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Gray", "Sky Blue"];
-
-// // Returns the option config for a given product:
-// // { ml: [...] }               -> Syringe (actual syringe, not the destroyer machine): only ml dropdown
-// // { ml: [...], color: [...] } -> Test Tube (the actual tube, NOT the stand): both ml + color dropdowns
-// // {}                          -> everything else (including Test Tube Stand, Syringe Destroyer): no options at all
-// const getProductOptions = (product) => {
-//   const name = product.name?.toLowerCase() || "";
-
-//   // "Test Tube Stand" contains "test tube" too, so explicitly exclude anything with "stand"
-//   const isActualTestTube = name.includes("test tube") && !name.includes("stand");
-
-//   // "Syringe Destroyer" contains "syringe" too, so explicitly exclude anything with "destroyer"
-//   const isActualSyringe = name.includes("syringe") && !name.includes("destroyer");
-
-//   if (isActualTestTube) {
-//     return { color: TEST_TUBE_COLORS };
-//   }
-//   if (isActualSyringe) {
-//     return { ml: ML_SIZE_OPTIONS };
-//   }
-//   return {};
-// };
-
-// const Purchase = () => {
-//   const { cartItems, addToCart, removeFromCart, updateQuantity, getTotalItems, getTotalPrice } = useCart();
-//   const [products, setProducts] = useState([]);
-//   const [selectedCategory, setSelectedCategory] = useState("All");
-//   const [searchQuery, setSearchQuery] = useState("");
-//   const [showCart, setShowCart] = useState(false);
-//   const [selectedProduct, setSelectedProduct] = useState(null);
-
-//   // tracks chosen ml per product id, e.g. { productId: "10ml" }
-//   const [selectedMl, setSelectedMl] = useState({});
-//   // tracks chosen color per product id, e.g. { productId: "Green" }
-//   const [selectedColor, setSelectedColor] = useState({});
-
-//   useEffect(() => {
-//     const fetchProducts = async () => {
-//       try {
-//         const response = await fetch("/api/products");
-//         const data = await response.json();
-//         if (data.success) {
-//           setProducts(data.products);
-//         }
-//       } catch (error) {
-//         console.error("Error fetching products:", error);
-//         alert("Failed to load products. Please refresh the page.");
-//       }
-//     };
-
-//     fetchProducts();
-//   }, []);
-
-//   const filteredProducts = products.filter((product) => {
-//     const productCategory = product.category?.trim().toLowerCase();
-//     const selected = selectedCategory.toLowerCase();
-
-//     const matchesCategory = selected === "all" || productCategory === selected;
-
-//     const matchesSearch = product.name
-//       ?.toLowerCase()
-//       .includes(searchQuery.toLowerCase());
-
-//     return matchesCategory && matchesSearch;
-//   });
-
-//   // Currently chosen ml for a product, or null if this product has no ml option
-//   const getSelectedMl = (product) => {
-//     const { ml } = getProductOptions(product);
-//     if (!ml) return null;
-//     return selectedMl[product.id] || ml[0];
-//   };
-
-//   // Currently chosen color for a product, or null if this product has no color option
-//   const getSelectedColor = (product) => {
-//     const { color } = getProductOptions(product);
-//     if (!color) return null;
-//     return selectedColor[product.id] || color[0];
-//   };
-
-//   const setMl = (productId, ml) => {
-//     setSelectedMl((prev) => ({ ...prev, [productId]: ml }));
-//   };
-
-//   const setColor = (productId, color) => {
-//     setSelectedColor((prev) => ({ ...prev, [productId]: color }));
-//   };
-
-//   // Build a unique cart-line id from whichever options apply to this product.
-//   // e.g. "12::10ml::Green", "45::20ml" (syringe), or just "9" (no options)
-//   const buildCartId = (productId, ml, color) => {
-//     let id = `${productId}`;
-//     if (ml) id += `::${ml}`;
-//     if (color) id += `::${color}`;
-//     return id;
-//   };
-
-//   const handleAddToCart = (product) => {
-//     const ml = getSelectedMl(product);
-//     const color = getSelectedColor(product);
-
-//     if (!ml && !color) {
-//       // No options for this product — add as-is
-//       addToCart(product);
-//       return;
-//     }
-
-//     const labelParts = [];
-//     if (ml) labelParts.push(ml);
-//     if (color) labelParts.push(color);
-
-//     const cartProduct = {
-//       ...product,
-//       id: buildCartId(product.id, ml, color),
-//       baseProductId: product.id,
-//       ml: ml || undefined,
-//       color: color || undefined,
-//       name: `${product.name} - ${labelParts.join(" / ")}`,
-//     };
-//     addToCart(cartProduct);
-//   };
-
-//   // How many units of THIS product (+ selected ml/color, if any) are already in the cart
-//   const getCartQuantity = (product) => {
-//     const ml = getSelectedMl(product);
-//     const color = getSelectedColor(product);
-//     const cartId = buildCartId(product.id, ml, color);
-//     const item = cartItems.find((i) => i.id === cartId);
-//     return item ? item.quantity : 0;
-//   };
-
-//   const cartTotal = getTotalPrice();
-//   const cartCount = getTotalItems();
-
-//   return (
-//     <div className="purchase-page">
-//       <div className="purchase-hero">
-//         <div className="hero-content">
-//           <h1>G Care Medical Equipment Store</h1>
-//           <p>Quality Healthcare Products for Professionals & Individuals</p>
-//           <div className="hero-stats">
-//             <div className="stat-item">
-//               <span className="stat-number">{products.length}</span>
-//               <span className="stat-label">Products</span>
-//             </div>
-//             <div className="stat-item">
-//               <span className="stat-number">ISO</span>
-//               <span className="stat-label">Certified</span>
-//             </div>
-//             <div className="stat-item">
-//               <span className="stat-number">24/7</span>
-//               <span className="stat-label">Support</span>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="purchase-container">
-//         <div className="filter-section">
-//           <div className="search-box">
-//             <input
-//               type="text"
-//               placeholder="🔍 Search products..."
-//               value={searchQuery}
-//               onChange={(e) => setSearchQuery(e.target.value)}
-//             />
-//           </div>
-
-//           <div className="category-filters">
-//             {["All", "Non-Consumable", "Consumable"].map((category) => (
-//               <button
-//                 key={category}
-//                 className={`filter-btn ${selectedCategory === category ? "active" : ""}`}
-//                 onClick={() => setSelectedCategory(category)}
-//               >
-//                 {category}
-//               </button>
-//             ))}
-//           </div>
-
-//           <button className="cart-toggle-btn" onClick={() => setShowCart(!showCart)}>
-//             🛒 Cart ({cartCount})
-//           </button>
-//         </div>
-
-//         <div className="products-grid">
-//           {filteredProducts.length > 0 ? (
-//             filteredProducts.map((product) => {
-//               const qtyInCart = getCartQuantity(product);
-//               const currentMl = getSelectedMl(product);
-//               const currentColor = getSelectedColor(product);
-//               const { ml: mlOptions, color: colorOptions } = getProductOptions(product);
-//               const cartId = buildCartId(product.id, currentMl, currentColor);
-
-//               return (
-//                 <div key={product.id} className="product-card">
-//                   <div
-//                     className="product-image"
-//                     onClick={() => setSelectedProduct(product)}
-//                     style={{ cursor: "pointer" }}
-//                   >
-//                     {product.image ? (
-//                       <img
-//                         src={product.image}
-//                         alt={product.name}
-//                         style={{ width: "100%", height: "100%", objectFit: "contain" }}
-//                       />
-//                     ) : (
-//                       <span className="product-emoji">🧴</span>
-//                     )}
-//                     <span className="product-category-badge">{product.category}</span>
-//                   </div>
-//                   <div className="product-info">
-//                     <h3
-//                       className="product-name"
-//                       onClick={() => setSelectedProduct(product)}
-//                       style={{ cursor: "pointer" }}
-//                     >
-//                       {product.name}
-//                     </h3>
-//                     <p className="product-sku">SKU: {product.sku}</p>
-
-//                     {product.description && (
-//                       <p
-//                         className="product-description"
-//                         style={{
-//                           fontSize: 13,
-//                           color: "#666",
-//                           marginBottom: 10,
-//                           display: "-webkit-box",
-//                           WebkitLineClamp: 2,
-//                           WebkitBoxOrient: "vertical",
-//                           overflow: "hidden",
-//                         }}
-//                       >
-//                         {product.description}
-//                       </p>
-//                     )}
-
-//                     <div className="product-footer">
-//                       <div className="product-price">
-//                         <span className="price-label">₹</span>
-//                         <span className="price-value">{product.price}</span>
-//                       </div>
-//                       <div className="product-stock">
-//                         Stock: <strong>{product.stock}</strong>
-//                       </div>
-//                     </div>
-
-//                     {/* ml dropdown — actual Syringe only (not Test Tube, not Syringe Destroyer) */}
-//                     {mlOptions && (
-//                       <div style={{ marginBottom: 8 }}>
-//                         <label style={{ fontSize: 12, color: "#666", display: "block", marginBottom: 4 }}>
-//                           Size (ml)
-//                         </label>
-//                         <select
-//                           value={currentMl}
-//                           onChange={(e) => setMl(product.id, e.target.value)}
-//                           style={{
-//                             width: "100%",
-//                             padding: "8px",
-//                             borderRadius: 6,
-//                             border: "1px solid #ccc",
-//                             fontSize: 13,
-//                           }}
-//                         >
-//                           {mlOptions.map((size) => (
-//                             <option key={size} value={size}>
-//                               {size}
-//                             </option>
-//                           ))}
-//                         </select>
-//                       </div>
-//                     )}
-
-//                     {/* Color dropdown — Test Tube only */}
-//                     {colorOptions && (
-//                       <div style={{ marginBottom: 8 }}>
-//                         <label style={{ fontSize: 12, color: "#666", display: "block", marginBottom: 4 }}>
-//                           Color
-//                         </label>
-//                         <select
-//                           value={currentColor}
-//                           onChange={(e) => setColor(product.id, e.target.value)}
-//                           style={{
-//                             width: "100%",
-//                             padding: "8px",
-//                             borderRadius: 6,
-//                             border: "1px solid #ccc",
-//                             fontSize: 13,
-//                           }}
-//                         >
-//                           {colorOptions.map((c) => (
-//                             <option key={c} value={c}>
-//                               {c}
-//                             </option>
-//                           ))}
-//                         </select>
-//                       </div>
-//                     )}
-
-//                     {qtyInCart === 0 ? (
-//                       <button
-//                         className="add-to-cart-btn"
-//                         onClick={() => handleAddToCart(product)}
-//                         disabled={product.stock === 0}
-//                       >
-//                         {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
-//                       </button>
-//                     ) : (
-//                       <div
-//                         style={{
-//                           display: "flex",
-//                           alignItems: "center",
-//                           justifyContent: "space-between",
-//                           background: "#ff6600",
-//                           borderRadius: 8,
-//                           padding: "4px",
-//                           marginTop: 8,
-//                         }}
-//                       >
-//                         <button
-//                           aria-label="Decrease quantity"
-//                           onClick={() => updateQuantity(cartId, qtyInCart - 1)}
-//                           style={{
-//                             width: 36,
-//                             height: 36,
-//                             border: "none",
-//                             background: "transparent",
-//                             color: "white",
-//                             fontSize: 20,
-//                             fontWeight: 600,
-//                             cursor: "pointer",
-//                             borderRadius: 6,
-//                           }}
-//                         >
-//                           −
-//                         </button>
-//                         <span style={{ color: "white", fontWeight: 600, fontSize: 15 }}>
-//                           {qtyInCart}
-//                         </span>
-//                         <button
-//                           aria-label="Increase quantity"
-//                           onClick={() => {
-//                             if (qtyInCart < product.stock) {
-//                               updateQuantity(cartId, qtyInCart + 1);
-//                             }
-//                           }}
-//                           disabled={qtyInCart >= product.stock}
-//                           style={{
-//                             width: 36,
-//                             height: 36,
-//                             border: "none",
-//                             background: "transparent",
-//                             color: "white",
-//                             fontSize: 20,
-//                             fontWeight: 600,
-//                             cursor: qtyInCart >= product.stock ? "not-allowed" : "pointer",
-//                             opacity: qtyInCart >= product.stock ? 0.5 : 1,
-//                             borderRadius: 6,
-//                           }}
-//                         >
-//                           +
-//                         </button>
-//                       </div>
-//                     )}
-//                   </div>
-//                 </div>
-//               );
-//             })
-//           ) : (
-//             <div className="no-products">
-//               <p>No products found</p>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-
-//       {showCart && (
-//         <div className="cart-overlay" onClick={() => setShowCart(false)}>
-//           <div className="cart-sidebar" onClick={(e) => e.stopPropagation()}>
-//             <div className="cart-header">
-//               <h2>Shopping Cart ({cartCount} items)</h2>
-//               <button className="close-cart-btn" onClick={() => setShowCart(false)}>
-//                 ✕
-//               </button>
-//             </div>
-
-//             <div className="cart-items">
-//               {cartItems.length === 0 ? (
-//                 <div className="empty-cart">
-//                   <p>Your cart is empty</p>
-//                   <span>🛒</span>
-//                 </div>
-//               ) : (
-//                 cartItems.map((item) => (
-//                   <div key={item.id} className="cart-item">
-//                     {item.image ? (
-//                       <img
-//                         src={item.image}
-//                         alt={item.name}
-//                         style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }}
-//                       />
-//                     ) : (
-//                       <span className="cart-item-emoji">🧴</span>
-//                     )}
-//                     <div className="cart-item-info">
-//                       <h4>{item.name}</h4>
-//                       <p>
-//                         ₹{item.price} × {item.quantity}
-//                       </p>
-//                     </div>
-//                     <div className="cart-item-total">₹{item.price * item.quantity}</div>
-//                     <button className="remove-btn" onClick={() => removeFromCart(item.id)}>
-//                       🗑️
-//                     </button>
-//                   </div>
-//                 ))
-//               )}
-//             </div>
-
-//             {cartItems.length > 0 && (
-//               <div className="cart-footer">
-//                 <div className="cart-total">
-//                   <span>Total:</span>
-//                   <span className="total-amount">₹{cartTotal}</span>
-//                 </div>
-//                 <Link to="/checkout" className="checkout-btn">
-//                   Proceed to Checkout
-//                 </Link>
-//               </div>
-//             )}
-//           </div>
-//         </div>
-//       )}
-
-//       {selectedProduct && (
-//         <div
-//           className="modal-overlay"
-//           onClick={() => setSelectedProduct(null)}
-//           style={{ zIndex: 2000 }}
-//         >
-//           <div
-//             className="modal-content"
-//             onClick={(e) => e.stopPropagation()}
-//             style={{ maxWidth: 700 }}
-//           >
-//             <div className="modal-header">
-//               <h2>{selectedProduct.name}</h2>
-//               <button className="close-modal" onClick={() => setSelectedProduct(null)}>
-//                 ✕
-//               </button>
-//             </div>
-//             <div className="modal-body">
-//               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 30 }}>
-//                 <div>
-//                   {selectedProduct.image ? (
-//                     <img
-//                       src={selectedProduct.image}
-//                       alt={selectedProduct.name}
-//                       style={{ width: "100%", borderRadius: 15, border: "2px solid #f0f0f0" }}
-//                     />
-//                   ) : (
-//                     <div
-//                       style={{
-//                         width: "100%",
-//                         height: 300,
-//                         background: "#f5f5f5",
-//                         borderRadius: 15,
-//                         display: "flex",
-//                         alignItems: "center",
-//                         justifyContent: "center",
-//                         fontSize: 80,
-//                       }}
-//                     >
-//                       🧴
-//                     </div>
-//                   )}
-//                 </div>
-
-//                 <div>
-//                   <p style={{ fontSize: 12, color: "#999", marginBottom: 10, fontFamily: "monospace" }}>
-//                     SKU: {selectedProduct.sku}
-//                   </p>
-
-//                   <div style={{ marginBottom: 20 }}>
-//                     <span
-//                       style={{
-//                         background: "rgba(0, 51, 61, 0.1)",
-//                         color: "#00333d",
-//                         padding: "6px 12px",
-//                         borderRadius: 20,
-//                         fontSize: 12,
-//                         fontWeight: 600,
-//                       }}
-//                     >
-//                       {selectedProduct.category}
-//                     </span>
-//                   </div>
-
-//                   <h3
-//                     style={{
-//                       fontSize: 16,
-//                       color: "#00333d",
-//                       marginBottom: 10,
-//                       borderLeft: "4px solid #ff6600",
-//                       paddingLeft: 10,
-//                     }}
-//                   >
-//                     Description
-//                   </h3>
-//                   <p style={{ fontSize: 14, color: "#666", lineHeight: 1.6, marginBottom: 20 }}>
-//                     {selectedProduct.description || "No description available"}
-//                   </p>
-
-//                   <div
-//                     style={{
-//                       padding: 20,
-//                       background: "#f9f9f9",
-//                       borderRadius: 10,
-//                       marginBottom: 20,
-//                     }}
-//                   >
-//                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-//                       <span style={{ color: "#666" }}>Price:</span>
-//                       <span style={{ fontSize: 24, fontWeight: 700, color: "#ff6600" }}>
-//                         ₹{selectedProduct.price}
-//                       </span>
-//                     </div>
-//                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-//                       <span style={{ color: "#666" }}>Stock:</span>
-//                       <span style={{ fontWeight: 600, color: "#00333d" }}>
-//                         {selectedProduct.stock} units
-//                       </span>
-//                     </div>
-//                   </div>
-
-//                   {/* ml dropdown in modal — actual Syringe only */}
-//                   {getProductOptions(selectedProduct).ml && (
-//                     <div style={{ marginBottom: 16 }}>
-//                       <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
-//                         Size (ml)
-//                       </label>
-//                       <select
-//                         value={getSelectedMl(selectedProduct)}
-//                         onChange={(e) => setMl(selectedProduct.id, e.target.value)}
-//                         style={{
-//                           width: "100%",
-//                           padding: "10px",
-//                           borderRadius: 8,
-//                           border: "1px solid #ccc",
-//                           fontSize: 14,
-//                         }}
-//                       >
-//                         {getProductOptions(selectedProduct).ml.map((size) => (
-//                           <option key={size} value={size}>
-//                             {size}
-//                           </option>
-//                         ))}
-//                       </select>
-//                     </div>
-//                   )}
-
-//                   {/* Color dropdown in modal — Test Tube only */}
-//                   {getProductOptions(selectedProduct).color && (
-//                     <div style={{ marginBottom: 16 }}>
-//                       <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
-//                         Color
-//                       </label>
-//                       <select
-//                         value={getSelectedColor(selectedProduct)}
-//                         onChange={(e) => setColor(selectedProduct.id, e.target.value)}
-//                         style={{
-//                           width: "100%",
-//                           padding: "10px",
-//                           borderRadius: 8,
-//                           border: "1px solid #ccc",
-//                           fontSize: 14,
-//                         }}
-//                       >
-//                         {getProductOptions(selectedProduct).color.map((c) => (
-//                           <option key={c} value={c}>
-//                             {c}
-//                           </option>
-//                         ))}
-//                       </select>
-//                     </div>
-//                   )}
-
-//                   {getCartQuantity(selectedProduct) === 0 ? (
-//                     <button
-//                       style={{
-//                         width: "100%",
-//                         padding: 16,
-//                         background: "linear-gradient(135deg, #ff6600, #ff8c00)",
-//                         color: "white",
-//                         border: "none",
-//                         borderRadius: 10,
-//                         fontWeight: 600,
-//                         cursor: "pointer",
-//                         fontSize: 16,
-//                         boxShadow: "0 4px 15px rgba(255, 102, 0, 0.3)",
-//                       }}
-//                       onClick={() => handleAddToCart(selectedProduct)}
-//                       disabled={selectedProduct.stock === 0}
-//                     >
-//                       {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
-//                     </button>
-//                   ) : (
-//                     <div
-//                       style={{
-//                         display: "flex",
-//                         alignItems: "center",
-//                         justifyContent: "space-between",
-//                         background: "#ff6600",
-//                         borderRadius: 10,
-//                         padding: "6px",
-//                       }}
-//                     >
-//                       <button
-//                         aria-label="Decrease quantity"
-//                         onClick={() =>
-//                           updateQuantity(
-//                             buildCartId(
-//                               selectedProduct.id,
-//                               getSelectedMl(selectedProduct),
-//                               getSelectedColor(selectedProduct)
-//                             ),
-//                             getCartQuantity(selectedProduct) - 1
-//                           )
-//                         }
-//                         style={{
-//                           width: 44,
-//                           height: 44,
-//                           border: "none",
-//                           background: "transparent",
-//                           color: "white",
-//                           fontSize: 22,
-//                           fontWeight: 600,
-//                           cursor: "pointer",
-//                           borderRadius: 8,
-//                         }}
-//                       >
-//                         −
-//                       </button>
-//                       <span style={{ color: "white", fontWeight: 600, fontSize: 17 }}>
-//                         {getCartQuantity(selectedProduct)}
-//                       </span>
-//                       <button
-//                         aria-label="Increase quantity"
-//                         onClick={() => {
-//                           const current = getCartQuantity(selectedProduct);
-//                           if (current < selectedProduct.stock) {
-//                             updateQuantity(
-//                               buildCartId(
-//                                 selectedProduct.id,
-//                                 getSelectedMl(selectedProduct),
-//                                 getSelectedColor(selectedProduct)
-//                               ),
-//                               current + 1
-//                             );
-//                           }
-//                         }}
-//                         disabled={getCartQuantity(selectedProduct) >= selectedProduct.stock}
-//                         style={{
-//                           width: 44,
-//                           height: 44,
-//                           border: "none",
-//                           background: "transparent",
-//                           color: "white",
-//                           fontSize: 22,
-//                           fontWeight: 600,
-//                           cursor:
-//                             getCartQuantity(selectedProduct) >= selectedProduct.stock
-//                               ? "not-allowed"
-//                               : "pointer",
-//                           opacity:
-//                             getCartQuantity(selectedProduct) >= selectedProduct.stock ? 0.5 : 1,
-//                           borderRadius: 8,
-//                         }}
-//                       >
-//                         +
-//                       </button>
-//                     </div>
-//                   )}
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Purchase;
-
-
-
-
-
-
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import "./Purchase.css";
 
-// Cosmetic-only color list, used ONLY as a fallback when a product has no
-// real color variants in the backend (currently: "Test Tube"). Picking a
-// color here does NOT change price/stock since there's only one real product.
-const TEST_TUBE_COSMETIC_COLORS = ["Green", "Black", "Purple", "Red", "Gray", "Sky Blue"];
+// ml sizes for products sold by volume
+const ML_SIZE_OPTIONS = ["2ml", "3ml", "5ml", "10ml"];
 
-const normalizeName = (name) => name?.trim().toLowerCase();
+// Test Tube also comes in different cap colors — edit this list to match your actual stock colors
+const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Gray", "Sky Blue"];
 
-// Normalizes a size string for COMPARISON only (not for display) so
-// "2ml", "2 ml", "2 mL", "2ML" are all treated as the same size.
-const normalizeSize = (size) => (size || "").toString().trim().toLowerCase().replace(/\s+/g, "");
+// Returns the option config for a given product:
+// { ml: [...] }               -> Syringe (actual syringe, not the destroyer machine): only ml dropdown
+// { ml: [...], color: [...] } -> Test Tube (the actual tube, NOT the stand): both ml + color dropdowns
+// {}                          -> everything else (including Test Tube Stand, Syringe Destroyer): no options at all
+const getProductOptions = (product) => {
+  const name = product.name?.toLowerCase() || "";
 
-// Group the flat product list into arrays that share the exact same
-// "Product Name". Each entry inside a group is treated as a real variant
-// (different Size and/or Color field, its own SKU/price/stock) of one item.
-// IMPORTANT: for this to work, when adding products in the admin, every size
-// variant of the same item (e.g. "Disposable Syringe" 2ml/3ml/5ml/10ml) must
-// use the EXACT SAME "Product Name" text — only Size/SKU/Price/Stock differ.
-const groupProducts = (products) => {
-  const map = new Map();
-  products.forEach((p) => {
-    const key = normalizeName(p.name);
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(p);
-  });
-  return Array.from(map.values());
-};
+  // "Test Tube Stand" contains "test tube" too, so explicitly exclude anything with "stand"
+  const isActualTestTube = name.includes("test tube") && !name.includes("stand");
 
-// Unique, real size values present across a group's variants (from the
-// product's own "size" field) — null if there's only one / none.
-const getRealSizeOptions = (group) => {
-  const seen = new Map(); // normalized value -> original raw label (first one seen)
-  group.forEach((p) => {
-    if (p.size) {
-      const norm = normalizeSize(p.size);
-      if (!seen.has(norm)) seen.set(norm, p.size.toString().trim());
-    }
-  });
-  const sizes = Array.from(seen.values()).sort(
-    (a, b) => parseFloat(a) - parseFloat(b) // numeric order: 2ml, 3ml, 5ml, 10ml...
-  );
-  return sizes.length > 1 ? sizes : null;
-};
+  // "Syringe Destroyer" contains "syringe" too, so explicitly exclude anything with "destroyer"
+  const isActualSyringe = name.includes("syringe") && !name.includes("destroyer");
 
-// Unique, real color values present across a group's variants (from the
-// product's own "color" field, if you ever add per-color products) — null
-// if there's only one / none.
-const getRealColorOptions = (group) => {
-  const colors = [...new Set(group.map((p) => p.color).filter(Boolean))];
-  return colors.length > 1 ? colors : null;
-};
-
-// Find the exact variant (real product doc) matching the chosen size/color.
-const resolveVariant = (group, size, color) => {
-  const normSize = size ? normalizeSize(size) : null;
-  const match = group.find(
-    (p) =>
-      (!normSize || normalizeSize(p.size) === normSize) &&
-      (!color || p.color === color)
-  );
-  return match || group[0];
+  if (isActualTestTube) {
+    return { color: TEST_TUBE_COLORS };
+  }
+  if (isActualSyringe) {
+    return { ml: ML_SIZE_OPTIONS };
+  }
+  return {};
 };
 
 const Purchase = () => {
@@ -2325,12 +1578,12 @@ const Purchase = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCart, setShowCart] = useState(false);
-  const [selectedGroupKey, setSelectedGroupKey] = useState(null); // for modal
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // chosen size per group, e.g. { "disposable syringe": "2ml" }
-  const [selectedSizeByGroup, setSelectedSizeByGroup] = useState({});
-  // chosen color per group (real or cosmetic), e.g. { "test tube": "Green" }
-  const [selectedColorByGroup, setSelectedColorByGroup] = useState({});
+  // tracks chosen ml per product id, e.g. { productId: "10ml" }
+  const [selectedMl, setSelectedMl] = useState({});
+  // tracks chosen color per product id, e.g. { productId: "Green" }
+  const [selectedColor, setSelectedColor] = useState({});
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -2362,87 +1615,73 @@ const Purchase = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // One card per distinct product name; each card may contain several real variants
-  const productGroups = useMemo(() => groupProducts(filteredProducts), [filteredProducts]);
-
-  // Everything needed to render + interact with one group, computed together
-  const getGroupInfo = (group) => {
-    const key = normalizeName(group[0].name);
-
-    const realSizeOptions = getRealSizeOptions(group);
-    const realColorOptions = getRealColorOptions(group);
-
-    // Cosmetic fallback: only for "Test Tube" when there's no real color variant yet
-    const isTestTube = key === "test tube";
-    const colorOptions = realColorOptions || (isTestTube && group.length === 1 ? TEST_TUBE_COSMETIC_COLORS : null);
-    const colorIsReal = Boolean(realColorOptions);
-
-    const selectedSize = realSizeOptions ? selectedSizeByGroup[key] || realSizeOptions[0] : null;
-    const selectedColor = colorOptions ? selectedColorByGroup[key] || colorOptions[0] : null;
-
-    // Only feed color into variant resolution if it's a REAL backend variant field
-    const variant = resolveVariant(group, selectedSize, colorIsReal ? selectedColor : null);
-
-    // Cart id: the real variant's own id already encodes size (and real color, if any).
-    // Only need to add the cosmetic color manually, since it doesn't change the underlying product.
-    const cartId = colorOptions && !colorIsReal ? `${variant.id}::${selectedColor}` : `${variant.id}`;
-
-    const displayNameParts = [variant.name];
-    if (variant.size) displayNameParts.push(variant.size);
-    if (colorOptions && !colorIsReal) displayNameParts.push(selectedColor);
-    else if (colorIsReal && selectedColor) displayNameParts.push(selectedColor);
-    const cartDisplayName = displayNameParts.join(" - ");
-
-    return {
-      key,
-      realSizeOptions,
-      colorOptions,
-      colorIsReal,
-      selectedSize,
-      selectedColor,
-      variant, // the actual product doc to show price/stock/sku/image for
-      cartId,
-      cartDisplayName,
-    };
+  // Currently chosen ml for a product, or null if this product has no ml option
+  const getSelectedMl = (product) => {
+    const { ml } = getProductOptions(product);
+    if (!ml) return null;
+    return selectedMl[product.id] || ml[0];
   };
 
-  const setSize = (groupKey, size) => {
-    setSelectedSizeByGroup((prev) => ({ ...prev, [groupKey]: size }));
+  // Currently chosen color for a product, or null if this product has no color option
+  const getSelectedColor = (product) => {
+    const { color } = getProductOptions(product);
+    if (!color) return null;
+    return selectedColor[product.id] || color[0];
   };
 
-  const setColor = (groupKey, color) => {
-    setSelectedColorByGroup((prev) => ({ ...prev, [groupKey]: color }));
+  const setMl = (productId, ml) => {
+    setSelectedMl((prev) => ({ ...prev, [productId]: ml }));
   };
 
-  const handleAddToCart = (group, info) => {
-    const { variant, cartId, cartDisplayName } = info;
+  const setColor = (productId, color) => {
+    setSelectedColor((prev) => ({ ...prev, [productId]: color }));
+  };
 
-    const isPlain = cartId === `${variant.id}`; // no cosmetic color attached
-    if (isPlain && cartDisplayName === variant.name) {
-      addToCart(variant);
+  // Build a unique cart-line id from whichever options apply to this product.
+  // e.g. "12::10ml::Green", "45::20ml" (syringe), or just "9" (no options)
+  const buildCartId = (productId, ml, color) => {
+    let id = `${productId}`;
+    if (ml) id += `::${ml}`;
+    if (color) id += `::${color}`;
+    return id;
+  };
+
+  const handleAddToCart = (product) => {
+    const ml = getSelectedMl(product);
+    const color = getSelectedColor(product);
+
+    if (!ml && !color) {
+      // No options for this product — add as-is
+      addToCart(product);
       return;
     }
 
-    addToCart({
-      ...variant,
-      id: cartId,
-      baseProductId: variant.id,
-      name: cartDisplayName,
-    });
+    const labelParts = [];
+    if (ml) labelParts.push(ml);
+    if (color) labelParts.push(color);
+
+    const cartProduct = {
+      ...product,
+      id: buildCartId(product.id, ml, color),
+      baseProductId: product.id,
+      ml: ml || undefined,
+      color: color || undefined,
+      name: `${product.name} - ${labelParts.join(" / ")}`,
+    };
+    addToCart(cartProduct);
   };
 
-  const getCartQuantity = (info) => {
-    const item = cartItems.find((i) => i.id === info.cartId);
+  // How many units of THIS product (+ selected ml/color, if any) are already in the cart
+  const getCartQuantity = (product) => {
+    const ml = getSelectedMl(product);
+    const color = getSelectedColor(product);
+    const cartId = buildCartId(product.id, ml, color);
+    const item = cartItems.find((i) => i.id === cartId);
     return item ? item.quantity : 0;
   };
 
   const cartTotal = getTotalPrice();
   const cartCount = getTotalItems();
-
-  const selectedGroup = selectedGroupKey
-    ? productGroups.find((g) => normalizeName(g[0].name) === selectedGroupKey)
-    : null;
-  const selectedInfo = selectedGroup ? getGroupInfo(selectedGroup) : null;
 
   return (
     <div className="purchase-page">
@@ -2496,41 +1735,43 @@ const Purchase = () => {
         </div>
 
         <div className="products-grid">
-          {productGroups.length > 0 ? (
-            productGroups.map((group) => {
-              const info = getGroupInfo(group);
-              const { variant, realSizeOptions, colorOptions, selectedSize, selectedColor } = info;
-              const qtyInCart = getCartQuantity(info);
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => {
+              const qtyInCart = getCartQuantity(product);
+              const currentMl = getSelectedMl(product);
+              const currentColor = getSelectedColor(product);
+              const { ml: mlOptions, color: colorOptions } = getProductOptions(product);
+              const cartId = buildCartId(product.id, currentMl, currentColor);
 
               return (
-                <div key={info.key} className="product-card">
+                <div key={product.id} className="product-card">
                   <div
                     className="product-image"
-                    onClick={() => setSelectedGroupKey(info.key)}
+                    onClick={() => setSelectedProduct(product)}
                     style={{ cursor: "pointer" }}
                   >
-                    {variant.image ? (
+                    {product.image ? (
                       <img
-                        src={variant.image}
-                        alt={variant.name}
+                        src={product.image}
+                        alt={product.name}
                         style={{ width: "100%", height: "100%", objectFit: "contain" }}
                       />
                     ) : (
                       <span className="product-emoji">🧴</span>
                     )}
-                    <span className="product-category-badge">{variant.category}</span>
+                    <span className="product-category-badge">{product.category}</span>
                   </div>
                   <div className="product-info">
                     <h3
                       className="product-name"
-                      onClick={() => setSelectedGroupKey(info.key)}
+                      onClick={() => setSelectedProduct(product)}
                       style={{ cursor: "pointer" }}
                     >
-                      {variant.name}
+                      {product.name}
                     </h3>
-                    <p className="product-sku">SKU: {variant.sku}</p>
+                    <p className="product-sku">SKU: {product.sku}</p>
 
-                    {variant.description && (
+                    {product.description && (
                       <p
                         className="product-description"
                         style={{
@@ -2543,29 +1784,29 @@ const Purchase = () => {
                           overflow: "hidden",
                         }}
                       >
-                        {variant.description}
+                        {product.description}
                       </p>
                     )}
 
                     <div className="product-footer">
                       <div className="product-price">
                         <span className="price-label">₹</span>
-                        <span className="price-value">{variant.price}</span>
+                        <span className="price-value">{product.price}</span>
                       </div>
                       <div className="product-stock">
-                        Stock: <strong>{variant.stock}</strong>
+                        Stock: <strong>{product.stock}</strong>
                       </div>
                     </div>
 
-                    {/* Real size dropdown — only when this product actually has multiple size variants in the DB */}
-                    {realSizeOptions && (
+                    {/* ml dropdown — actual Syringe only (not Test Tube, not Syringe Destroyer) */}
+                    {mlOptions && (
                       <div style={{ marginBottom: 8 }}>
                         <label style={{ fontSize: 12, color: "#666", display: "block", marginBottom: 4 }}>
-                          Size
+                          Size (ml)
                         </label>
                         <select
-                          value={selectedSize}
-                          onChange={(e) => setSize(info.key, e.target.value)}
+                          value={currentMl}
+                          onChange={(e) => setMl(product.id, e.target.value)}
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -2574,7 +1815,7 @@ const Purchase = () => {
                             fontSize: 13,
                           }}
                         >
-                          {realSizeOptions.map((size) => (
+                          {mlOptions.map((size) => (
                             <option key={size} value={size}>
                               {size}
                             </option>
@@ -2583,15 +1824,15 @@ const Purchase = () => {
                       </div>
                     )}
 
-                    {/* Color dropdown — real variant colors if present, else cosmetic Test Tube fallback */}
+                    {/* Color dropdown — Test Tube only */}
                     {colorOptions && (
                       <div style={{ marginBottom: 8 }}>
                         <label style={{ fontSize: 12, color: "#666", display: "block", marginBottom: 4 }}>
                           Color
                         </label>
                         <select
-                          value={selectedColor}
-                          onChange={(e) => setColor(info.key, e.target.value)}
+                          value={currentColor}
+                          onChange={(e) => setColor(product.id, e.target.value)}
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -2612,10 +1853,10 @@ const Purchase = () => {
                     {qtyInCart === 0 ? (
                       <button
                         className="add-to-cart-btn"
-                        onClick={() => handleAddToCart(group, info)}
-                        disabled={variant.stock === 0}
+                        onClick={() => handleAddToCart(product)}
+                        disabled={product.stock === 0}
                       >
-                        {variant.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                        {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
                       </button>
                     ) : (
                       <div
@@ -2631,7 +1872,7 @@ const Purchase = () => {
                       >
                         <button
                           aria-label="Decrease quantity"
-                          onClick={() => updateQuantity(info.cartId, qtyInCart - 1)}
+                          onClick={() => updateQuantity(cartId, qtyInCart - 1)}
                           style={{
                             width: 36,
                             height: 36,
@@ -2652,11 +1893,11 @@ const Purchase = () => {
                         <button
                           aria-label="Increase quantity"
                           onClick={() => {
-                            if (qtyInCart < variant.stock) {
-                              updateQuantity(info.cartId, qtyInCart + 1);
+                            if (qtyInCart < product.stock) {
+                              updateQuantity(cartId, qtyInCart + 1);
                             }
                           }}
-                          disabled={qtyInCart >= variant.stock}
+                          disabled={qtyInCart >= product.stock}
                           style={{
                             width: 36,
                             height: 36,
@@ -2665,8 +1906,8 @@ const Purchase = () => {
                             color: "white",
                             fontSize: 20,
                             fontWeight: 600,
-                            cursor: qtyInCart >= variant.stock ? "not-allowed" : "pointer",
-                            opacity: qtyInCart >= variant.stock ? 0.5 : 1,
+                            cursor: qtyInCart >= product.stock ? "not-allowed" : "pointer",
+                            opacity: qtyInCart >= product.stock ? 0.5 : 1,
                             borderRadius: 6,
                           }}
                         >
@@ -2744,10 +1985,10 @@ const Purchase = () => {
         </div>
       )}
 
-      {selectedGroup && selectedInfo && (
+      {selectedProduct && (
         <div
           className="modal-overlay"
-          onClick={() => setSelectedGroupKey(null)}
+          onClick={() => setSelectedProduct(null)}
           style={{ zIndex: 2000 }}
         >
           <div
@@ -2756,18 +1997,18 @@ const Purchase = () => {
             style={{ maxWidth: 700 }}
           >
             <div className="modal-header">
-              <h2>{selectedInfo.variant.name}</h2>
-              <button className="close-modal" onClick={() => setSelectedGroupKey(null)}>
+              <h2>{selectedProduct.name}</h2>
+              <button className="close-modal" onClick={() => setSelectedProduct(null)}>
                 ✕
               </button>
             </div>
             <div className="modal-body">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 30 }}>
                 <div>
-                  {selectedInfo.variant.image ? (
+                  {selectedProduct.image ? (
                     <img
-                      src={selectedInfo.variant.image}
-                      alt={selectedInfo.variant.name}
+                      src={selectedProduct.image}
+                      alt={selectedProduct.name}
                       style={{ width: "100%", borderRadius: 15, border: "2px solid #f0f0f0" }}
                     />
                   ) : (
@@ -2790,7 +2031,7 @@ const Purchase = () => {
 
                 <div>
                   <p style={{ fontSize: 12, color: "#999", marginBottom: 10, fontFamily: "monospace" }}>
-                    SKU: {selectedInfo.variant.sku}
+                    SKU: {selectedProduct.sku}
                   </p>
 
                   <div style={{ marginBottom: 20 }}>
@@ -2804,7 +2045,7 @@ const Purchase = () => {
                         fontWeight: 600,
                       }}
                     >
-                      {selectedInfo.variant.category}
+                      {selectedProduct.category}
                     </span>
                   </div>
 
@@ -2820,7 +2061,7 @@ const Purchase = () => {
                     Description
                   </h3>
                   <p style={{ fontSize: 14, color: "#666", lineHeight: 1.6, marginBottom: 20 }}>
-                    {selectedInfo.variant.description || "No description available"}
+                    {selectedProduct.description || "No description available"}
                   </p>
 
                   <div
@@ -2834,26 +2075,26 @@ const Purchase = () => {
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                       <span style={{ color: "#666" }}>Price:</span>
                       <span style={{ fontSize: 24, fontWeight: 700, color: "#ff6600" }}>
-                        ₹{selectedInfo.variant.price}
+                        ₹{selectedProduct.price}
                       </span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ color: "#666" }}>Stock:</span>
                       <span style={{ fontWeight: 600, color: "#00333d" }}>
-                        {selectedInfo.variant.stock} units
+                        {selectedProduct.stock} units
                       </span>
                     </div>
                   </div>
 
-                  {/* Real size dropdown in modal */}
-                  {selectedInfo.realSizeOptions && (
+                  {/* ml dropdown in modal — actual Syringe only */}
+                  {getProductOptions(selectedProduct).ml && (
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
-                        Size
+                        Size (ml)
                       </label>
                       <select
-                        value={selectedInfo.selectedSize}
-                        onChange={(e) => setSize(selectedInfo.key, e.target.value)}
+                        value={getSelectedMl(selectedProduct)}
+                        onChange={(e) => setMl(selectedProduct.id, e.target.value)}
                         style={{
                           width: "100%",
                           padding: "10px",
@@ -2862,7 +2103,7 @@ const Purchase = () => {
                           fontSize: 14,
                         }}
                       >
-                        {selectedInfo.realSizeOptions.map((size) => (
+                        {getProductOptions(selectedProduct).ml.map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
@@ -2871,15 +2112,15 @@ const Purchase = () => {
                     </div>
                   )}
 
-                  {/* Color dropdown in modal */}
-                  {selectedInfo.colorOptions && (
+                  {/* Color dropdown in modal — Test Tube only */}
+                  {getProductOptions(selectedProduct).color && (
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
                         Color
                       </label>
                       <select
-                        value={selectedInfo.selectedColor}
-                        onChange={(e) => setColor(selectedInfo.key, e.target.value)}
+                        value={getSelectedColor(selectedProduct)}
+                        onChange={(e) => setColor(selectedProduct.id, e.target.value)}
                         style={{
                           width: "100%",
                           padding: "10px",
@@ -2888,7 +2129,7 @@ const Purchase = () => {
                           fontSize: 14,
                         }}
                       >
-                        {selectedInfo.colorOptions.map((c) => (
+                        {getProductOptions(selectedProduct).color.map((c) => (
                           <option key={c} value={c}>
                             {c}
                           </option>
@@ -2897,7 +2138,7 @@ const Purchase = () => {
                     </div>
                   )}
 
-                  {getCartQuantity(selectedInfo) === 0 ? (
+                  {getCartQuantity(selectedProduct) === 0 ? (
                     <button
                       style={{
                         width: "100%",
@@ -2911,10 +2152,10 @@ const Purchase = () => {
                         fontSize: 16,
                         boxShadow: "0 4px 15px rgba(255, 102, 0, 0.3)",
                       }}
-                      onClick={() => handleAddToCart(selectedGroup, selectedInfo)}
-                      disabled={selectedInfo.variant.stock === 0}
+                      onClick={() => handleAddToCart(selectedProduct)}
+                      disabled={selectedProduct.stock === 0}
                     >
-                      {selectedInfo.variant.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                      {selectedProduct.stock === 0 ? "Out of Stock" : "Add to Cart"}
                     </button>
                   ) : (
                     <div
@@ -2930,7 +2171,14 @@ const Purchase = () => {
                       <button
                         aria-label="Decrease quantity"
                         onClick={() =>
-                          updateQuantity(selectedInfo.cartId, getCartQuantity(selectedInfo) - 1)
+                          updateQuantity(
+                            buildCartId(
+                              selectedProduct.id,
+                              getSelectedMl(selectedProduct),
+                              getSelectedColor(selectedProduct)
+                            ),
+                            getCartQuantity(selectedProduct) - 1
+                          )
                         }
                         style={{
                           width: 44,
@@ -2947,17 +2195,24 @@ const Purchase = () => {
                         −
                       </button>
                       <span style={{ color: "white", fontWeight: 600, fontSize: 17 }}>
-                        {getCartQuantity(selectedInfo)}
+                        {getCartQuantity(selectedProduct)}
                       </span>
                       <button
                         aria-label="Increase quantity"
                         onClick={() => {
-                          const current = getCartQuantity(selectedInfo);
-                          if (current < selectedInfo.variant.stock) {
-                            updateQuantity(selectedInfo.cartId, current + 1);
+                          const current = getCartQuantity(selectedProduct);
+                          if (current < selectedProduct.stock) {
+                            updateQuantity(
+                              buildCartId(
+                                selectedProduct.id,
+                                getSelectedMl(selectedProduct),
+                                getSelectedColor(selectedProduct)
+                              ),
+                              current + 1
+                            );
                           }
                         }}
-                        disabled={getCartQuantity(selectedInfo) >= selectedInfo.variant.stock}
+                        disabled={getCartQuantity(selectedProduct) >= selectedProduct.stock}
                         style={{
                           width: 44,
                           height: 44,
@@ -2967,11 +2222,11 @@ const Purchase = () => {
                           fontSize: 22,
                           fontWeight: 600,
                           cursor:
-                            getCartQuantity(selectedInfo) >= selectedInfo.variant.stock
+                            getCartQuantity(selectedProduct) >= selectedProduct.stock
                               ? "not-allowed"
                               : "pointer",
                           opacity:
-                            getCartQuantity(selectedInfo) >= selectedInfo.variant.stock ? 0.5 : 1,
+                            getCartQuantity(selectedProduct) >= selectedProduct.stock ? 0.5 : 1,
                           borderRadius: 8,
                         }}
                       >
@@ -2990,3 +2245,7 @@ const Purchase = () => {
 };
 
 export default Purchase;
+
+
+
+
