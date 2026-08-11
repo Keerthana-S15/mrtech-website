@@ -1535,7 +1535,6 @@
 
 // export default Purchase;
 
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -1545,22 +1544,25 @@ import "./Purchase.css";
 const ML_SIZE_OPTIONS = ["2ml", "3ml", "5ml", "10ml"];
 
 // Test Tube also comes in different cap colors — edit this list to match your actual stock colors
-const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red","Gray", "Sky Blue"];
+const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Gray", "Sky Blue"];
 
 // Returns the option config for a given product:
-// { ml: [...] }               -> Syringe: only ml dropdown
+// { ml: [...] }               -> Syringe (actual syringe, not the destroyer machine): only ml dropdown
 // { ml: [...], color: [...] } -> Test Tube (the actual tube, NOT the stand): both ml + color dropdowns
-// {}                          -> everything else (including Test Tube Stand): no options at all
+// {}                          -> everything else (including Test Tube Stand, Syringe Destroyer): no options at all
 const getProductOptions = (product) => {
   const name = product.name?.toLowerCase() || "";
 
   // "Test Tube Stand" contains "test tube" too, so explicitly exclude anything with "stand"
   const isActualTestTube = name.includes("test tube") && !name.includes("stand");
 
+  // "Syringe Destroyer" contains "syringe" too, so explicitly exclude anything with "destroyer"
+  const isActualSyringe = name.includes("syringe") && !name.includes("destroyer");
+
   if (isActualTestTube) {
     return { color: TEST_TUBE_COLORS };
   }
-  if (name.includes("syringe")) {
+  if (isActualSyringe) {
     return { ml: ML_SIZE_OPTIONS };
   }
   return {};
@@ -1792,7 +1794,7 @@ const Purchase = () => {
                       </div>
                     </div>
 
-                    {/* ml dropdown — Syringe & Test Tube only */}
+                    {/* ml dropdown — actual Syringe only (not Test Tube, not Syringe Destroyer) */}
                     {mlOptions && (
                       <div style={{ marginBottom: 8 }}>
                         <label style={{ fontSize: 12, color: "#666", display: "block", marginBottom: 4 }}>
@@ -2080,7 +2082,7 @@ const Purchase = () => {
                     </div>
                   </div>
 
-                  {/* ml dropdown in modal — Syringe & Test Tube only */}
+                  {/* ml dropdown in modal — actual Syringe only */}
                   {getProductOptions(selectedProduct).ml && (
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ fontSize: 13, color: "#666", display: "block", marginBottom: 6 }}>
