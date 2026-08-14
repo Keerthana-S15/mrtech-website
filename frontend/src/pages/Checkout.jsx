@@ -2006,15 +2006,15 @@
 
 
 
-
 // src/pages/Checkout.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import { useCart } from "../context/CartContext";
 import LocationMap from "./LocationMap";
 import "./Checkout.css";
 
-// ✅ NEW: Your UPI details, shown as a scannable QR when the customer picks UPI
+// Your UPI details, shown as a scannable QR when the customer picks UPI
 const UPI_ID = "MYTHREALITYTECHNOLOGIESPRIV@iob";
 
 const Checkout = () => {
@@ -2046,7 +2046,7 @@ const Checkout = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [pincodeChecking, setPincodeChecking] = useState(false);
 
-  // ✅ Auto-fill City & State from Pincode using India Post's free public API
+  // Auto-fill City & State from Pincode using India Post's free public API
   const lookupPincode = async (pincode) => {
     setPincodeChecking(true);
     try {
@@ -2069,7 +2069,7 @@ const Checkout = () => {
     }
   };
 
-  // ✅ Auto-fill address when user picks a location on the map.
+  // Auto-fill address when user picks a location on the map.
   // User can still edit this field afterwards to add door no. / floor / landmark.
   const handleLocationSelect = (location) => {
     setShippingInfo((prev) => ({
@@ -2143,7 +2143,7 @@ const Checkout = () => {
     return true;
   };
 
-  // 🔥 Place Order with Backend API
+  // Place Order with Backend API
   const handlePlaceOrder = async () => {
     if (!agreeTerms) {
       alert("Please agree to terms and conditions");
@@ -2174,7 +2174,6 @@ const Checkout = () => {
         totalAmount: total,
       };
 
-      // ✅ FIX: relative path instead of hardcoded http://localhost:3000
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2504,7 +2503,7 @@ const Checkout = () => {
                   {/* UPI ID */}
                   {paymentMethod === "UPI" && (
                     <div className="upi-details">
-                      {/* ✅ NEW: Scannable QR code for direct UPI payment */}
+                      {/* Dynamic QR — amount changes automatically based on order total */}
                       <div
                         style={{
                           textAlign: "center",
@@ -2514,18 +2513,24 @@ const Checkout = () => {
                           marginBottom: 16,
                         }}
                       >
-                        <img
-                          src="/upi-qr.png"
-                          alt="Scan to pay via UPI"
+                        <div
                           style={{
-                            width: 220,
-                            height: "auto",
+                            display: "inline-block",
+                            padding: 12,
+                            background: "white",
                             borderRadius: 10,
                             border: "1px solid #e0e0e0",
                           }}
-                        />
+                        >
+                          <QRCodeSVG
+                            value={`upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(
+                              "Myth Reality Technologies"
+                            )}&am=${total}&cu=INR&tn=${encodeURIComponent("Order Payment")}`}
+                            size={220}
+                          />
+                        </div>
                         <p style={{ fontSize: 13, color: "#666", marginTop: 10, marginBottom: 2 }}>
-                          Scan with any UPI app (GPay, PhonePe, Paytm)
+                          Scan with any UPI app (GPay, PhonePe, Paytm) — amount ₹{total} auto-filled
                         </p>
                         <p style={{ fontSize: 14, fontWeight: 600, color: "#00333d" }}>
                           UPI ID: {UPI_ID}
