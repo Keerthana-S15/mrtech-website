@@ -63,12 +63,12 @@ export default function Contact() {
 
           <div className="c-row">
             <div className="c-label c-email">Email:</div>
-            <div className="c-value">info@mythrealitytech.com</div>
+            <div className="c-value">info@mrtech.co.in</div>
           </div>
 
           <div className="c-row">
             <div className="c-label c-phone">Phone:</div>
-            <div className="c-value">+91-XXXXXXXXXX</div>
+            <div className="c-value">+91-7305152581 / +91-7200704649</div>
           </div>
 
           <div className="c-row">
@@ -78,7 +78,7 @@ export default function Contact() {
             </div>
           </div>
 
-          <a className="c-cta" href="tel:+919999999999">📅 Schedule Call</a>
+          <a className="c-cta" href="tel:+917305152581">📅 Schedule Call</a>
         </article>
 
         {/* RIGHT — Form */}
