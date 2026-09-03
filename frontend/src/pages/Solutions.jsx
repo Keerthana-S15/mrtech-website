@@ -220,7 +220,7 @@ const SOLUTIONS = [
   },
   {
     icon: <FaUsers />,
-    title: "CrowdShaki Platform",
+    title: "Nandago Platform",
     text:
       "Community intelligence platform for collaborative, data-driven decision-making and social impact.",
     href: "/crowdshaki", // ✅ ALREADY CORRECT
