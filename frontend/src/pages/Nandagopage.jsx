@@ -121,9 +121,8 @@
 
 
 
-
 import React from "react";
-import "./NandagoPlatform.css";
+import "./Nandagoplatform.css";
 import { motion } from "framer-motion";
 import { FaUsers, FaHeart, FaShareAlt, FaChartLine } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
