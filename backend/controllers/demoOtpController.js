@@ -299,15 +299,15 @@
 
 
 
-
-
 import transporter from "../config/email.js";
 import { db } from "../config/firebase.js";
-import fetch from "node-fetch";
 
 const demoOtpStore = {};
 
 // ✅ Send OTP for Demo Request (Email + Mobile)
+// Mobile OTP now uses Fast2SMS "Smart OTP" (otp_id based) — same method
+// that already works on the Signup page — instead of the DLT template
+// route, which needs Fast2SMS-side template/entity approval we don't have.
 export const sendDemoOtp = async (req, res) => {
   const { email, mobile } = req.body;
 
@@ -315,20 +315,19 @@ export const sendDemoOtp = async (req, res) => {
     return res.status(400).json({ error: "Email and Mobile are required" });
   }
 
-  // Generate 6-digit OTPs
+  // Only the Email OTP is generated locally now. The Mobile OTP is
+  // generated and held by Fast2SMS itself (Smart OTP) — we never see its
+  // value; we just forward whatever the user enters to Fast2SMS's own
+  // /verify endpoint later.
   const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
-  const mobileOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Store OTPs
   demoOtpStore[email] = {
     emailOtp,
-    mobileOtp,
     mobile,
     expiresAt: Date.now() + 5 * 60 * 1000,
   };
 
   try {
-    // ✅ FIX: was "text:" — Brevo's API (via config/email.js) requires "html:"
     await transporter.sendMail({
       from: `"MRtech Website" <${process.env.ADMIN_EMAIL}>`,
       to: email,
@@ -348,9 +347,9 @@ export const sendDemoOtp = async (req, res) => {
     });
     console.log(`✅ Demo Email OTP sent to ${email}: ${emailOtp}`);
 
-    // Send Mobile OTP via SMS
-    await sendDemoSmsOtp(mobile, mobileOtp);
-    console.log(`✅ Demo Mobile OTP sent to ${mobile}: ${mobileOtp}`);
+    // Send Mobile OTP via Fast2SMS Smart OTP
+    await sendDemoSmsOtp(mobile);
+    console.log(`✅ Demo Mobile OTP (Smart OTP) sent to ${mobile}`);
 
     res.json({
       success: true,
@@ -362,35 +361,25 @@ export const sendDemoOtp = async (req, res) => {
   }
 };
 
-// Fast2SMS - Demo Request Template
-const sendDemoSmsOtp = async (mobile, otp) => {
+// Fast2SMS Smart OTP — Demo Request (mirrors signupOtpController.js sendPhoneOtp)
+const sendDemoSmsOtp = async (mobile) => {
   try {
-    const url = new URL("https://www.fast2sms.com/dev/bulkV2");
+    const response = await fetch("https://www.fast2sms.com/dev/otp/send", {
+      method: "POST",
+      headers: {
+        Authorization: process.env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        otp_id: process.env.FAST2SMS_OTP_ID,
+        mobile: mobile,
+      }),
+    });
 
-    url.searchParams.append("authorization", process.env.FAST2SMS_API_KEY);
-    url.searchParams.append("variables_values", otp);
-    url.searchParams.append("route", "dlt");
-    url.searchParams.append("numbers", mobile);
-    // ✅ FIX: entity_id was hardcoded before and didn't match .env — now all
-    // three pulled from environment variables so they stay in sync with
-    // your Fast2SMS DLT setup.
-    url.searchParams.append("sender_id", process.env.FAST2SMS_SENDER_ID);
-    url.searchParams.append("template_id", process.env.FAST2SMS_TEMPLATE_ID);
-    url.searchParams.append("entity_id", process.env.FAST2SMS_ENTITY_ID);
-
-    console.log("📤 Demo SMS OTP - Fast2SMS API Call");
-    console.log("📱 Mobile:", mobile);
-    console.log("🔢 OTP:", otp);
-    console.log("📋 Template: DEMO_REQUEST_OTP");
-    console.log("🆔 Template ID:", process.env.FAST2SMS_TEMPLATE_ID);
-    console.log("🏢 Entity ID:", process.env.FAST2SMS_ENTITY_ID);
-
-    const response = await fetch(url.toString(), { method: "GET" });
     const data = await response.json();
-
     console.log("📨 Demo SMS Response:", JSON.stringify(data, null, 2));
 
-    if (data.return === false || data.type === "error") {
+    if (data.return !== true) {
       throw new Error(data.message || "Demo SMS sending failed");
     }
 
@@ -403,6 +392,9 @@ const sendDemoSmsOtp = async (mobile, otp) => {
 };
 
 // ✅ Verify Demo Request OTP
+// Email OTP is checked locally (as before). Mobile OTP is checked by
+// calling Fast2SMS's own /verify endpoint, since Fast2SMS (not us)
+// generated that OTP.
 export const verifyDemoOtp = async (req, res) => {
   const { name, email, mobile, emailOtp, mobileOtp } = req.body;
 
@@ -421,8 +413,29 @@ export const verifyDemoOtp = async (req, res) => {
     return res.status(400).json({ error: "Invalid Email OTP" });
   }
 
-  if (mobileOtp !== stored.mobileOtp) {
-    return res.status(400).json({ error: "Invalid Mobile OTP" });
+  // Verify Mobile OTP with Fast2SMS
+  try {
+    const verifyRes = await fetch("https://www.fast2sms.com/dev/otp/verify", {
+      method: "POST",
+      headers: {
+        Authorization: process.env.FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mobile: mobile,
+        otp: mobileOtp.toString(),
+      }),
+    });
+
+    const verifyData = await verifyRes.json();
+    console.log("📨 Demo Mobile OTP Verify Response:", JSON.stringify(verifyData, null, 2));
+
+    if (verifyData.return !== true) {
+      return res.status(400).json({ error: verifyData.message || "Invalid or expired Mobile OTP" });
+    }
+  } catch (error) {
+    console.error("❌ Demo Mobile OTP Verify Error:", error);
+    return res.status(500).json({ error: "Failed to verify Mobile OTP. Try again." });
   }
 
   try {
@@ -434,7 +447,6 @@ export const verifyDemoOtp = async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
-    // ✅ FIX: was "text:" — changed to "html:"
     await transporter.sendMail({
       from: `"MRtech Website" <${process.env.ADMIN_EMAIL}>`,
       to: process.env.ADMIN_EMAIL,
