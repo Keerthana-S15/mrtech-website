@@ -63,7 +63,7 @@ export default function Contact() {
 
           <div className="c-row">
             <div className="c-label c-email">Email:</div>
-            <div className="c-value">info@mrtech.co.in</div>
+            <div className="c-value">mrtech05.ai@gmail.com</div>
           </div>
 
           <div className="c-row">
