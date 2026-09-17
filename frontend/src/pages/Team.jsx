@@ -693,11 +693,6 @@ const teamData = {
     { name: "Purushothaman", role: "Social Entrepreneurs", image: "/images/social-entrepreneurs/s1.jpeg", bio: "Drives sustainable social enterprises." },
     { name: "Rajan", role: "Social Entrepreneurs", image: "/images/social-entrepreneurs/s2.jpeg", bio: "Promotes inclusive technology adoption." },
     { name: "Nithya", role: "Social Entrepreneurs", image: "/images/social-entrepreneurs/s3.jpeg" },
-    { name: "Meena Patel", role: "Social Entrepreneurs", image: "/images/social-entrepreneurs/meena.jpg" },
-    { name: "Siddharth Rao", role: "Social Entrepreneurs", image: "/images/social-entrepreneurs/siddharth.jpg" },
-    { name: "Ritu Agarwal", role: "Social Entrepreneurs", image: "/images/social-entrepreneurs/ritu.jpg" },
-    { name: "Vikash Kumar", role: "", image: "/images/social-entrepreneurs/vikash.jpg" },
-    { name: "Prachi Goyal", role: "Social Enterprise Consultant", image: "/images/social-entrepreneurs/prachi.jpg" },
   ],
 };
 
