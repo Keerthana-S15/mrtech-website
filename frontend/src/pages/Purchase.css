@@ -297,6 +297,36 @@
   font-size: 18px;
 }
 
+/* Shown when the products API call fails (as opposed to genuinely empty) */
+.products-error {
+  color: #b42318;
+  background: #fff4f2;
+  border: 1px solid #f5c2bb;
+  border-radius: 8px;
+  grid-column: 1 / -1;
+}
+
+.products-error-detail {
+  font-size: 13px;
+  color: #8a2a20;
+  margin: 6px 0 16px;
+  word-break: break-word;
+}
+
+.retry-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  background: #2c7be5;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  background: #1f5fbf;
+}
+
 /* Cart Overlay */
 .cart-overlay {
   position: fixed;

@@ -2306,21 +2306,39 @@ const Purchase = () => {
   // tracks chosen color per product id, e.g. { productId: "Green" }
   const [selectedColor, setSelectedColor] = useState({});
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("/api/products");
-        const data = await response.json();
-        if (data.success) {
-          setProducts(data.products);
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        alert("Failed to load products. Please refresh the page.");
-      }
-    };
+  // "loading" | "ready" | "error" — lets the UI tell "no products exist" apart
+  // from "the API call failed", instead of silently showing a zero count.
+  const [loadState, setLoadState] = useState("loading");
+  const [loadError, setLoadError] = useState("");
 
+  const fetchProducts = async () => {
+    setLoadState("loading");
+    setLoadError("");
+    try {
+      const response = await fetch("/api/products");
+      const data = await response.json().catch(() => ({}));
+
+      // Log the raw response so a backend failure is visible in the console
+      console.log("📦 /api/products →", response.status, data);
+
+      if (!response.ok || !data.success || !Array.isArray(data.products)) {
+        throw new Error(
+          data.message || data.error || `Server responded with HTTP ${response.status}`
+        );
+      }
+
+      setProducts(data.products);
+      setLoadState("ready");
+    } catch (error) {
+      console.error("❌ Error fetching products:", error);
+      setLoadError(error.message);
+      setLoadState("error");
+    }
+  };
+
+  useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredProducts = products.filter((product) => {
@@ -2655,6 +2673,18 @@ const Purchase = () => {
                 </div>
               );
             })
+          ) : loadState === "loading" ? (
+            <div className="no-products">
+              <p>Loading products…</p>
+            </div>
+          ) : loadState === "error" ? (
+            <div className="no-products products-error" role="alert">
+              <p>⚠️ Unable to load products, please try again.</p>
+              <p className="products-error-detail">{loadError}</p>
+              <button type="button" className="retry-btn" onClick={fetchProducts}>
+                Retry
+              </button>
+            </div>
           ) : (
             <div className="no-products">
               <p>No products found</p>

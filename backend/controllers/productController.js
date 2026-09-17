@@ -798,9 +798,10 @@ export const getAllProducts = async (req, res) => {
     console.log("📦 Fetching all products (public storefront)...");
 
     const snapshot = await db.collection("products").orderBy("createdAt", "desc").get();
+    console.log(`📦 Firestore returned ${snapshot.size} product document(s)`);
 
     if (snapshot.empty) {
-      return res.json({ success: true, products: [] });
+      return res.json({ success: true, products: [], count: 0 });
     }
 
     const products = [];

@@ -4,7 +4,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
-import { db } from "./config/firebase.js";
+import { db, checkFirestore } from "./config/firebase.js";
 import enquiryRoutes from "./routes/enquiryRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import demoOtpRoutes from "./routes/demoOtpRoutes.js";
@@ -27,6 +27,17 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const frontendPath = path.resolve(__dirname, "..", "frontend", "build");
 console.log("✅ Frontend path:", frontendPath);
 app.use(express.static(frontendPath));
+
+// Health check — re-probes Firestore so a revoked key shows up here as 503
+// instead of as an empty storefront. Point Render's health check at this.
+app.get("/api/health", async (req, res) => {
+  const firestore = await checkFirestore();
+  res.status(firestore.ok ? 200 : 503).json({
+    status: firestore.ok ? "ok" : "degraded",
+    firestore,
+    uptimeSeconds: Math.round(process.uptime()),
+  });
+});
 
 // API Routes
 app.use("/api", enquiryRoutes);

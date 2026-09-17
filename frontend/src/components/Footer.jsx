@@ -31,7 +31,7 @@ export default function Footer() {
             <li><Link to="/solutions/gcare">G Care Health ATM</Link></li>
             <li><Link to="/solutions/health-score">G-Score App</Link></li>
             <li><Link to="/solutions/agri">AI Agriculture Solutions</Link></li>
-            <li><Link to="/crowdshaki">Nandago Platform</Link></li>
+            <li><Link to="/crowdshaki">NandaGo Platform</Link></li>
             <li><Link to="/solutions/cha">CHA Training Program</Link></li>
             <li><Link to="/solutions/serv-attendance">SERV Attendance App</Link></li>
           </ul>
