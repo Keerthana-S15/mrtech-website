@@ -4,10 +4,17 @@
   "scripts": {
     "start": "cd backend && node index.js",
     "build": "cd frontend && npm run build",
-    "setup": "cd backend && npm install && cd ../frontend && npm install && npm run build"
+    "setup": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "dev": "npm run build && concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && node index.js",
+    "dev:frontend": "nodemon --watch frontend/src --watch frontend/public --ext js,jsx,ts,tsx,css,scss,html,json,svg --exec \"npm run build\""
   },
   "dependencies": {
     "leaflet": "^1.9.4",
     "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9"
   }
 }
