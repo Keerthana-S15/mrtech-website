@@ -144,12 +144,25 @@ export async function sendDltOtp(mobile, otp) {
   });
 }
 
-/** Ask Fast2SMS to generate + send an OTP itself (Smart OTP). */
-export async function sendSmartOtp(mobile) {
+/**
+ * Send `otp` to `mobile` through the Smart OTP template (`otp_id`).
+ *
+ * We pass our own OTP value (supported by Fast2SMS's `otp` parameter) so the
+ * code can be verified locally, exactly like the DLT route. Relying on
+ * Fast2SMS's own /otp/verify instead is fragile: it is one-shot per mobile
+ * ("OTP not found or already verified" on any second call), so a retry or a
+ * failure after that check permanently invalidates the user's OTP.
+ */
+export async function sendSmartOtp(mobile, otp, { expiryMinutes = 5 } = {}) {
   if (!fast2smsConfig.smartOtpReady) {
     throw new Fast2SmsError("Smart OTP route is not configured", { code: "SMART_NOT_CONFIGURED" });
   }
-  return callFast2Sms("/otp/send", { otp_id: OTP_ID, mobile });
+  return callFast2Sms("/otp/send", {
+    otp_id: OTP_ID,
+    mobile,
+    otp: String(otp),
+    otp_expiry: expiryMinutes,
+  });
 }
 
 /**

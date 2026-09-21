@@ -308,7 +308,6 @@ import {
   normaliseMobile,
   sendDltOtp,
   sendSmartOtp,
-  verifySmartOtp,
 } from "../config/fast2sms.js";
 
 /**
@@ -318,8 +317,10 @@ import {
  *               verified locally.
  *  Mobile OTP → delivered via Fast2SMS (config/fast2sms.js):
  *               • DLT template route first (our sender ID + approved
- *                 template; OTP generated + verified locally), then
- *               • Smart OTP as a fallback (Fast2SMS generates + verifies).
+ *                 template), then
+ *               • Smart OTP template as a fallback.
+ *               In both cases the OTP is generated here, handed to
+ *               Fast2SMS for delivery, and verified locally.
  *
  * Pending OTPs live in memory keyed by email, so a single Render instance
  * is assumed (same as before).
@@ -342,12 +343,16 @@ const sweepExpired = () => {
   }
 };
 
-/** Send the mobile OTP; returns how it was delivered so verify knows what to check. */
+/**
+ * Send the mobile OTP through Fast2SMS. The OTP is generated here and
+ * delivered via the DLT template, or via the Smart OTP template if DLT is
+ * rejected — either way the same code is stored and verified locally.
+ */
 async function deliverMobileOtp(mobile) {
   const masked = maskMobile(mobile);
+  const otp = generateOtp();
 
   if (fast2smsConfig.dltReady) {
-    const otp = generateOtp();
     try {
       await sendDltOtp(mobile, otp);
       console.log(`✅ Demo mobile OTP sent via Fast2SMS DLT to ${masked}`);
@@ -363,9 +368,9 @@ async function deliverMobileOtp(mobile) {
   }
 
   if (fast2smsConfig.smartOtpReady) {
-    await sendSmartOtp(mobile);
+    await sendSmartOtp(mobile, otp, { expiryMinutes: OTP_TTL_MS / 60000 });
     console.log(`✅ Demo mobile OTP sent via Fast2SMS Smart OTP to ${masked}`);
-    return { method: "smart" };
+    return { method: "smart", otp };
   }
 
   throw new Fast2SmsError("SMS service is not configured", { code: "NOT_CONFIGURED" });
@@ -529,25 +534,10 @@ export const verifyDemoOtp = async (req, res) => {
     return res.status(400).json({ error: "Invalid Email OTP" });
   }
 
-  // Mobile OTP (Fast2SMS-delivered) — local check for the DLT route,
-  // Fast2SMS /otp/verify for the Smart OTP route
-  if (needMobile) {
-    if (!/^\d{4,6}$/.test(mobileOtp)) {
-      return res.status(400).json({ error: "Invalid Mobile OTP" });
-    }
-    if (stored.mobileMethod === "dlt") {
-      if (mobileOtp !== stored.mobileOtp) {
-        return res.status(400).json({ error: "Invalid Mobile OTP" });
-      }
-    } else {
-      try {
-        const ok = await verifySmartOtp(mobile, mobileOtp);
-        if (!ok) return res.status(400).json({ error: "Invalid or expired Mobile OTP" });
-      } catch (error) {
-        console.error(`❌ Fast2SMS verify error [${error.code ?? "?"}]:`, error.message);
-        return res.status(503).json({ error: "Could not verify the mobile OTP right now. Please try again." });
-      }
-    }
+  // Mobile OTP (Fast2SMS-delivered, DLT or Smart OTP) — checked locally
+  // against the code we generated and sent
+  if (needMobile && (!/^\d{6}$/.test(mobileOtp) || mobileOtp !== stored.mobileOtp)) {
+    return res.status(400).json({ error: "Invalid Mobile OTP" });
   }
 
   // Both OTPs verified — persist and notify
