@@ -371,7 +371,45 @@ async function deliverMobileOtp(mobile) {
   throw new Fast2SmsError("SMS service is not configured", { code: "NOT_CONFIGURED" });
 }
 
-// ✅ Step 1 — send Email OTP (Brevo) + Mobile OTP (Fast2SMS)
+/** Send the email OTP through Brevo. Returns the OTP, or throws. */
+async function deliverEmailOtp(email) {
+  const otp = generateOtp();
+  await transporter.sendMail({
+    from: `"MRtech Website" <${process.env.ADMIN_EMAIL}>`,
+    to: email,
+    subject: "Your Email OTP - MRtech Demo Request",
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #eee;border-radius:8px;padding:32px;background:#fafafa;">
+        <h2 style="color:#333;text-align:center;">Email Verification</h2>
+        <p style="color:#555;text-align:center;">Your Email OTP for the demo request is:</p>
+        <div style="font-size:36px;font-weight:bold;text-align:center;color:#4F46E5;letter-spacing:8px;margin:24px 0;">
+          ${otp}
+        </div>
+        <p style="color:#888;text-align:center;font-size:13px;">Valid for 5 minutes. Do not share this OTP with anyone.</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>
+        <p style="color:#aaa;text-align:center;font-size:12px;">— Myth Reality Technologies</p>
+      </div>
+    `,
+  });
+  console.log(`✅ Demo email OTP sent to ${email}${IS_PROD ? "" : ` (otp ${otp})`}`);
+  return otp;
+}
+
+/** Map a mobile-OTP failure to a user-facing message + HTTP status. */
+const mobileErrorInfo = (error) => ({
+  status: error?.retryable ? 503 : 502,
+  message:
+    error?.code === "NOT_CONFIGURED"
+      ? "SMS service is not available right now."
+      : error?.retryable
+      ? "Could not reach the SMS service. Please try again in a moment."
+      : "Could not send the mobile OTP. Please check the number and try again.",
+});
+
+// ✅ Step 1 — send Email OTP (Brevo) and Mobile OTP (Fast2SMS)
+// The two channels are sent independently: a Brevo failure never blocks the
+// Fast2SMS OTP (and vice versa). The response tells the client which
+// channel(s) succeeded so it can ask only for those OTPs.
 export const sendDemoOtp = async (req, res) => {
   const email = String(req.body?.email || "").trim().toLowerCase();
   const mobile = normaliseMobile(req.body?.mobile);
@@ -394,63 +432,56 @@ export const sendDemoOtp = async (req, res) => {
     return res.status(429).json({ error: `Please wait ${wait}s before requesting a new OTP` });
   }
 
-  const emailOtp = generateOtp();
+  const [emailResult, mobileResult] = await Promise.allSettled([
+    deliverEmailOtp(email),
+    deliverMobileOtp(mobile),
+  ]);
 
-  // 1) Email OTP via Brevo
-  try {
-    await transporter.sendMail({
-      from: `"MRtech Website" <${process.env.ADMIN_EMAIL}>`,
-      to: email,
-      subject: "Your Email OTP - MRtech Demo Request",
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #eee;border-radius:8px;padding:32px;background:#fafafa;">
-          <h2 style="color:#333;text-align:center;">Email Verification</h2>
-          <p style="color:#555;text-align:center;">Your Email OTP for the demo request is:</p>
-          <div style="font-size:36px;font-weight:bold;text-align:center;color:#4F46E5;letter-spacing:8px;margin:24px 0;">
-            ${emailOtp}
-          </div>
-          <p style="color:#888;text-align:center;font-size:13px;">Valid for 5 minutes. Do not share this OTP with anyone.</p>
-          <hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>
-          <p style="color:#aaa;text-align:center;font-size:12px;">— Myth Reality Technologies</p>
-        </div>
-      `,
-    });
-    console.log(`✅ Demo email OTP sent to ${email}${IS_PROD ? "" : ` (otp ${emailOtp})`}`);
-  } catch (error) {
-    console.error("❌ Demo email OTP error:", error.message);
-    return res.status(502).json({ error: "Could not send the email OTP. Please check the address and try again." });
+  const emailSent = emailResult.status === "fulfilled";
+  const mobileSent = mobileResult.status === "fulfilled";
+
+  if (!emailSent) {
+    console.error("❌ Demo email OTP error:", emailResult.reason?.message);
+  }
+  if (!mobileSent) {
+    const err = mobileResult.reason;
+    console.error(`❌ Demo mobile OTP error [${err?.code ?? "?"}]:`, err?.message);
   }
 
-  // 2) Mobile OTP via Fast2SMS
-  let delivery;
-  try {
-    delivery = await deliverMobileOtp(mobile);
-    if (!IS_PROD && delivery.otp) console.log(`   (mobile otp ${delivery.otp})`);
-  } catch (error) {
-    console.error(`❌ Demo mobile OTP error [${error.code ?? "?"}]:`, error.message);
-    const msg =
-      error.code === "NOT_CONFIGURED"
-        ? "SMS service is not available right now."
-        : error.retryable
-        ? "Could not reach the SMS service. Please try again in a moment."
-        : "Could not send the mobile OTP. Please check the number and try again.";
-    return res.status(error.retryable ? 503 : 502).json({ error: msg });
+  if (!emailSent && !mobileSent) {
+    const info = mobileErrorInfo(mobileResult.reason);
+    return res.status(info.status).json({
+      error: `Could not send the OTPs. ${info.message}`,
+      emailSent: false,
+      mobileSent: false,
+    });
+  }
+
+  if (!IS_PROD && mobileSent && mobileResult.value.otp) {
+    console.log(`   (mobile otp ${mobileResult.value.otp})`);
   }
 
   demoOtpStore.set(email, {
-    emailOtp,
+    emailOtp: emailSent ? emailResult.value : null,
     mobile,
-    mobileMethod: delivery.method,
-    mobileOtp: delivery.otp ?? null, // only for the DLT route
+    mobileMethod: mobileSent ? mobileResult.value.method : null,
+    mobileOtp: mobileSent ? mobileResult.value.otp ?? null : null, // only for the DLT route
     attempts: 0,
     sentAt: Date.now(),
     expiresAt: Date.now() + OTP_TTL_MS,
   });
 
-  res.json({
-    success: true,
-    message: "Demo request OTP sent to both Email and Mobile!",
-  });
+  let message = "OTP sent to both Email and Mobile!";
+  let warning;
+  if (!emailSent) {
+    message = "OTP sent to your Mobile.";
+    warning = "We couldn't send the email OTP, so only the mobile OTP is required.";
+  } else if (!mobileSent) {
+    message = "OTP sent to your Email.";
+    warning = `We couldn't send the mobile OTP (${mobileErrorInfo(mobileResult.reason).message}) so only the email OTP is required.`;
+  }
+
+  res.json({ success: true, emailSent, mobileSent, message, ...(warning && { warning }) });
 };
 
 // ✅ Step 2 — verify both OTPs, save the request, notify admin
@@ -461,8 +492,8 @@ export const verifyDemoOtp = async (req, res) => {
   const emailOtp = String(req.body?.emailOtp || "").trim();
   const mobileOtp = String(req.body?.mobileOtp || "").trim();
 
-  if (!email || !emailOtp || !mobileOtp) {
-    return res.status(400).json({ error: "Email, Email OTP and Mobile OTP are required" });
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
   }
 
   const stored = demoOtpStore.get(email);
@@ -481,27 +512,41 @@ export const verifyDemoOtp = async (req, res) => {
     return res.status(400).json({ error: "Mobile number does not match the one the OTP was sent to" });
   }
 
+  const needEmail = Boolean(stored.emailOtp);
+  const needMobile = Boolean(stored.mobileMethod);
+
+  if (needEmail && !emailOtp) {
+    return res.status(400).json({ error: "Email OTP is required" });
+  }
+  if (needMobile && !mobileOtp) {
+    return res.status(400).json({ error: "Mobile OTP is required" });
+  }
+
   stored.attempts += 1;
 
-  if (!/^\d{6}$/.test(emailOtp) || emailOtp !== stored.emailOtp) {
+  // Email OTP (Brevo-delivered) — checked locally
+  if (needEmail && (!/^\d{6}$/.test(emailOtp) || emailOtp !== stored.emailOtp)) {
     return res.status(400).json({ error: "Invalid Email OTP" });
   }
 
-  // Mobile OTP: local check for the DLT route, Fast2SMS check for Smart OTP
-  if (!/^\d{4,6}$/.test(mobileOtp)) {
-    return res.status(400).json({ error: "Invalid Mobile OTP" });
-  }
-  if (stored.mobileMethod === "dlt") {
-    if (mobileOtp !== stored.mobileOtp) {
+  // Mobile OTP (Fast2SMS-delivered) — local check for the DLT route,
+  // Fast2SMS /otp/verify for the Smart OTP route
+  if (needMobile) {
+    if (!/^\d{4,6}$/.test(mobileOtp)) {
       return res.status(400).json({ error: "Invalid Mobile OTP" });
     }
-  } else {
-    try {
-      const ok = await verifySmartOtp(mobile, mobileOtp);
-      if (!ok) return res.status(400).json({ error: "Invalid or expired Mobile OTP" });
-    } catch (error) {
-      console.error(`❌ Fast2SMS verify error [${error.code ?? "?"}]:`, error.message);
-      return res.status(503).json({ error: "Could not verify the mobile OTP right now. Please try again." });
+    if (stored.mobileMethod === "dlt") {
+      if (mobileOtp !== stored.mobileOtp) {
+        return res.status(400).json({ error: "Invalid Mobile OTP" });
+      }
+    } else {
+      try {
+        const ok = await verifySmartOtp(mobile, mobileOtp);
+        if (!ok) return res.status(400).json({ error: "Invalid or expired Mobile OTP" });
+      } catch (error) {
+        console.error(`❌ Fast2SMS verify error [${error.code ?? "?"}]:`, error.message);
+        return res.status(503).json({ error: "Could not verify the mobile OTP right now. Please try again." });
+      }
     }
   }
 
@@ -511,6 +556,8 @@ export const verifyDemoOtp = async (req, res) => {
       name,
       email,
       mobile,
+      emailVerified: needEmail,
+      mobileVerified: needMobile,
       mobileOtpMethod: stored.mobileMethod,
       verifiedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
@@ -526,6 +573,7 @@ export const verifyDemoOtp = async (req, res) => {
           <p><strong>Name:</strong> ${name}</p>
           <p><strong>Email:</strong> ${email}</p>
           <p><strong>Mobile:</strong> ${mobile}</p>
+          <p><strong>Verified via:</strong> ${[needEmail && "Email", needMobile && "Mobile"].filter(Boolean).join(" + ")}</p>
           <p><strong>Verified At:</strong> ${new Date().toLocaleString()}</p>
         </div>
       `,

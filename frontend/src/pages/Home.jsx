@@ -487,6 +487,11 @@ export default function Home() {
   const [verified, setVerified] = useState(false);
   const [emailOtp, setEmailOtp] = useState("");
   const [mobileOtp, setMobileOtp] = useState("");
+  // Which channels the backend actually delivered an OTP to. A Brevo (email)
+  // failure no longer blocks the Fast2SMS (mobile) OTP — we just ask for the
+  // OTP(s) that were sent.
+  const [otpChannels, setOtpChannels] = useState({ emailSent: true, mobileSent: true });
+  const [sending, setSending] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -497,40 +502,48 @@ export default function Home() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Step 1: Send OTP to both Email & Mobile
+  // ✅ Step 1: Send OTP — Email via Brevo, Mobile via Fast2SMS (independent)
   const handleGetOtp = async (e) => {
     e.preventDefault();
+    if (sending) return;
+    setSending(true);
 
     try {
-      // ✅ FIX: relative path instead of hardcoded http://localhost:3000
       const res = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           email: formData.email,
-          mobile: formData.mobile 
+          mobile: formData.mobile,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (res.ok) {
-        alert("✅ OTP sent to your Email and Mobile!");
+      if (res.ok && data.success) {
+        setOtpChannels({
+          emailSent: data.emailSent !== false,
+          mobileSent: data.mobileSent !== false,
+        });
+        alert("✅ " + (data.message || "OTP sent!") + (data.warning ? "\n\n" + data.warning : ""));
         setOtpSent(true);
       } else {
-        alert("❌ " + data.error);
+        alert("❌ " + (data.error || "Failed to send OTP"));
       }
     } catch (err) {
       console.error(err);
-      alert("⚠️ Failed to send OTP");
+      alert("⚠️ Failed to send OTP. Please check your connection and try again.");
+    } finally {
+      setSending(false);
     }
   };
 
-  // ✅ Step 2: Verify both OTPs
+  // ✅ Step 2: Verify the OTP(s) that were delivered
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    
+    if (sending) return;
+    setSending(true);
+
     try {
-      // ✅ FIX: relative path
       const res = await fetch("/api/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -538,26 +551,28 @@ export default function Home() {
           name: formData.name,
           email: formData.email,
           mobile: formData.mobile,
-          emailOtp,
-          mobileOtp,
+          ...(otpChannels.emailSent && { emailOtp }),
+          ...(otpChannels.mobileSent && { mobileOtp }),
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (res.ok) {
-        alert("🎉 Both OTPs Verified! Demo request submitted successfully!");
+      if (res.ok && data.success) {
+        alert("🎉 OTP verified! Demo request submitted successfully!");
         setVerified(true);
         // ✅ Popup no longer auto-closes — it stays open showing the
         // "Download from Play Store" button (see success-message block
         // in the JSX below). User closes it manually via the ✕ button,
         // which also resets all the form/OTP state.
       } else {
-        alert("❌ " + data.error);
+        alert("❌ " + (data.error || "Verification failed"));
       }
     } catch (err) {
       console.error(err);
-      alert("⚠️ Verification failed");
+      alert("⚠️ Verification failed. Please check your connection and try again.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -784,37 +799,57 @@ export default function Home() {
                   />
                 </label>
 
-                <button type="submit" className="btn btn-primary">
-                  Send OTP
+                <button type="submit" className="btn btn-primary" disabled={sending}>
+                  {sending ? "Sending..." : "Send OTP"}
                 </button>
               </form>
             ) : !verified ? (
-              // Step 2: Verify Both OTPs
+              // Step 2: Verify the OTP(s) that were delivered
               <form onSubmit={handleVerifyOtp} className="popup-form">
-                <label>
-                  Enter Email OTP:
-                  <input
-                    type="text"
-                    value={emailOtp}
-                    onChange={(e) => setEmailOtp(e.target.value)}
-                    placeholder="6-digit email OTP"
-                    maxLength="6"
-                    required
-                  />
-                </label>
-                <label>
-                  Enter Mobile OTP:
-                  <input
-                    type="text"
-                    value={mobileOtp}
-                    onChange={(e) => setMobileOtp(e.target.value)}
-                    placeholder="6-digit mobile OTP"
-                    maxLength="6"
-                    required
-                  />
-                </label>
-                <button type="submit" className="btn btn-primary">
-                  Verify OTPs
+                {!otpChannels.emailSent && (
+                  <p className="popup-note">
+                    We couldn't send the email OTP — verify with the mobile OTP only.
+                  </p>
+                )}
+                {!otpChannels.mobileSent && (
+                  <p className="popup-note">
+                    We couldn't send the mobile OTP — verify with the email OTP only.
+                  </p>
+                )}
+                {otpChannels.emailSent && (
+                  <label>
+                    Enter Email OTP:
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={emailOtp}
+                      onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, ""))}
+                      placeholder="6-digit email OTP"
+                      maxLength="6"
+                      required
+                    />
+                  </label>
+                )}
+                {otpChannels.mobileSent && (
+                  <label>
+                    Enter Mobile OTP:
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={mobileOtp}
+                      onChange={(e) => setMobileOtp(e.target.value.replace(/\D/g, ""))}
+                      placeholder="6-digit mobile OTP"
+                      maxLength="6"
+                      required
+                    />
+                  </label>
+                )}
+                <button type="submit" className="btn btn-primary" disabled={sending}>
+                  {sending
+                    ? "Verifying..."
+                    : otpChannels.emailSent && otpChannels.mobileSent
+                    ? "Verify OTPs"
+                    : "Verify OTP"}
                 </button>
               </form>
             ) : (
@@ -841,6 +876,7 @@ export default function Home() {
                 setFormData({ name: "", email: "", mobile: "" });
                 setEmailOtp("");
                 setMobileOtp("");
+                setOtpChannels({ emailSent: true, mobileSent: true });
               }}
             >
               ✕
