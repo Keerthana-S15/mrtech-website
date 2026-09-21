@@ -366,7 +366,7 @@ const Navbar = () => {
       {/* Left: Logo */}
       <div className="nav-logo">
         <Link to="/" className="logo-link" onClick={closeMobileMenu}>
-          <img src="/MR LOGO.jpeg" alt="Company Logo" className="logo-img" />
+          <img src="/MR LOGO.jpeg" alt="Company Logo" className="nav-logo-img" />
           <span className="logo-text">
             Myth Reality Technologies Pvt. Ltd.
           </span>

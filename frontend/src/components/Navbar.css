@@ -27,9 +27,15 @@
   gap: 10px;
 }
 
-.logo-img {
+/* Square (1:1) header logo. Uses its own class so the circular `.logo-img`
+   rules in Login.css / Signup.css can't leak onto it. */
+.nav-logo-img {
   height: 38px;
   width: 38px;
+  border-radius: 0;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 .logo-text {
@@ -387,7 +393,7 @@ body.mobile-menu-open {
     height: 60px;
   }
 
-  .logo-img {
+  .nav-logo-img {
     height: 32px;
     width: 32px;
   }
@@ -423,7 +429,7 @@ body.mobile-menu-open {
     height: 55px;
   }
 
-  .logo-img {
+  .nav-logo-img {
     height: 28px;
     width: 28px;
   }
