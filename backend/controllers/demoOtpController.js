@@ -540,7 +540,8 @@ export const verifyDemoOtp = async (req, res) => {
     return res.status(400).json({ error: "Invalid Mobile OTP" });
   }
 
-  // Both OTPs verified — persist and notify
+  // Both OTPs verified — persist the request. This is the only step that
+  // may fail the response.
   try {
     await db.collection("demoRequests").add({
       name,
@@ -552,7 +553,22 @@ export const verifyDemoOtp = async (req, res) => {
       verifiedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     });
+  } catch (error) {
+    console.error("❌ Demo request save error:", error.message);
+    return res.status(500).json({ error: "Failed to process demo request" });
+  }
 
+  demoOtpStore.delete(email);
+  console.log(`✅ Demo OTPs verified for ${email} / ${maskMobile(mobile)} — request saved.`);
+  res.json({
+    success: true,
+    message: "Demo request submitted successfully!",
+  });
+
+  // Admin notification is best-effort: the user's request is already saved
+  // and verified, so a Brevo failure here must not turn into an error for
+  // them (it previously caused a 500 after a successful verification).
+  try {
     await transporter.sendMail({
       from: `"MRtech Website" <${process.env.ADMIN_EMAIL}>`,
       to: process.env.ADMIN_EMAIL,
@@ -568,16 +584,7 @@ export const verifyDemoOtp = async (req, res) => {
         </div>
       `,
     });
-
-    demoOtpStore.delete(email);
-
-    console.log(`✅ Demo OTPs verified for ${email} / ${maskMobile(mobile)} — request saved.`);
-    res.json({
-      success: true,
-      message: "Demo request submitted successfully!",
-    });
   } catch (error) {
-    console.error("❌ Demo verification error:", error.message);
-    res.status(500).json({ error: "Failed to process demo request" });
+    console.error("⚠️ Demo request saved but admin notification email failed:", error.message);
   }
 };
