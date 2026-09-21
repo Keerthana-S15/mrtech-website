@@ -650,6 +650,11 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import "./Team.css";
 
+// Cache-busting version for team photos. Bump this whenever a photo is
+// replaced but keeps the same filename, so browsers/CDNs fetch the new file
+// instead of serving a previously cached copy.
+const TEAM_IMAGE_VERSION = "2";
+
 const teamData = {
   "ai-scientists": [
     { name: "Anupriya Narasimman", role: "Junior Developer", image: "/images/ai-scientists/Anu.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "anupriyan.ai@gmail.com", linkedin: "https://www.linkedin.com/in/anupriyanarasimman/" },
@@ -739,7 +744,7 @@ const Team = () => {
             <div className="team-card" key={index}>
               <div className="team-card-inner">
                 <div className="team-card-front">
-                  <img src={member.image} alt={member.name} className="team-img" />
+                  <img src={`${member.image}?v=${TEAM_IMAGE_VERSION}`} alt={member.name} className="team-img" />
                   <h3>{member.name}</h3>
                   <p>{member.role}</p>
                 </div>
