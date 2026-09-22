@@ -646,8 +646,9 @@
 
 
 
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { FaEnvelope, FaLinkedinIn, FaSyncAlt } from "react-icons/fa";
 import "./Team.css";
 
 // Cache-busting version for team photos. Bump this whenever a photo is
@@ -711,62 +712,170 @@ const categoryTitles = {
 const Team = () => {
   const { category } = useParams();
   const members = teamData[category] || [];
+  const gridRef = useRef(null);
+  // Tap-to-flip for touch devices (desktop still flips on hover)
+  const [flipped, setFlipped] = useState(null);
+
+  useEffect(() => {
+    setFlipped(null);
+    const grid = gridRef.current;
+    if (!grid) return;
+    const cards = Array.from(grid.querySelectorAll(".team-card"));
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      cards.forEach((c) => (c.dataset.visible = "1"));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.dataset.visible = "1";
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    cards.forEach((c) => io.observe(c));
+    const fallback = setTimeout(() => cards.forEach((c) => (c.dataset.visible = "1")), 1500);
+    return () => {
+      io.disconnect();
+      clearTimeout(fallback);
+    };
+  }, [category]);
 
   if (!category) {
     return (
       <div className="team-page">
-        <h1 className="team-title">Our Team</h1>
-        <p className="team-subtitle">
-          Choose a team category from the navigation menu to view our talented professionals.
-        </p>
+        <div className="team-bg team-bg--a" aria-hidden="true" />
+        <div className="team-bg team-bg--b" aria-hidden="true" />
+        <header className="team-head">
+          <span className="team-eyebrow">People behind MRT</span>
+          <h1 className="team-title">Our Team</h1>
+          <p className="team-subtitle">
+            Choose a team category from the navigation menu to view our talented professionals.
+          </p>
+        </header>
         <div className="team-stats">
-          {Object.entries(teamData).map(([key, teamMembers]) => (
-            <div key={key} className="team-stat-card">
+          {Object.entries(teamData).map(([key, teamMembers], i) => (
+            <Link
+              key={key}
+              to={`/team/${key}`}
+              className={`team-stat-card team-stat-card--${i % 4}`}
+              style={{ "--i": i }}
+            >
+              <span className="team-stat-count">{teamMembers.length}</span>
               <h3>{categoryTitles[key]}</h3>
               <p>{teamMembers.length} Members</p>
-            </div>
+              <span className="team-stat-arrow" aria-hidden="true">→</span>
+            </Link>
           ))}
         </div>
       </div>
     );
   }
 
+  const title = categoryTitles[category] || "Our Team";
+
   return (
     <div className="team-page">
-      <h1 className="team-title">{categoryTitles[category] || "Our Team"}</h1>
-      <p className="team-subtitle">
-        Meet our {members.length} talented {categoryTitles[category]?.toLowerCase()}
-      </p>
+      <div className="team-bg team-bg--a" aria-hidden="true" />
+      <div className="team-bg team-bg--b" aria-hidden="true" />
+
+      <header className="team-head">
+        <span className="team-eyebrow">People behind MRT</span>
+        <h1 className="team-title">{title}</h1>
+        <p className="team-subtitle">
+          Meet our {members.length} talented {categoryTitles[category]?.toLowerCase()}
+        </p>
+        <span className="team-count-pill">
+          <span className="team-count-dot" aria-hidden="true" />
+          {members.length} members
+        </span>
+      </header>
 
       {members.length > 0 ? (
-        <div className="team-container">
-          {members.map((member, index) => (
-            <div className="team-card" key={index}>
-              <div className="team-card-inner">
-                <div className="team-card-front">
-                  <img src={`${member.image}?v=${TEAM_IMAGE_VERSION}`} alt={member.name} className="team-img" />
-                  <h3>{member.name}</h3>
-                  <p>{member.role}</p>
-                </div>
-                <div className="team-card-back">
-                  <h3>{member.name}</h3>
-                  <p className="bio">{member.bio || "No bio available."}</p>
-                  {member.email && (
-                    <p className="contact">
-                      <a href={`mailto:${member.email}`}>{member.email}</a>
-                    </p>
-                  )}
-                  {member.linkedin && (
-                    <p className="contact">
-                      <a href={member.linkedin} target="_blank" rel="noopener noreferrer">
-                        LinkedIn
-                      </a>
-                    </p>
-                  )}
+        <div className="team-container" ref={gridRef}>
+          {members.map((member, index) => {
+            const isFlipped = flipped === index;
+            const initials = member.name
+              .split(" ")
+              .slice(0, 2)
+              .map((w) => w[0])
+              .join("");
+            return (
+              <div
+                className={`team-card team-card--${index % 4}${isFlipped ? " is-flipped" : ""}`}
+                style={{ "--i": index }}
+                key={index}
+                onClick={() => setFlipped(isFlipped ? null : index)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setFlipped(isFlipped ? null : index);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-pressed={isFlipped}
+                aria-label={`${member.name}, ${member.role}. Show details`}
+              >
+                <div className="team-card-inner">
+                  {/* ---- FRONT ---- */}
+                  <div className="team-card-front">
+                    <span className="team-card-glow" aria-hidden="true" />
+                    <div className="team-avatar">
+                      <span className="team-avatar-ring" aria-hidden="true" />
+                      <img
+                        src={`${member.image}?v=${TEAM_IMAGE_VERSION}`}
+                        alt={member.name}
+                        className="team-img"
+                        loading="lazy"
+                      />
+                      <span className="team-avatar-badge" aria-hidden="true">{initials}</span>
+                    </div>
+                    <h3>{member.name}</h3>
+                    <p className="team-role">{member.role}</p>
+                    <span className="team-flip-hint" aria-hidden="true">
+                      <FaSyncAlt /> View details
+                    </span>
+                  </div>
+
+                  {/* ---- BACK ---- */}
+                  <div className="team-card-back">
+                    <h3>{member.name}</h3>
+                    <p className="team-role team-role--back">{member.role}</p>
+                    <p className="bio">{member.bio || "No bio available."}</p>
+                    <div className="team-links">
+                      {member.email && (
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="team-link"
+                          onClick={(e) => e.stopPropagation()}
+                          title={member.email}
+                        >
+                          <FaEnvelope /> <span>Email</span>
+                        </a>
+                      )}
+                      {member.linkedin && (
+                        <a
+                          href={member.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="team-link"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FaLinkedinIn /> <span>LinkedIn</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <p className="no-members">No team members available for this category.</p>
