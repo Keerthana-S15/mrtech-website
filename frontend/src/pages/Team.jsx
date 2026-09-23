@@ -654,7 +654,7 @@ import "./Team.css";
 // Cache-busting version for team photos. Bump this whenever a photo is
 // replaced but keeps the same filename, so browsers/CDNs fetch the new file
 // instead of serving a previously cached copy.
-const TEAM_IMAGE_VERSION = "11";
+const TEAM_IMAGE_VERSION = "12";
 
 const teamData = {
   "ai-scientists": [
