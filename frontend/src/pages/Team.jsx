@@ -654,7 +654,7 @@ import "./Team.css";
 // Cache-busting version for team photos. Bump this whenever a photo is
 // replaced but keeps the same filename, so browsers/CDNs fetch the new file
 // instead of serving a previously cached copy.
-const TEAM_IMAGE_VERSION = "7";
+const TEAM_IMAGE_VERSION = "8";
 
 const teamData = {
   "ai-scientists": [
@@ -668,7 +668,7 @@ const teamData = {
     { name: "Jeyalakshmi Mariyappan", role: "Junior Developer", image: "/images/ai-scientists/jeyalakshmi.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "jeyalakshmim.ai01@gmail.com", linkedin: "https://www.linkedin.com/in/jeyalakshmi-m-2a3020341/" },
     { name: "Keerthana S", role: "Junior Developer", image: "/images/ai-scientists/Keerthana.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "keerthanas15.ai@gmail.com", linkedin: "https://www.linkedin.com/in/keerthana-s-2bba62303/" },
     { name: "Keerthika Sankar", role: "Junior Developer", image: "/images/ai-scientists/keerthika.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "keerthis21.ai@gmail.com", linkedin: "https://www.linkedin.com/in/keerthikasankar/" },
-    { name: "Padmavathi Shanmugam", role: "Junior Developer", image: "/images/ai-scientists/Padmavathi.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "padmavathis14.ai@gmail.com", linkedin: "www.linkedin.com/in/padmavathi-s-632384334" },
+    { name: "Padmavathi Shanmugam", role: "Junior Developer", image: "/images/ai-scientists/Padmavathi.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "padmavathis14.ai@gmail.com", linkedin: "https://www.linkedin.com/in/padmavathi-s-632384334/" },
     { name: "Pavithra Venkateshan", role: "Junior Developer", image: "/images/ai-scientists/pavi.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "pavithrav13.ai@gmail.com", linkedin: "https://www.linkedin.com/in/pavithravenkatesan2003" },
     { name: "Priya Venkateshan", role: "Junior Developer", image: "/images/ai-scientists/Priya.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "priyav63.ai@gmail.com", linkedin: "https://www.linkedin.com/in/priya-v-4b31b7335/" },
     { name: "Reena Poongavanam", role: "Junior Developer", image: "/images/ai-scientists/Reena.png", bio: "Leads AI-driven healthcare projects for hospitals.", email: "reenap21.ai@gmail.com", linkedin: "https://www.linkedin.com/in/reenapoongavanam/" },

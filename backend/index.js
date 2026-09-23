@@ -26,7 +26,26 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Serve Frontend Build
 const frontendPath = path.resolve(__dirname, "..", "frontend", "build");
 console.log("✅ Frontend path:", frontendPath);
-app.use(express.static(frontendPath));
+// Static assets are served with real cache headers. Without them Express
+// sends "Cache-Control: public, max-age=0", which makes Cloudflare treat every
+// image as DYNAMIC (cf-cache-status: DYNAMIC) and re-fetch it from this origin
+// on every page view — slow loads that look like broken images.
+//   • /static/*  — content-hashed by CRA, safe to cache for a year
+//   • images etc — busted via the ?v= query (see TEAM_IMAGE_VERSION), cache 30d
+//   • index.html — must never be cached, or users get a stale app after deploys
+app.use(
+  express.static(frontendPath, {
+    maxAge: "30d",
+    etag: true,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith("index.html")) {
+        res.setHeader("Cache-Control", "no-cache");
+      } else if (filePath.includes(`${path.sep}static${path.sep}`)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
+  })
+);
 
 // Health check — re-probes Firestore so a revoked key shows up here as 503
 // instead of as an empty storefront. Point Render's health check at this.
