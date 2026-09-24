@@ -436,6 +436,7 @@ import {
   FaShoppingCart,
   FaMobileAlt,
   FaChartBar,
+  FaNotesMedical,
   FaHeartbeat,
   FaSeedling,
   FaNetworkWired,
@@ -639,6 +640,16 @@ export default function Home() {
                 <FaChartBar className="hero-cta-icon" />
                 <span>Health Score Report</span>
               </Link>
+
+              <a
+                href="https://www.gcareindia.in/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hero-cta hero-cta--ghost"
+              >
+                <FaNotesMedical className="hero-cta-icon" />
+                <span>Health ATM</span>
+              </a>
             </div>
 
             <ul className="hero-trust">
