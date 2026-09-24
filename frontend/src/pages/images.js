@@ -71,7 +71,7 @@ const galleries = {
   
   "tech-conf": { 
     title: "Tech Conference 2026", 
-    images: make("tech-conf", 6, "jpeg") 
+    images: make("tech-conf", 10, "jpeg") 
   },
   
   "cha-training": { 
