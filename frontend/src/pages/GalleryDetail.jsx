@@ -1,37 +1,77 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import galleries from "./images";
+import GalleryLightbox from "./GalleryLightbox";
 import "./Gallery.css";
+import { FaArrowLeft, FaExpand } from "react-icons/fa";
 
 export default function GalleryDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const gallery = galleries[id];
+  // index of the image shown full-size, or null when the grid is showing
+  const [lightbox, setLightbox] = useState(null);
+
+  // Go back to the gallery the reader came from (keeps their filter and
+  // scroll position); fall back to /gallery on a direct visit.
+  const backToGallery = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/gallery");
+  };
 
   if (!gallery) {
     return (
       <section className="gallery-section">
         <h2>Gallery not found</h2>
-        {/* <Link to="/gallery" className="back-link">← </Link> */}
+        <div className="detail-actions">
+          <Link to="/gallery" className="gallery-back">
+            <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
+            <span>Back to Gallery</span>
+          </Link>
+        </div>
       </section>
     );
   }
 
   return (
     <section className="gallery-section">
-      {/* 🔹 Underline removed (no <span className="underline" />) */}
-      <h1 className="gallery-title">{gallery.title}</h1>
-
       <div className="detail-actions">
-        {/* <Link to="/gallery" className="back-link">← </Link> */}
+        <button type="button" className="gallery-back" onClick={backToGallery}>
+          <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
+          <span>Back to Gallery</span>
+        </button>
       </div>
+
+      <h1 className="gallery-title">{gallery.title}</h1>
 
       <div className="image-grid">
         {gallery.images.map((src, i) => (
-          <img key={i} src={src} alt={`${gallery.title} ${i + 1}`} />
+          <button
+            type="button"
+            key={i}
+            className="image-grid-item"
+            onClick={() => setLightbox(i)}
+            aria-label={`View ${gallery.title} image ${i + 1} full size`}
+          >
+            <img src={src} alt={`${gallery.title} ${i + 1}`} loading="lazy" />
+            <span className="image-grid-zoom" aria-hidden="true">
+              <FaExpand />
+            </span>
+          </button>
         ))}
       </div>
 
       <div className="footer-spacer" />
+
+      {lightbox !== null && (
+        <GalleryLightbox
+          album={gallery}
+          index={lightbox}
+          onChange={setLightbox}
+          onClose={() => setLightbox(null)}
+          backLabel="Back to Gallery"
+        />
+      )}
     </section>
   );
 }

@@ -1,16 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import galleries from "./images";
+import GalleryLightbox from "./GalleryLightbox";
 import "./Gallery.css";
 import {
   FaImages,
   FaExpand,
   FaArrowRight,
   FaArrowLeft,
-  FaChevronLeft,
-  FaChevronRight,
-  FaTimes,
 } from "react-icons/fa";
 
 /* Category for the filter chips (albums themselves are unchanged) */
@@ -40,11 +37,31 @@ export default function Gallery() {
   );
   const categories = useMemo(() => ["All", ...new Set(items.map((x) => x.category))], [items]);
 
-  const [filter, setFilter] = useState("All");
+  // Remember the chosen category so returning from an album (Back to Gallery
+  // / browser back) lands on the same filter the reader left from.
+  const [filter, setFilter] = useState(() => {
+    try {
+      return sessionStorage.getItem("galleryFilter") || "All";
+    } catch {
+      return "All";
+    }
+  });
   const [lightbox, setLightbox] = useState(null); // { album, index }
   const gridRef = useRef(null);
 
-  const visible = filter === "All" ? items : items.filter((x) => x.category === filter);
+  // A stored filter that no longer exists (e.g. a category was renamed)
+  // falls back to "All" so the grid can never come up empty.
+  const activeFilter = categories.includes(filter) ? filter : "All";
+  const visible =
+    activeFilter === "All" ? items : items.filter((x) => x.category === activeFilter);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("galleryFilter", activeFilter);
+    } catch {
+      /* private mode / storage disabled — filtering still works, just not remembered */
+    }
+  }, [activeFilter]);
 
   /* scroll reveal (data attribute so React re-renders can't clear it) */
   useEffect(() => {
@@ -101,8 +118,8 @@ export default function Gallery() {
               key={c}
               type="button"
               role="tab"
-              aria-selected={filter === c}
-              className={`gallery-filter${filter === c ? " is-active" : ""}`}
+              aria-selected={activeFilter === c}
+              className={`gallery-filter${activeFilter === c ? " is-active" : ""}`}
               onClick={() => setFilter(c)}
             >
               {c}
@@ -114,12 +131,12 @@ export default function Gallery() {
         </div>
       </header>
 
-      <div className="gallery-grid" ref={gridRef} key={filter}>
+      <div className="gallery-grid" ref={gridRef} key={activeFilter}>
         {visible.map((album, i) => (
           <article
             key={album.id}
             className={`gallery-card gallery-card--${album.accent}${
-              i === 0 && filter === "All" ? " gallery-card--featured" : ""
+              i === 0 && activeFilter === "All" ? " gallery-card--featured" : ""
             }`}
             style={{ "--i": i }}
           >
@@ -177,11 +194,13 @@ export default function Gallery() {
       <div className="footer-spacer" />
 
       {lightbox && (
-        <Lightbox
+        <GalleryLightbox
           album={lightbox.album}
           index={lightbox.index}
           onChange={(index) => setLightbox({ album: lightbox.album, index })}
           onClose={() => setLightbox(null)}
+          backLabel="Back to Gallery"
+          albumHref={`/gallery/${lightbox.album.id}`}
         />
       )}
     </section>
@@ -199,101 +218,4 @@ function Cover({ src, alt }) {
     );
   }
   return <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} />;
-}
-
-/* ================= LIGHTBOX ================= */
-function Lightbox({ album, index, onChange, onClose }) {
-  const total = album.images.length;
-  const src = album.images[index];
-  const touchX = useRef(null);
-
-  const prev = useCallback(() => onChange((index - 1 + total) % total), [index, total, onChange]);
-  const next = useCallback(() => onChange((index + 1) % total), [index, total, onChange]);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") prev();
-      else if (e.key === "ArrowRight") next();
-    };
-    window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [prev, next, onClose]);
-
-  // preload neighbours for instant navigation
-  useEffect(() => {
-    [album.images[(index + 1) % total], album.images[(index - 1 + total) % total]].forEach((s) => {
-      const im = new Image();
-      im.src = s;
-    });
-  }, [index, total, album.images]);
-
-  return createPortal(
-    <div
-      className="lightbox"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${album.title} — image ${index + 1} of ${total}`}
-      onClick={onClose}
-    >
-      <div
-        className="lightbox-inner"
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
-        onTouchEnd={(e) => {
-          if (touchX.current == null) return;
-          const dx = e.changedTouches[0].clientX - touchX.current;
-          if (dx > 50) prev();
-          else if (dx < -50) next();
-          touchX.current = null;
-        }}
-      >
-        <div className="lightbox-top">
-          <div>
-            <strong>{album.title}</strong>
-            <span className="lightbox-counter">{index + 1} / {total}</span>
-          </div>
-          <div className="lightbox-actions">
-            <Link to={`/gallery/${album.id}`} className="lightbox-open" onClick={onClose}>
-              Open album <FaArrowRight />
-            </Link>
-            <button type="button" className="lightbox-btn" onClick={onClose} aria-label="Close">
-              <FaTimes />
-            </button>
-          </div>
-        </div>
-
-        <div className="lightbox-stage">
-          <button type="button" className="lightbox-nav lightbox-nav--prev" onClick={prev} aria-label="Previous image">
-            <FaChevronLeft />
-          </button>
-          <img key={src} src={src} alt={`${album.title} ${index + 1}`} className="lightbox-img" />
-          <button type="button" className="lightbox-nav lightbox-nav--next" onClick={next} aria-label="Next image">
-            <FaChevronRight />
-          </button>
-        </div>
-
-        <div className="lightbox-strip">
-          {album.images.map((s, i) => (
-            <button
-              type="button"
-              key={s}
-              className={`lightbox-thumb${i === index ? " is-active" : ""}`}
-              onClick={() => onChange(i)}
-              aria-label={`Image ${i + 1}`}
-              aria-current={i === index}
-            >
-              <img src={s} alt="" loading="lazy" />
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
 }
