@@ -70,8 +70,8 @@ const galleries = {
   },
   
   "tech-conf": { 
-    title: "Tech Conference 2024", 
-    images: make("tech-conf", 10, "jpeg") 
+    title: "Tech Conference 2026", 
+    images: make("tech-conf", 6, "jpeg") 
   },
   
   "cha-training": { 
