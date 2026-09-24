@@ -176,34 +176,6 @@
 }
 .lg-feature:hover .lg-tick { transform: rotate(-10deg) scale(1.1); }
 
-/* floating chips */
-.lg-chip {
-  position: absolute;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border-radius: 999px;
-  font-size: .78rem;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(255, 255, 255, .10);
-  border: 1px solid rgba(255, 255, 255, .2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, .3);
-  animation: lg-float 7s ease-in-out infinite, lg-rise .8s .5s var(--lg-ease) both;
-  pointer-events: none;
-}
-.lg-chip svg { font-size: .9rem; }
-.lg-chip--a { top: 10%;   left: 8%;  animation-delay: -1s, .5s; }
-.lg-chip--a svg { color: #fdba74; }
-.lg-chip--b { top: 22%;   right: 7%; animation-delay: -3.5s, .6s; }
-.lg-chip--b svg { color: #6ee7b7; }
-.lg-chip--c { bottom: 10%; right: 12%; animation-delay: -5s, .7s; }
-.lg-chip--c svg { color: #d8b4fe; }
-
 /* =====================================================================
    RIGHT — form panel
    ===================================================================== */
@@ -433,12 +405,10 @@
 /* ---- responsive ---- */
 @media (max-width: 1100px) {
   .lg-page { grid-template-columns: minmax(0, 42%) minmax(0, 1fr); }
-  .lg-chip--b { right: 4%; }
 }
 @media (max-width: 900px) {
   .lg-page { grid-template-columns: 1fr; min-height: auto; }
   .lg-brand { padding: 48px 20px 56px; min-height: 0; }
-  .lg-chip { display: none; }
   .lg-features { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .lg-feature { flex-direction: column; text-align: center; gap: 8px; padding: 12px 8px; }
   .lg-feature p { font-size: .85rem; }

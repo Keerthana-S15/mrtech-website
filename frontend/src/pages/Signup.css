@@ -92,22 +92,6 @@
 .su-step-dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .68rem; font-weight: 800; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .2); transition: background .3s var(--su-ease), transform .3s var(--su-ease), border-color .3s; }
 .su-step.is-done .su-step-dot { background: var(--su-green); border-color: var(--su-green); color: #fff; transform: scale(1.1); }
 
-.su-chip {
-  position: absolute; z-index: 1; display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 14px; border-radius: 999px; font-size: .78rem; font-weight: 700; color: #fff;
-  background: rgba(255, 255, 255, .10); border: 1px solid rgba(255, 255, 255, .2);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, .3);
-  animation: su-float 7s ease-in-out infinite, su-rise .8s .5s var(--su-ease) both;
-  pointer-events: none;
-}
-.su-chip--a { top: 8%;    left: 7%;   animation-delay: -1s, .5s; }
-.su-chip--a svg { color: #fdba74; }
-.su-chip--b { top: 20%;   right: 6%;  animation-delay: -3.5s, .6s; }
-.su-chip--b svg { color: #6ee7b7; }
-.su-chip--c { bottom: 8%; right: 10%; animation-delay: -5s, .7s; }
-.su-chip--c svg { color: #d8b4fe; }
-
 /* =====================================================================
    RIGHT — form panel
    ===================================================================== */
@@ -230,11 +214,10 @@
 }
 
 /* ---- responsive ---- */
-@media (max-width: 1100px) { .su-page { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); } .su-chip--b { right: 4%; } }
+@media (max-width: 1100px) { .su-page { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); } }
 @media (max-width: 900px) {
   .su-page { grid-template-columns: 1fr; min-height: auto; }
   .su-brand { padding: 44px 20px 52px; }
-  .su-chip { display: none; }
   .su-features { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .su-feature { flex-direction: column; text-align: center; gap: 8px; padding: 12px 8px; }
   .su-feature p { font-size: .85rem; }

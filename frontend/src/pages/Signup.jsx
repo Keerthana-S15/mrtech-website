@@ -12,9 +12,6 @@ import {
   FaPaperPlane,
   FaArrowRight,
   FaUserPlus,
-  FaHeartbeat,
-  FaSeedling,
-  FaShieldAlt,
 } from "react-icons/fa";
 import "./Signup.css";
 
@@ -258,10 +255,6 @@ export default function Signup() {
             </ol>
           </div>
         </div>
-
-        <div className="su-chip su-chip--a" aria-hidden="true"><FaHeartbeat /> AI Healthcare</div>
-        <div className="su-chip su-chip--b" aria-hidden="true"><FaSeedling /> Smart Agriculture</div>
-        <div className="su-chip su-chip--c" aria-hidden="true"><FaShieldAlt /> Verified accounts</div>
       </aside>
 
       {/* ================= RIGHT — form ================= */}

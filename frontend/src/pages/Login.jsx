@@ -7,9 +7,6 @@ import {
   FaEyeSlash,
   FaArrowRight,
   FaCheck,
-  FaHeartbeat,
-  FaSeedling,
-  FaNetworkWired,
   FaShieldAlt,
 } from "react-icons/fa";
 
@@ -134,16 +131,6 @@ export default function Login() {
           </ul>
         </div>
 
-        {/* floating glass chips */}
-        <div className="lg-chip lg-chip--a" aria-hidden="true">
-          <FaHeartbeat /> AI Healthcare
-        </div>
-        <div className="lg-chip lg-chip--b" aria-hidden="true">
-          <FaSeedling /> Smart Agriculture
-        </div>
-        <div className="lg-chip lg-chip--c" aria-hidden="true">
-          <FaNetworkWired /> Digital Platforms
-        </div>
       </aside>
 
       {/* ================= RIGHT — form ================= */}
