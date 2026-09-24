@@ -695,21 +695,6 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-
-            <div className="hero-float hero-float--a">
-              <FaHeartbeat />
-              <div>
-                <strong>Preventive care</strong>
-                <small>for every household</small>
-              </div>
-            </div>
-            <div className="hero-float hero-float--b">
-              <FaSeedling />
-              <div>
-                <strong>Smarter yields</strong>
-                <small>AI in the field</small>
-              </div>
-            </div>
           </div>
         </div>
 
