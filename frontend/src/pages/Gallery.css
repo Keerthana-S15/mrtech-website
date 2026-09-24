@@ -481,11 +481,7 @@
 
 .footer-spacer{ height:56px; }
 
-/* ---- Back to Solutions ---- */
-.gallery-nav {
-  max-width: 1200px;
-  margin: 0 auto 18px;
-}
+/* ---- Back button (album/detail pages) ---- */
 .gallery-back {
   display: inline-flex;
   align-items: center;
@@ -516,7 +512,6 @@
 .gallery-back:focus-visible { outline: 3px solid rgba(16, 185, 129, .45); outline-offset: 3px; }
 
 @media (max-width: 620px) {
-  .gallery-nav { margin-bottom: 14px; }
   .gallery-back { width: 100%; justify-content: center; padding: 11px 16px; }
 }
 

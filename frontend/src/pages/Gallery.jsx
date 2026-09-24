@@ -7,7 +7,6 @@ import {
   FaImages,
   FaExpand,
   FaArrowRight,
-  FaArrowLeft,
 } from "react-icons/fa";
 
 /* Category for the filter chips (albums themselves are unchanged) */
@@ -97,13 +96,6 @@ export default function Gallery() {
     <section className="gallery-section gallery-section--index">
       <div className="gallery-bg gallery-bg--a" aria-hidden="true" />
       <div className="gallery-bg gallery-bg--b" aria-hidden="true" />
-
-      <div className="gallery-nav">
-        <Link to="/solutions" className="gallery-back">
-          <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
-          <span>Back to Solutions</span>
-        </Link>
-      </div>
 
       <header className="gallery-head">
         <span className="gallery-eyebrow">Moments &amp; milestones</span>
