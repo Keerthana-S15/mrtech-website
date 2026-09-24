@@ -442,18 +442,6 @@
   margin:0 0 18px;
 }
 
-/* second action on album pages: same pill, teal-tinted so the two are
-   distinguishable at a glance */
-.gallery-back--solutions{
-  background:rgba(0,49,60,.06);
-  border-color:rgba(0,49,60,.22);
-}
-.gallery-back--solutions:hover{
-  background:var(--color-secondary);
-  border-color:var(--color-secondary);
-  color:#fff;
-}
-
 @media (max-width: 620px){
   .detail-actions{ gap:8px; }
   .detail-actions .gallery-back{ flex:1 1 100%; }

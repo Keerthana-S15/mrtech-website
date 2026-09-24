@@ -31,10 +31,6 @@ export default function GalleryDetail() {
             <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
             <span>Back to Gallery</span>
           </Link>
-          <Link to="/solutions" className="gallery-back gallery-back--solutions">
-            <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
-            <span>Back to Solutions</span>
-          </Link>
         </div>
       </section>
     );
@@ -47,10 +43,6 @@ export default function GalleryDetail() {
           <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
           <span>Back to Gallery</span>
         </button>
-        <Link to="/solutions" className="gallery-back gallery-back--solutions">
-          <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
-          <span>Back to Solutions</span>
-        </Link>
       </div>
 
       <h1 className="gallery-title">{gallery.title}</h1>
