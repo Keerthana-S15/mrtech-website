@@ -141,7 +141,12 @@ export default function Gallery() {
             style={{ "--i": i }}
           >
             {/* whole card navigates to the album page (existing route) */}
-            <Link to={`/gallery/${album.id}`} className="gallery-card-link" aria-label={`Open ${album.title} album`}>
+            <Link
+              to={`/gallery/${album.id}`}
+              state={{ from: "gallery" }}
+              className="gallery-card-link"
+              aria-label={`Open ${album.title} album`}
+            >
               <div className="gallery-card-media">
                 <Cover src={album.cover} alt={album.title} />
                 <span className="gallery-card-shade" aria-hidden="true" />

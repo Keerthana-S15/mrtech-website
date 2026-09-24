@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import galleries from "./images";
 import GalleryLightbox from "./GalleryLightbox";
 import "./Gallery.css";
@@ -8,14 +8,17 @@ import { FaArrowLeft, FaExpand } from "react-icons/fa";
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const gallery = galleries[id];
   // index of the image shown full-size, or null when the grid is showing
   const [lightbox, setLightbox] = useState(null);
 
-  // Go back to the gallery the reader came from (keeps their filter and
-  // scroll position); fall back to /gallery on a direct visit.
+  // Step back in history only when the reader actually arrived from the
+  // gallery index — that restores their scroll position and category.
+  // Arriving any other way (direct link, Solutions, a shared URL) goes to
+  // /gallery, so the button never lands somewhere that isn't the gallery.
   const backToGallery = () => {
-    if (window.history.length > 1) navigate(-1);
+    if (location.state?.from === "gallery") navigate(-1);
     else navigate("/gallery");
   };
 
@@ -27,6 +30,10 @@ export default function GalleryDetail() {
           <Link to="/gallery" className="gallery-back">
             <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
             <span>Back to Gallery</span>
+          </Link>
+          <Link to="/solutions" className="gallery-back gallery-back--solutions">
+            <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
+            <span>Back to Solutions</span>
           </Link>
         </div>
       </section>
@@ -40,6 +47,10 @@ export default function GalleryDetail() {
           <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
           <span>Back to Gallery</span>
         </button>
+        <Link to="/solutions" className="gallery-back gallery-back--solutions">
+          <FaArrowLeft className="gallery-back-icon" aria-hidden="true" />
+          <span>Back to Solutions</span>
+        </Link>
       </div>
 
       <h1 className="gallery-title">{gallery.title}</h1>
