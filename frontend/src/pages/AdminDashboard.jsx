@@ -2514,9 +2514,15 @@
 
 
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import {
+  FaChartPie, FaBoxOpen, FaShoppingCart, FaUsers, FaBuilding, FaSignOutAlt,
+  FaRupeeSign, FaClock, FaExclamationTriangle, FaSyncAlt, FaArrowUp, FaArrowDown,
+  FaBell, FaCubes,
+} from "react-icons/fa";
+import { RevenueTrend, StatusMix, TopProducts, Sparkline, STATUS_COLORS } from "./AdminCharts";
 import "./AdminDashboard.css";
 
 export default function AdminDashboard() {
@@ -2563,6 +2569,14 @@ export default function AdminDashboard() {
   });
   const [companySearchQuery, setCompanySearchQuery] = useState("");
 
+  // live refresh: re-poll the same endpoints on an interval so the numbers
+  // track the backend without a manual reload
+  const [lastSync, setLastSync] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [revenueRange, setRevenueRange] = useState(14); // days shown in the trend
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile nav drawer
+
   // ✅ NEW: every admin API call must carry the JWT so the backend can scope
   // data to this admin's company (or bypass scoping for the super admin).
   const authFetch = (url, options = {}) => {
@@ -2580,8 +2594,39 @@ export default function AdminDashboard() {
     fetchOrders();
     fetchProducts();
     if (isSuperAdmin) fetchCompanies();
+    setLastSync(new Date());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-pull orders/products. Used by the Refresh button and the poll timer;
+  // it never touches the CRUD flows.
+  const refreshData = useCallback(
+    async (silent = false) => {
+      if (!silent) setRefreshing(true);
+      try {
+        await Promise.all([fetchOrders(), fetchProducts()]);
+        setLastSync(new Date());
+      } finally {
+        if (!silent) setRefreshing(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  // Poll every 30s while the tab is visible and auto-refresh is on.
+  useEffect(() => {
+    if (!autoRefresh) return undefined;
+    const tick = () => {
+      if (document.visibilityState === "visible") refreshData(true);
+    };
+    const id = setInterval(tick, 30000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [autoRefresh, refreshData]);
 
   // ✅ CHANGED: now hits the company-scoped admin endpoint (not the public
   // storefront one), and sends the auth token.
@@ -2828,6 +2873,105 @@ export default function AdminDashboard() {
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
   const lowStockItems = products.filter((p) => p.stock < 5).length;
 
+  // ---- dashboard analytics, derived from the live orders/products ----
+  const analytics = useMemo(() => {
+    const dayKey = (d) => d.toISOString().slice(0, 10);
+    const days = [];
+    for (let i = revenueRange - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+    const buckets = new Map(days.map((d) => [dayKey(d), { value: 0, count: 0 }]));
+
+    let prevWindow = 0;
+    const windowStart = days[0];
+    const prevStart = new Date(windowStart);
+    prevStart.setDate(prevStart.getDate() - revenueRange);
+
+    orders.forEach((o) => {
+      const raw = o.fullData?.createdAt;
+      if (!raw) return;
+      const when = new Date(raw);
+      if (Number.isNaN(when.getTime())) return;
+      const k = dayKey(when);
+      if (buckets.has(k)) {
+        const bucket = buckets.get(k);
+        bucket.value += o.total || 0;
+        bucket.count += 1;
+      } else if (when >= prevStart && when < windowStart) {
+        prevWindow += o.total || 0;
+      }
+    });
+
+    const trend = days.map((d) => ({
+      label: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+      value: buckets.get(dayKey(d)).value,
+      count: buckets.get(dayKey(d)).count,
+    }));
+
+    const windowRevenue = trend.reduce((sum, t) => sum + t.value, 0);
+    const revenueDelta =
+      prevWindow > 0 ? Math.round(((windowRevenue - prevWindow) / prevWindow) * 100) : null;
+
+    const statusCounts = orders.reduce((acc, o) => {
+      const k = (o.status || "pending").toLowerCase();
+      acc[k] = (acc[k] || 0) + 1;
+      return acc;
+    }, {});
+
+    // units sold per product name, taken from the order line items
+    const unitsByProduct = {};
+    orders.forEach((o) => {
+      const items = o.fullData?.items;
+      if (!Array.isArray(items)) return;
+      items.forEach((it) => {
+        const name = it.name || "Unknown";
+        unitsByProduct[name] = (unitsByProduct[name] || 0) + (Number(it.quantity) || 1);
+      });
+    });
+    const topProducts = Object.entries(unitsByProduct)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+
+    const stockValue = products.reduce(
+      (sum, p) => sum + (Number(p.price) || 0) * (Number(p.stock) || 0),
+      0
+    );
+    const outOfStock = products.filter((p) => Number(p.stock) === 0).length;
+    const customerCount = new Set(orders.map((o) => o.email || o.customer)).size;
+    const avgOrder = orders.length
+      ? Math.round(orders.reduce((sum, o) => sum + (o.total || 0), 0) / orders.length)
+      : 0;
+
+    return {
+      trend,
+      sparkRevenue: trend.map((t) => t.value),
+      sparkOrders: trend.map((t) => t.count),
+      windowRevenue,
+      revenueDelta,
+      statusCounts,
+      topProducts,
+      stockValue,
+      outOfStock,
+      customerCount,
+      avgOrder,
+      recentOrders: [...orders]
+        .sort(
+          (a, b) =>
+            new Date(b.fullData?.createdAt || 0) - new Date(a.fullData?.createdAt || 0)
+        )
+        .slice(0, 6),
+      lowStockList: products
+        .filter((p) => Number(p.stock) < 5)
+        .sort((a, b) => a.stock - b.stock)
+        .slice(0, 6),
+    };
+  }, [orders, products, revenueRange]);
+
+
   const statusColors = {
     pending: "status-pending",
     processing: "status-processing",
@@ -2905,16 +3049,28 @@ export default function AdminDashboard() {
   if (isSuperAdmin) tabs.splice(4, 0, "companies");
 
   const tabIcons = {
-    dashboard: "📊 ",
-    orders: "🛒 ",
-    products: "📦 ",
-    customers: "👥 ",
-    companies: "🏢 ",
-    settings: "⚙️ ",
+    dashboard: <FaChartPie />,
+    orders: <FaShoppingCart />,
+    products: <FaBoxOpen />,
+    customers: <FaUsers />,
+    companies: <FaBuilding />,
+    settings: <FaCubes />,
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className={`admin-dashboard${sidebarOpen ? " nav-open" : ""}`}>
+      <button
+        type="button"
+        className="admin-nav-toggle"
+        onClick={() => setSidebarOpen((v) => !v)}
+        aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+        aria-expanded={sidebarOpen}
+      >
+        <span /><span /><span />
+      </button>
+      {sidebarOpen && (
+        <div className="admin-nav-scrim" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+      )}
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <div className="admin-logo">
@@ -2929,10 +3085,15 @@ export default function AdminDashboard() {
             <button
               key={tab}
               className={`admin-nav-item ${currentTab === tab ? "active" : ""}`}
-              onClick={() => setCurrentTab(tab)}
+              onClick={() => {
+                setCurrentTab(tab);
+                setSidebarOpen(false);
+              }}
             >
-              {tabIcons[tab]}
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <span className="admin-nav-icon">{tabIcons[tab]}</span>
+              <span className="admin-nav-label">
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </span>
               {tab === "orders" && pendingOrders > 0 && (
                 <span className="badge">{pendingOrders}</span>
               )}
@@ -2941,7 +3102,7 @@ export default function AdminDashboard() {
         </nav>
 
         <button className="admin-logout" onClick={handleLogout}>
-          🚪 Logout
+          <FaSignOutAlt /> Logout
         </button>
       </aside>
 
@@ -2952,30 +3113,255 @@ export default function AdminDashboard() {
             <p>Welcome back, {currentUser.fullName || "Admin"}</p>
           </div>
           <div className="admin-user">
-            <span>🔔</span>
-            <div className="admin-avatar">A</div>
+            <button type="button" className="admin-bell" aria-label={`${pendingOrders} pending orders`}>
+              <FaBell />
+              {pendingOrders > 0 && <span className="admin-bell-dot" />}
+            </button>
+            <div className="admin-avatar">
+              {(currentUser.fullName || "Admin").trim().charAt(0).toUpperCase()}
+            </div>
           </div>
         </header>
 
         {currentTab === "dashboard" && (
           <div className="admin-content">
+            {/* live status strip */}
+            <div className="dash-toolbar">
+              <span className={`live-dot${autoRefresh ? " is-live" : ""}`} aria-hidden="true" />
+              <span className="dash-live-text">
+                {autoRefresh ? "Live" : "Paused"}
+                {lastSync && (
+                  <small>
+                    updated{" "}
+                    {lastSync.toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
+                  </small>
+                )}
+              </span>
+              <div className="dash-toolbar-actions">
+                <button
+                  type="button"
+                  className={`dash-chip${autoRefresh ? " is-active" : ""}`}
+                  onClick={() => setAutoRefresh((v) => !v)}
+                  title="Toggle 30s auto-refresh"
+                >
+                  Auto-refresh
+                </button>
+                <button
+                  type="button"
+                  className={`dash-refresh${refreshing ? " is-busy" : ""}`}
+                  onClick={() => refreshData(false)}
+                  disabled={refreshing}
+                >
+                  <FaSyncAlt /> {refreshing ? "Refreshing…" : "Refresh"}
+                </button>
+              </div>
+            </div>
+
+            {/* KPI row */}
             <div className="stats-grid">
-              <div className="stat-card card-blue" onClick={() => setSelectedStat("orders")}>
-                <h3>Total Orders</h3>
+              <button
+                type="button"
+                className="stat-card card-blue"
+                onClick={() => setSelectedStat(selectedStat === "orders" ? null : "orders")}
+              >
+                <div className="stat-top">
+                  <span className="stat-icon"><FaShoppingCart /></span>
+                  <h3>Total Orders</h3>
+                </div>
                 <p>{totalOrders}</p>
-              </div>
+                <div className="stat-foot">
+                  <Sparkline points={analytics.sparkOrders} color="#0EA5E9" />
+                  <span className="stat-sub">{analytics.customerCount} customers</span>
+                </div>
+              </button>
+
               <div className="stat-card card-green">
-                <h3>Total Revenue</h3>
-                <p>₹{totalRevenue.toLocaleString()}</p>
+                <div className="stat-top">
+                  <span className="stat-icon"><FaRupeeSign /></span>
+                  <h3>Total Revenue</h3>
+                </div>
+                <p>₹{totalRevenue.toLocaleString("en-IN")}</p>
+                <div className="stat-foot">
+                  <Sparkline points={analytics.sparkRevenue} color="#10B981" />
+                  {analytics.revenueDelta !== null ? (
+                    <span className={`stat-delta ${analytics.revenueDelta >= 0 ? "up" : "down"}`}>
+                      {analytics.revenueDelta >= 0 ? <FaArrowUp /> : <FaArrowDown />}
+                      {Math.abs(analytics.revenueDelta)}%
+                    </span>
+                  ) : (
+                    <span className="stat-sub">avg ₹{analytics.avgOrder.toLocaleString("en-IN")}</span>
+                  )}
+                </div>
               </div>
-              <div className="stat-card card-yellow" onClick={() => setSelectedStat("pending")}>
-                <h3>Pending Orders</h3>
+
+              <button
+                type="button"
+                className="stat-card card-yellow"
+                onClick={() => setSelectedStat(selectedStat === "pending" ? null : "pending")}
+              >
+                <div className="stat-top">
+                  <span className="stat-icon"><FaClock /></span>
+                  <h3>Pending Orders</h3>
+                </div>
                 <p>{pendingOrders}</p>
-              </div>
-              <div className="stat-card card-red" onClick={() => setSelectedStat("lowstock")}>
-                <h3>Low Stock Items</h3>
+                <div className="stat-foot">
+                  <span className="stat-sub">
+                    {totalOrders ? Math.round((pendingOrders / totalOrders) * 100) : 0}% of all orders
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="stat-card card-red"
+                onClick={() => setSelectedStat(selectedStat === "lowstock" ? null : "lowstock")}
+              >
+                <div className="stat-top">
+                  <span className="stat-icon"><FaExclamationTriangle /></span>
+                  <h3>Low Stock Items</h3>
+                </div>
                 <p>{lowStockItems}</p>
+                <div className="stat-foot">
+                  <span className="stat-sub">{analytics.outOfStock} out of stock</span>
+                </div>
+              </button>
+
+              <div className="stat-card card-teal">
+                <div className="stat-top">
+                  <span className="stat-icon"><FaCubes /></span>
+                  <h3>Stock Value</h3>
+                </div>
+                <p>₹{analytics.stockValue.toLocaleString("en-IN")}</p>
+                <div className="stat-foot">
+                  <span className="stat-sub">{products.length} products</span>
+                </div>
               </div>
+            </div>
+
+            {/* charts */}
+            <div className="dash-grid">
+              <section className="admin-card dash-panel dash-panel--wide">
+                <header className="dash-panel-head">
+                  <div>
+                    <h2>Revenue trend</h2>
+                    <p>Daily order value over the last {revenueRange} days</p>
+                  </div>
+                  <div className="dash-range" role="tablist" aria-label="Range">
+                    {[7, 14, 30].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        role="tab"
+                        aria-selected={revenueRange === d}
+                        className={revenueRange === d ? "is-active" : ""}
+                        onClick={() => setRevenueRange(d)}
+                      >
+                        {d}d
+                      </button>
+                    ))}
+                  </div>
+                </header>
+                <RevenueTrend data={analytics.trend} />
+              </section>
+
+              <section className="admin-card dash-panel">
+                <header className="dash-panel-head">
+                  <div>
+                    <h2>Order status</h2>
+                    <p>{totalOrders} orders in total</p>
+                  </div>
+                </header>
+                <StatusMix counts={analytics.statusCounts} total={totalOrders} />
+              </section>
+
+              <section className="admin-card dash-panel">
+                <header className="dash-panel-head">
+                  <div>
+                    <h2>Top products</h2>
+                    <p>By units sold</p>
+                  </div>
+                </header>
+                <TopProducts items={analytics.topProducts} />
+              </section>
+
+              <section className="admin-card dash-panel">
+                <header className="dash-panel-head">
+                  <div>
+                    <h2>Low stock</h2>
+                    <p>Fewer than 5 units left</p>
+                  </div>
+                </header>
+                {analytics.lowStockList.length ? (
+                  <ul className="dash-list">
+                    {analytics.lowStockList.map((p) => (
+                      <li key={p.id}>
+                        <span className="dash-list-main">
+                          <strong>{p.name}</strong>
+                          <small>{p.sku}</small>
+                        </span>
+                        <span className={`stock-pill${Number(p.stock) === 0 ? " is-out" : ""}`}>
+                          {Number(p.stock) === 0 ? "Out of stock" : `${p.stock} left`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="chart-empty">All products are well stocked</div>
+                )}
+              </section>
+
+              <section className="admin-card dash-panel dash-panel--wide">
+                <header className="dash-panel-head">
+                  <div>
+                    <h2>Recent orders</h2>
+                    <p>Latest activity</p>
+                  </div>
+                  <button type="button" className="dash-link" onClick={() => setCurrentTab("orders")}>
+                    View all
+                  </button>
+                </header>
+                {analytics.recentOrders.length ? (
+                  <div className="table-scroll">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Customer</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analytics.recentOrders.map((o) => (
+                          <tr key={o.id}>
+                            <td>{o.id}</td>
+                            <td>{o.customer}</td>
+                            <td>₹{Number(o.total || 0).toLocaleString("en-IN")}</td>
+                            <td>
+                              <span
+                                className="status-dot-badge"
+                                style={{
+                                  "--s": STATUS_COLORS[(o.status || "").toLowerCase()] || "#64748b",
+                                }}
+                              >
+                                {o.status}
+                              </span>
+                            </td>
+                            <td>{o.date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="chart-empty">No orders yet</div>
+                )}
+              </section>
             </div>
 
             {selectedStat && (
@@ -2988,53 +3374,57 @@ export default function AdminDashboard() {
                     : "Low Stock Products"}
                 </h2>
                 {selectedStat === "lowstock" ? (
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>SKU</th>
-                        <th>Name</th>
-                        <th>Stock</th>
-                        <th>Price</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getFilteredData().map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.sku}</td>
-                          <td>{p.name}</td>
-                          <td>{p.stock}</td>
-                          <td>₹{p.price}</td>
+                  <div className="table-scroll">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>SKU</th>
+                          <th>Name</th>
+                          <th>Stock</th>
+                          <th>Price</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {getFilteredData().map((p) => (
+                          <tr key={p.id}>
+                            <td>{p.sku}</td>
+                            <td>{p.name}</td>
+                            <td>{p.stock}</td>
+                            <td>₹{p.price}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Order ID</th>
-                        <th>Customer</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getFilteredData().map((o) => (
-                        <tr key={o.id}>
-                          <td>{o.id}</td>
-                          <td>{o.customer}</td>
-                          <td>₹{o.total}</td>
-                          <td>
-                            <span className={`status-badge ${statusColors[o.status]}`}>
-                              {o.status}
-                            </span>
-                          </td>
-                          <td>{o.date}</td>
+                  <div className="table-scroll">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Customer</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                          <th>Date</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {getFilteredData().map((o) => (
+                          <tr key={o.id}>
+                            <td>{o.id}</td>
+                            <td>{o.customer}</td>
+                            <td>₹{o.total}</td>
+                            <td>
+                              <span className={`status-badge ${statusColors[o.status]}`}>
+                                {o.status}
+                              </span>
+                            </td>
+                            <td>{o.date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             )}
