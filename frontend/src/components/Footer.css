@@ -227,37 +227,6 @@
 }
 .ft-copy { margin: 0; font-size: .84rem; color: rgba(255, 255, 255, .55); }
 
-.ft-social { display: flex; gap: 8px; }
-.ft-social-link {
-  --accent: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-size: .95rem;
-  color: rgba(255, 255, 255, .8);
-  background: rgba(255, 255, 255, .07);
-  border: 1px solid rgba(255, 255, 255, .12);
-  text-decoration: none;
-  transition: background .3s var(--ft-ease), color .3s var(--ft-ease), transform .3s var(--ft-ease), border-color .3s var(--ft-ease), box-shadow .3s var(--ft-ease);
-}
-.ft-social-link:hover {
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-4px) rotate(-6deg);
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 45%, transparent);
-}
-.ft-social-link:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.ft-social-link--linkedin  { --accent: #0a66c2; }
-.ft-social-link--facebook  { --accent: #1877f2; }
-.ft-social-link--instagram { --accent: #e1306c; }
-.ft-social-link--youtube   { --accent: #ff0000; }
-.ft-social-link--playstore { --accent: #10B981; }
-.ft-social-link--email     { --accent: #F97316; }
-.ft-social-link--phone     { --accent: #0e7490; }
-
 .ft-top {
   width: 40px;
   height: 40px;
@@ -290,10 +259,8 @@
 @media (max-width: 600px) {
   .ft-inner { grid-template-columns: 1fr; gap: 30px; padding-left: 16px; padding-right: 16px; }
   .ft-bottom-inner { flex-direction: column; text-align: center; padding: 18px 16px 22px; }
-  .ft-social { justify-content: center; flex-wrap: wrap; }
-  .ft-social { order: 1; }
   .ft-top { order: 2; }
-  .ft-copy { order: 3; font-size: .8rem; }
+  .ft-copy { order: 1; font-size: .8rem; }
 }
 
 /* =====================================================================

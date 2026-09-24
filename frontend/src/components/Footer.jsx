@@ -4,11 +4,6 @@ import {
   FaEnvelope,
   FaPhoneAlt,
   FaMapMarkerAlt,
-  FaLinkedinIn,
-  FaFacebookF,
-  FaInstagram,
-  FaYoutube,
-  FaGooglePlay,
   FaArrowRight,
   FaArrowUp,
   FaHeartbeat,
@@ -16,17 +11,6 @@ import {
   FaNetworkWired,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
-/* Company social profiles — add the URLs and the icons appear automatically. */
-const SOCIALS = [
-  { id: "linkedin", label: "LinkedIn", icon: <FaLinkedinIn />, href: "" },
-  { id: "facebook", label: "Facebook", icon: <FaFacebookF />, href: "" },
-  { id: "instagram", label: "Instagram", icon: <FaInstagram />, href: "" },
-  { id: "youtube", label: "YouTube", icon: <FaYoutube />, href: "" },
-  { id: "playstore", label: "SERV app on Google Play", icon: <FaGooglePlay />, href: "https://play.google.com/store/apps/details?id=com.serv.serv_app" },
-  { id: "email", label: "Email us", icon: <FaEnvelope />, href: "mailto:info@mrtech.co.in" },
-  { id: "phone", label: "Call us", icon: <FaPhoneAlt />, href: "tel:+917305152581" },
-].filter((s) => s.href);
 
 /* Links — unchanged destinations */
 const SOLUTIONS = [
@@ -144,22 +128,6 @@ export default function Footer() {
           <p className="ft-copy">
             © {new Date().getFullYear()} Myth Reality Technologies. All rights reserved.
           </p>
-
-          <div className="ft-social" aria-label="Connect with us">
-            {SOCIALS.map((s) => (
-              <a
-                key={s.id}
-                href={s.href}
-                className={`ft-social-link ft-social-link--${s.id}`}
-                aria-label={s.label}
-                title={s.label}
-                target={/^https?:/.test(s.href) ? "_blank" : undefined}
-                rel={/^https?:/.test(s.href) ? "noopener noreferrer" : undefined}
-              >
-                {s.icon}
-              </a>
-            ))}
-          </div>
 
           <button type="button" className="ft-top" onClick={scrollTop} aria-label="Back to top">
             <FaArrowUp />
