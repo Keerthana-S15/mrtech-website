@@ -109,8 +109,13 @@ export default function Contact() {
 
       {/* Header */}
       <section className="c-hero">
-        <span className="c-eyebrow">Get in touch</span>
-        <h1>Contact Us</h1>
+        <span className="c-eyebrow">
+          <i className="c-eyebrow-dot" aria-hidden="true" />
+          Get in touch
+        </span>
+        <h1>
+          Contact <span className="c-title-accent">Us</span>
+        </h1>
         <p>We're here to collaborate, partner, and answer your questions.</p>
       </section>
 
