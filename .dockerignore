@@ -1,0 +1,40 @@
+# Build context hygiene. Anything listed here is invisible to `docker build`,
+# which keeps the image small AND keeps secrets out of it.
+
+# Dependencies are installed inside the image, never copied from the host —
+# host node_modules may contain platform-specific binaries.
+**/node_modules
+
+# The frontend is compiled inside stage 1. The committed build/ (which Render
+# serves) must not be copied in, or a stale bundle could shadow the fresh one.
+frontend/build
+
+# Uploaded files are runtime data, served from a volume — not image content.
+backend/uploads
+
+# --- secrets: never bake these into an image layer ---
+**/.env
+**/.env.*
+!**/.env.example
+**/serviceAccountKey.json
+
+# VCS, tooling and docs
+.git
+.gitignore
+.github
+.vscode
+.idea
+Dockerfile
+docker-compose*.yml
+.dockerignore
+DOCKER.md
+README.md
+TECHNICAL_GAP_ANALYSIS.md
+*.docx
+*.zip
+
+# Local noise
+**/npm-debug.log*
+**/yarn-error.log*
+**/.DS_Store
+**/coverage
