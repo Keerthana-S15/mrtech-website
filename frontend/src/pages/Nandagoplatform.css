@@ -129,29 +129,82 @@ blockquote {
 
 
 .nandago-page {
-  background: linear-gradient(135deg, #f5f9ff, #e3edff);
+  /* the pale blue wash had no hero band at all, so this page read as a
+     different product from the rest of the Solutions section */
+  background:
+    radial-gradient(52% 34% at 88% 0%, rgba(34, 211, 238, .07), transparent 62%),
+    radial-gradient(46% 30% at 4% 42%, rgba(99, 102, 241, .06), transparent 62%),
+    var(--color-bg, #F9FAFB);
   min-height: 100vh;
-  padding: 60px 20px;
-  font-family: "Poppins", sans-serif;
+  padding: 0 0 clamp(56px, 7vw, 88px);
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   color: #2b2b2b;
 }
 
+/* a real hero band, on the shared solution surface */
 .nandago-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   text-align: center;
-  margin-bottom: 50px;
+  padding: clamp(64px, 8vw, 104px) 20px clamp(56px, 7vw, 92px);
+  margin-bottom: clamp(36px, 4.5vw, 56px);
+  background:
+    radial-gradient(58% 60% at 84% 4%, rgba(34, 211, 238, .18), transparent 62%),
+    radial-gradient(52% 54% at 8% 98%, rgba(99, 102, 241, .20), transparent 64%),
+    linear-gradient(166deg, #081a2c 0%, #062733 42%, #04303c 72%, #02181f 100%);
 }
+.nandago-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(rgba(125, 211, 252, .022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .022) 1px, transparent 1px);
+  background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
+  -webkit-mask-image: radial-gradient(68% 78% at 50% 42%, #000 8%, transparent 100%);
+          mask-image: radial-gradient(68% 78% at 50% 42%, #000 8%, transparent 100%);
+  pointer-events: none;
+}
+.nandago-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 38%, rgba(165, 243, 252, .06) 50%, transparent 62%);
+  background-size: 260% 100%;
+  animation: nandago-scan 13s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes nandago-scan { 0% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
 
 .nandago-hero h1 {
-  font-size: 2.8rem;
+  margin: 0 0 14px;
+  font-size: clamp(1.95rem, 4vw, 2.9rem);
   font-weight: 700;
-  color: #0056b3;
+  line-height: 1.1;
+  letter-spacing: -.028em;
+  color: #fff;
+  text-wrap: balance;
 }
 
 .nandago-hero p {
-  font-size: 1.2rem;
-  color: #444;
-  margin-top: 10px;
-  font-weight: 500;
+  margin: 0 auto;
+  max-width: 56ch;
+  font-size: clamp(1rem, 1.35vw, 1.1rem);
+  color: rgba(255, 255, 255, .72);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* the page's own content needs the side padding the page used to provide */
+.nandago-content,
+.nandago-page > *:not(.nandago-hero) {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .nandago-content {

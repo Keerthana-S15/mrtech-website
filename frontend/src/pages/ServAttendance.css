@@ -37,24 +37,49 @@ body {
 }
 
 /* Header/Hero Section */
+/* Matches the shared solution-detail hero: the royal-blue gradient and the
+   oversized corner circle read as a different product from the rest of the
+   Solutions section. */
 .serv-header {
-  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
-  padding: 40px 20px 50px;
+  background:
+    radial-gradient(58% 60% at 84% 4%, rgba(34, 211, 238, .18), transparent 62%),
+    radial-gradient(52% 54% at 8% 98%, rgba(99, 102, 241, .20), transparent 64%),
+    linear-gradient(166deg, #081a2c 0%, #062733 42%, #04303c 72%, #02181f 100%);
+  padding: clamp(52px, 6vw, 76px) 20px clamp(58px, 6vw, 78px);
   position: relative;
+  isolation: isolate;
   overflow: hidden;
 }
 
+/* fine technical grid, matching the other solution heroes */
 .serv-header::before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 600px;
-  height: 600px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 50%;
-  transform: translate(30%, -30%);
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(rgba(125, 211, 252, .022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .022) 1px, transparent 1px);
+  background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
+  -webkit-mask-image: radial-gradient(70% 80% at 40% 46%, #000 8%, transparent 100%);
+          mask-image: radial-gradient(70% 80% at 40% 46%, #000 8%, transparent 100%);
+  pointer-events: none;
 }
+
+/* one slow light sweep */
+.serv-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 38%, rgba(165, 243, 252, .06) 50%, transparent 62%);
+  background-size: 260% 100%;
+  animation: serv-scan 13s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes serv-scan { 0% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
 
 .header-content {
   max-width: 1200px;
@@ -64,25 +89,29 @@ body {
 }
 
 .serv-title {
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  /* was up to 3.5rem, a full step larger than every other solution hero */
+  font-size: clamp(1.95rem, 4vw, 2.9rem);
   font-weight: 700;
+  line-height: 1.1;
   color: var(--white);
-  margin-bottom: 16px;
-  letter-spacing: -1px;
+  margin-bottom: 14px;
+  letter-spacing: -.028em;
+  text-wrap: balance;
 }
 
 .serv-subtitle {
-  font-size: clamp(1.1rem, 2vw, 1.3rem);
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 24px;
-  font-weight: 500;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  color: #a5f3fc;
+  margin-bottom: 20px;
+  font-weight: 600;
+  letter-spacing: .01em;
 }
 
 .serv-description {
-  font-size: clamp(1rem, 1.5vw, 1.1rem);
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 800px;
+  font-size: clamp(.95rem, 1.35vw, 1.05rem);
+  line-height: 1.75;
+  color: rgba(255, 255, 255, .72);
+  max-width: 72ch;
 }
 
 /* Stats Section */

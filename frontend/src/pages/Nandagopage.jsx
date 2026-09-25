@@ -145,16 +145,20 @@ const NandagoPage = () => {
         {/* ✅ NEW: Back to Solutions button */}
         <button
           onClick={() => navigate("/solutions")}
+          /* the hero band is dark now, so this reads as a glass pill like the
+             back control on the other solution pages */
           style={{
-            marginTop: "20px",
-            padding: "10px 22px",
-            background: "#00333d",
-            border: "2px solid #00333d",
-            borderRadius: "30px",
-            color: "white",
+            marginTop: "24px",
+            padding: "12px 22px",
+            background: "rgba(255, 255, 255, 0.06)",
+            border: "1px solid rgba(255, 255, 255, 0.22)",
+            borderRadius: "999px",
+            color: "#fff",
             fontWeight: 600,
             cursor: "pointer",
             fontSize: "14px",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
           }}
         >
           ← Back to Solutions
