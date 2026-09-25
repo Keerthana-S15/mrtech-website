@@ -445,6 +445,7 @@ import {
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import AboutUs from "./AboutUs";
+import aiNeural from "../assets/ai-neural.jpg";
 
 /* ====== HOMEPAGE SERVICE CARDS ====== */
 const SERVICES = [
@@ -671,6 +672,11 @@ export default function Home() {
       <section className="hero">
         {/* decorative layers — a built AI visual rather than a stock photo */}
         <div className="hero-mesh" aria-hidden="true" />
+        <div
+          className="hero-photo"
+          style={{ "--hero-photo": `url(${aiNeural})` }}
+          aria-hidden="true"
+        />
         <div className="hero-grid" aria-hidden="true" />
         <HeroNetwork />
         <div className="hero-orb hero-orb--orange" aria-hidden="true" />

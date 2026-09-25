@@ -269,7 +269,10 @@
   color: rgba(255, 255, 255, .8);
 }
 .mr-home .hero-trust li { display: inline-flex; align-items: center; gap: 8px; }
-.mr-home .hero-trust svg { color: var(--mr-cyan); font-size: .95rem; flex: none; }
+/* a lighter cyan than the token: the ticks sit over the brightest part of
+   the photo layer on small screens, where #22D3EE only just cleared the 3:1
+   non-text contrast minimum. */
+.mr-home .hero-trust svg { color: #67e8f9; font-size: .95rem; flex: none; }
 
 /* ---- right column: glass panel ---- */
 .mr-home .hero-right {
@@ -750,6 +753,48 @@
    AI VISUAL LAYERS  (added in the enterprise redesign)
    --------------------------------------------------------------------- */
 
+/* Photographic depth layer.
+   A futuristic AI visual fused into the gradient rather than sitting on top
+   of it: `screen` lets the dark parts of the photo disappear into the teal
+   base so only the glowing circuitry survives, and the mask keeps it clear
+   of the headline column on the left. Sits below the node mesh and the text.
+   Source is an optimised 1600px derivative (167 KB) of the 2.5 MB original. */
+.mr-home .hero-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  /* URL comes from the component so webpack can content-hash the asset */
+  background-image: var(--hero-photo);
+  background-repeat: no-repeat;
+  background-position: 78% 45%;
+  background-size: cover;
+  opacity: .26;
+  mix-blend-mode: screen;
+  /* cool it toward the cyan/indigo accent ramp and lift the blacks */
+  filter: saturate(.78) contrast(1.12) brightness(.92) hue-rotate(-6deg);
+  /* fade out to the left so the headline never competes with the artwork */
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .35) 34%, #000 62%, #000 88%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 22%, #000 74%, transparent 100%);
+          mask-image:
+    linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .35) 34%, #000 62%, #000 88%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 22%, #000 74%, transparent 100%);
+  -webkit-mask-composite: source-in;
+          mask-composite: intersect;
+  animation: mr-photo-in 1.4s var(--mr-ease) both;
+}
+
+/* soft bloom sitting over the photo, so it reads as lit rather than pasted */
+.mr-home .hero-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(38% 44% at 76% 42%, rgba(103, 232, 249, .22), transparent 68%);
+}
+
+@keyframes mr-photo-in { from { opacity: 0; transform: scale(1.04); } to { opacity: .26; transform: none; } }
+
 /* Node mesh — an inference-graph motif. Drawn as SVG so it scales cleanly
    and costs nothing at runtime beyond two CSS animations. */
 .mr-home .hero-net {
@@ -836,7 +881,18 @@
   border-color: color-mix(in srgb, var(--svc-color) 42%, transparent);
 }
 
+@media (max-width: 900px) {
+  .mr-home .hero-photo {
+    opacity: .13;
+    background-position: 72% 28%;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 62%, transparent 92%);
+            mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 62%, transparent 92%);
+    animation-name: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .mr-home .hero-photo { animation: none !important; }
   .mr-home .hero-net-edges line,
   .mr-home .hero-net-nodes circle,
   .mr-home .hero-scan { animation: none !important; }
