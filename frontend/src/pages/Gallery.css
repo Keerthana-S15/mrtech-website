@@ -22,7 +22,7 @@
    Gallery index page (Gallery.jsx)
    --------------------------------------------------------------------- */
 .gallery-section--index {
-  --g-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --g-font: "Inter", "Segoe UI", Arial, sans-serif;
   --g-ease: cubic-bezier(.22, 1, .36, 1);
   --g-teal: var(--color-primary);
   position: relative;
@@ -284,7 +284,7 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   animation: g-fade .3s var(--g-ease, ease);
-  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 .lightbox-inner {
   width: min(1100px, 100%);

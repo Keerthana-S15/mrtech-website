@@ -6,7 +6,7 @@
    ===================================================================== */
 
 .team-page {
-  --tm-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --tm-font: "Inter", "Segoe UI", Arial, sans-serif;
   --tm-ease: cubic-bezier(.22, 1, .36, 1);
   --tm-teal: var(--color-primary);
   --tm-muted: #4b5563;

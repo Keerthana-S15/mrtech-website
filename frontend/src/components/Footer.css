@@ -6,7 +6,7 @@
    ===================================================================== */
 
 .footer.ft {
-  --ft-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --ft-font: "Inter", "Segoe UI", Arial, sans-serif;
   --ft-ease: cubic-bezier(.22, 1, .36, 1);
   /* Same cool ramp as the homepage and About: orange is no longer one of
      three co-equal accents, it belongs to the back-to-top control. */

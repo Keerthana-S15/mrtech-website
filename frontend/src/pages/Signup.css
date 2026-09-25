@@ -4,7 +4,7 @@
    ===================================================================== */
 
 .su-page {
-  --su-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --su-font: "Inter", "Segoe UI", Arial, sans-serif;
   --su-ease: cubic-bezier(.22, 1, .36, 1);
   --su-teal: #00313C;
   --su-orange: #F97316;

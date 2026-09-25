@@ -5,7 +5,7 @@
    ===================================================================== */
 
 .about {
-  --ab-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --ab-font: "Inter", "Segoe UI", Arial, sans-serif;
   --ab-ease: cubic-bezier(.22, 1, .36, 1);
   --ab-glass: rgba(255, 255, 255, .08);
   --ab-glass-border: rgba(255, 255, 255, .18);

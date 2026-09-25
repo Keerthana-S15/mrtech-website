@@ -6,7 +6,7 @@
    ===================================================================== */
 
 .c-wrap {
-  --c-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --c-font: "Inter", "Segoe UI", Arial, sans-serif;
   --c-ease: cubic-bezier(.22, 1, .36, 1);
   --c-teal: var(--color-primary);
   --c-orange: var(--color-secondary);

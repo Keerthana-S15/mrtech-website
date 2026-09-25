@@ -507,7 +507,7 @@
    ===================================================================== */
 
 .admin-dashboard {
-  --ad-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --ad-font: "Inter", "Segoe UI", Arial, sans-serif;
   --ad-ease: cubic-bezier(.22, 1, .36, 1);
   --ad-teal: #00313C;
   --ad-orange: #F97316;

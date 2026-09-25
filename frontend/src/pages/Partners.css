@@ -6,7 +6,7 @@
    ===================================================================== */
 
 .partners-wrap {
-  --pt-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --pt-font: "Inter", "Segoe UI", Arial, sans-serif;
   --pt-ease: cubic-bezier(.22, 1, .36, 1);
   --pt-teal: var(--color-primary);
   --pt-muted: #4b5563;

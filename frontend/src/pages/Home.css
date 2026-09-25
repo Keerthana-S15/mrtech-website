@@ -9,7 +9,7 @@
    ===================================================================== */
 
 .mr-home {
-  --mr-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --mr-font: "Inter", "Segoe UI", Arial, sans-serif;
   --mr-ink: var(--color-text);
   --mr-muted: #4b5563;
   --mr-teal: var(--color-primary);
@@ -26,6 +26,8 @@
   --mr-radius: 22px;
   --mr-ease: cubic-bezier(.22, 1, .36, 1);
   font-family: var(--mr-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
 
@@ -130,10 +132,11 @@
   gap: 10px;
   padding: 8px 14px 8px 10px;
   border-radius: 999px;
-  font-size: .8rem;
+  font-size: .74rem;
   font-weight: 600;
-  letter-spacing: .02em;
-  color: #e6fffa;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .86);
   background: rgba(255, 255, 255, .08);
   border: 1px solid rgba(255, 255, 255, .18);
   backdrop-filter: blur(8px);
@@ -149,11 +152,14 @@
 }
 
 .mr-home .hero-title {
-  font-size: clamp(2.1rem, 4.6vw, 3.6rem);
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -.02em;
-  margin: 0 0 20px;
+  /* Capped at 3rem rather than 3.6rem: the headline was running four lines
+     on desktop and dominating the section. Inter at 700 holds authority
+     without the extra size. */
+  font-size: clamp(1.95rem, 3.4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -.028em;
+  margin: 0 0 18px;
   color: #fff;
   text-wrap: balance;
 }
@@ -170,11 +176,13 @@
 .mr-home .hero-title-accent--violet { background-image: linear-gradient(92deg, #a5b4fc, var(--mr-violet)); }
 
 .mr-home .hero-sub {
-  color: rgba(255, 255, 255, .82);
-  font-size: clamp(1rem, 1.25vw, 1.15rem);
-  line-height: 1.7;
-  max-width: 56ch;
-  margin: 0 0 28px;
+  color: rgba(255, 255, 255, .72);
+  font-size: clamp(.97rem, 1.1vw, 1.06rem);
+  font-weight: 400;
+  line-height: 1.72;
+  letter-spacing: .002em;
+  max-width: 52ch;
+  margin: 0 0 30px;
 }
 
 /* ---- CTA row ---- */
@@ -769,7 +777,7 @@
   background-repeat: no-repeat;
   background-position: 78% 45%;
   background-size: cover;
-  opacity: .26;
+  opacity: .20;
   mix-blend-mode: screen;
   /* cool it toward the cyan/indigo accent ramp and lift the blacks */
   filter: saturate(.78) contrast(1.12) brightness(.92) hue-rotate(-6deg);
@@ -793,7 +801,7 @@
   background: radial-gradient(38% 44% at 76% 42%, rgba(103, 232, 249, .22), transparent 68%);
 }
 
-@keyframes mr-photo-in { from { opacity: 0; transform: scale(1.04); } to { opacity: .26; transform: none; } }
+@keyframes mr-photo-in { from { opacity: 0; transform: scale(1.04); } to { opacity: .20; transform: none; } }
 
 /* Node mesh — an inference-graph motif. Drawn as SVG so it scales cleanly
    and costs nothing at runtime beyond two CSS animations. */
@@ -883,7 +891,7 @@
 
 @media (max-width: 900px) {
   .mr-home .hero-photo {
-    opacity: .13;
+    opacity: .10;
     background-position: 72% 28%;
     -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 62%, transparent 92%);
             mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 62%, transparent 92%);

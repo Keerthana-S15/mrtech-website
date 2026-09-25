@@ -5,7 +5,7 @@
    ===================================================================== */
 
 .solutions {
-  --sol-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --sol-font: "Inter", "Segoe UI", Arial, sans-serif;
   --sol-ease: cubic-bezier(.22, 1, .36, 1);
   --sol-teal: var(--color-primary);
   --sol-muted: #4b5563;

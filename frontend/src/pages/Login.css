@@ -5,7 +5,7 @@
    ===================================================================== */
 
 .lg-page {
-  --lg-font: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  --lg-font: "Inter", "Segoe UI", Arial, sans-serif;
   --lg-ease: cubic-bezier(.22, 1, .36, 1);
   --lg-teal: #00313C;
   --lg-teal-2: #0b4a58;
