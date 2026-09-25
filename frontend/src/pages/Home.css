@@ -350,17 +350,29 @@
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: #a7f3d0;
+  color: #99f6e4;
   padding: 5px 10px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, .16);
-  border: 1px solid rgba(16, 185, 129, .35);
+  background: rgba(45, 212, 191, .14);
+  border: 1px solid rgba(45, 212, 191, .34);
 }
 .mr-home .hero-panel-live-dot {
+  position: relative;
   width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--mr-green);
-  animation: mr-pulse 1.6s ease-in-out infinite;
+  /* was a 1.6s blink down to .55 opacity, which read as a flashing alert.
+     The dot now holds steady and a ring pings outward instead. */
+  animation: mr-live-dot 3s ease-in-out infinite;
+}
+.mr-home .hero-panel-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1px solid var(--mr-green);
+  animation: mr-live-ring 3s cubic-bezier(.22, 1, .36, 1) infinite;
+  pointer-events: none;
 }
 
 .mr-home .hero-panel-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -819,6 +831,8 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(38% 44% at 76% 42%, rgba(103, 232, 249, .22), transparent 68%);
+  /* a slow bloom, so the artwork reads as lit rather than printed */
+  animation: mr-bloom 12s ease-in-out infinite;
 }
 
 @keyframes mr-photo-in { from { opacity: 0; transform: scale(1.04); } to { opacity: .20; transform: none; } }
@@ -863,6 +877,19 @@
   animation: mr-trace-flow 11s linear infinite;
   animation-delay: var(--d, 0s);
 }
+/* the travelling light packet itself */
+.mr-home .hero-net-pulses polyline {
+  fill: none;
+  stroke: #d8fbff;
+  stroke-width: .3;
+  stroke-linecap: round;
+  stroke-dasharray: 3 97;
+  filter: drop-shadow(0 0 1.2px rgba(165, 243, 252, .9));
+  opacity: .75;
+  animation: mr-trace-pulse 9s cubic-bezier(.45, 0, .55, 1) infinite;
+  animation-delay: var(--d, 0s);
+}
+
 .mr-home .hero-net-pads circle {
   fill: none;
   stroke: rgba(165, 243, 252, .42);
@@ -893,6 +920,19 @@
 @keyframes mr-net-flow   { to { stroke-dashoffset: -12; } }
 @keyframes mr-trace-flow { to { stroke-dashoffset: -30; } }
 @keyframes mr-pad-pulse  { 0%, 100% { opacity: .30; } 50% { opacity: .85; } }
+/* the packet crosses once, then rests before the next run */
+@keyframes mr-trace-pulse {
+  0%       { stroke-dashoffset: 0;    opacity: 0; }
+  6%       { opacity: .75; }
+  56%      { opacity: .75; }
+  66%, 100% { stroke-dashoffset: -100; opacity: 0; }
+}
+@keyframes mr-bloom { 0%, 100% { opacity: .75; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes mr-live-dot  { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
+@keyframes mr-live-ring {
+  0%       { opacity: .6; transform: scale(1); }
+  70%, 100% { opacity: 0;  transform: scale(3.1); }
+}
 @keyframes mr-mote {
   0%   { opacity: 0;   transform: translateY(2.5px); }
   18%  { opacity: .5; }
@@ -961,7 +1001,12 @@
   .mr-home .hero-net-nodes circle,
   .mr-home .hero-net-traces polyline,
   .mr-home .hero-net-pads circle,
+  .mr-home .hero-photo::after,
+  .mr-home .hero-panel-live-dot,
   .mr-home .hero-scan { animation: none !important; }
+  /* the packets only exist while they travel, so drop them entirely */
+  .mr-home .hero-net-pulses { display: none; }
+  .mr-home .hero-panel-live-dot::after { display: none; }
   /* motes start at opacity 0, so they need an explicit resting state */
   .mr-home .hero-motes circle { animation: none !important; opacity: .32; transform: none; }
   .mr-home .service-card { opacity: 1 !important; transform: none !important; }

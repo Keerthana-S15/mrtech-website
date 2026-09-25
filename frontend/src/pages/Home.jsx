@@ -535,6 +535,19 @@ function HeroNetwork() {
           />
         ))}
       </g>
+      {/* A light packet running along each trace. pathLength normalises every
+          route to 100 units, so one dash traverses exactly once per cycle
+          regardless of how long the route actually is. */}
+      <g className="hero-net-pulses">
+        {NET_TRACES.map((pts, i) => (
+          <polyline
+            key={`tp${i}`}
+            points={pts.map((pt) => pt.join(",")).join(" ")}
+            pathLength="100"
+            style={{ "--d": `${i * 1.9}s` }}
+          />
+        ))}
+      </g>
       <g className="hero-net-pads">
         {NET_TRACES.map((pts, i) => {
           const [x, y] = pts[pts.length - 1];
