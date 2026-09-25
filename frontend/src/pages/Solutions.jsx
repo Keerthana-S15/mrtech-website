@@ -317,7 +317,10 @@ export default function Solutions() {
 
       <div className="solutions-inner">
         <header className="sol-head">
-          <span className="sol-eyebrow">What we offer</span>
+          <span className="sol-eyebrow">
+            <i className="sol-eyebrow-dot" aria-hidden="true" />
+            What we offer
+          </span>
           <h2 id="solutions-title" className="solutions-title">
             Our Professional <span>IT Services</span>
           </h2>

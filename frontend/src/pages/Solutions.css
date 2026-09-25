@@ -8,13 +8,20 @@
   --sol-font: "Inter", "Segoe UI", Arial, sans-serif;
   --sol-ease: cubic-bezier(.22, 1, .36, 1);
   --sol-teal: var(--color-primary);
+  --sol-cyan: #22D3EE;
+  --sol-indigo: #6366F1;
   --sol-muted: #4b5563;
+  --sol-muted-2: #64748b;
+  --sol-hair: rgba(0, 49, 60, .09);
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding: clamp(56px, 7vw, 96px) 20px;
+  padding: clamp(40px, 5vw, 64px) 20px clamp(64px, 8vw, 104px);
   font-family: var(--sol-font);
-  background: var(--color-bg);
+  background:
+    radial-gradient(50% 32% at 88% 4%, rgba(34, 211, 238, .07), transparent 62%),
+    radial-gradient(44% 28% at 4% 52%, rgba(99, 102, 241, .06), transparent 62%),
+    var(--color-bg);
 }
 
 /* soft brand tints behind the grid */
@@ -22,44 +29,125 @@
   position: absolute;
   z-index: -1;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: .28;
+  filter: blur(96px);
+  opacity: .20;
   pointer-events: none;
   animation: sol-drift 18s ease-in-out infinite alternate;
 }
-.sol-bg--a { width: 520px; height: 520px; left: -200px; top: -160px;   background: var(--color-accent1); }
-.sol-bg--b { width: 460px; height: 460px; right: -180px; bottom: 10%;   background: var(--color-accent2); animation-delay: -8s; }
+.sol-bg--a { width: 560px; height: 560px; left: -220px; top: -180px;   background: var(--sol-cyan); }
+.sol-bg--b { width: 480px; height: 480px; right: -190px; bottom: 8%;    background: var(--sol-indigo); animation-delay: -8s; }
 
 .solutions-inner { max-width: 1180px; margin: 0 auto; }
 
 /* ---- header ---- */
-.sol-head { text-align: center; max-width: 720px; margin: 0 auto 40px; }
-.sol-eyebrow {
-  display: inline-block;
-  font-size: .78rem;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--color-secondary);
-  margin-bottom: 12px;
+/* The header is now a contained hero panel on the same navy-to-teal surface
+   as the solution detail pages, so moving between the list and a detail page
+   feels like one product. Contained rather than full-bleed, which keeps it
+   responsive with no 100vw scrollbar tricks. */
+.sol-head {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  text-align: center;
+  max-width: none;
+  margin: 0 0 clamp(32px, 4vw, 48px);
+  padding: clamp(48px, 6vw, 76px) clamp(20px, 4vw, 48px) clamp(36px, 4.5vw, 52px);
+  border-radius: clamp(20px, 2.4vw, 30px);
+  color: #fff;
+  background:
+    radial-gradient(58% 64% at 84% 2%, rgba(34, 211, 238, .18), transparent 62%),
+    radial-gradient(52% 58% at 8% 100%, rgba(99, 102, 241, .20), transparent 64%),
+    linear-gradient(166deg, #081a2c 0%, #062733 42%, #04303c 72%, #02181f 100%);
+  box-shadow: 0 26px 60px rgba(0, 24, 32, .22);
 }
+.sol-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(rgba(125, 211, 252, .022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .022) 1px, transparent 1px);
+  background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
+  -webkit-mask-image: radial-gradient(70% 80% at 50% 40%, #000 8%, transparent 100%);
+          mask-image: radial-gradient(70% 80% at 50% 40%, #000 8%, transparent 100%);
+  pointer-events: none;
+}
+.sol-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 38%, rgba(165, 243, 252, .06) 50%, transparent 62%);
+  background-size: 260% 100%;
+  animation: sol-scan 13s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sol-scan { 0% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
+
+.sol-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 15px 7px 12px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .88);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .14);
+  margin-bottom: 20px;
+}
+.sol-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sol-cyan);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, .18);
+  animation: sol-pulse 2.6s ease-in-out infinite;
+}
+@keyframes sol-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.82); } }
+
 .solutions-title {
   text-align: center;
-  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
-  font-weight: 800;
-  letter-spacing: -.02em;
-  line-height: 1.12;
-  margin: 0 0 12px;
-  color: var(--sol-teal);
+  font-size: clamp(1.95rem, 4vw, 2.9rem);
+  font-weight: 700;
+  letter-spacing: -.028em;
+  line-height: 1.1;
+  margin: 0 0 14px;
+  color: #fff;
+  text-wrap: balance;
 }
 .solutions-title span {
-  background: linear-gradient(92deg, var(--color-accent1), var(--color-accent2));
+  background: linear-gradient(94deg, #a5f3fc, var(--sol-cyan) 45%, #a5b4fc);
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
-.sol-lead { margin: 0 0 24px; color: var(--sol-muted); font-size: 1.02rem; line-height: 1.7; }
+.sol-lead {
+  margin: 0 auto clamp(26px, 3vw, 34px);
+  max-width: 56ch;
+  color: rgba(255, 255, 255, .70);
+  font-size: clamp(1rem, 1.3vw, 1.08rem);
+  line-height: 1.7;
+}
+
+/* header items reveal in sequence */
+.sol-head > * {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: sol-head-in .75s var(--sol-ease) both;
+}
+.sol-head > *:nth-child(1) { animation-delay: .06s; }
+.sol-head > *:nth-child(2) { animation-delay: .15s; }
+.sol-head > *:nth-child(3) { animation-delay: .24s; }
+.sol-head > *:nth-child(4) { animation-delay: .33s; }
+@keyframes sol-head-in { to { opacity: 1; transform: none; } }
 
 /* ---- filter chips ---- */
 .sol-filters {
@@ -72,45 +160,54 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 16px;
+  padding: 10px 17px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 49, 60, .14);
-  background: #fff;
-  color: var(--sol-teal);
+  border: 1px solid rgba(255, 255, 255, .16);
+  background: rgba(255, 255, 255, .06);
+  color: rgba(255, 255, 255, .84);
   font: inherit;
-  font-size: .86rem;
-  font-weight: 700;
+  font-size: .84rem;
+  font-weight: 600;
+  letter-spacing: .01em;
   cursor: pointer;
-  transition: background .25s var(--sol-ease), color .25s var(--sol-ease), border-color .25s var(--sol-ease), transform .25s var(--sol-ease), box-shadow .25s var(--sol-ease);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background .28s var(--sol-ease), color .28s var(--sol-ease), border-color .28s var(--sol-ease), transform .28s var(--sol-ease), box-shadow .28s var(--sol-ease);
 }
-.sol-filter:hover { transform: translateY(-1px); border-color: rgba(0, 49, 60, .3); }
-.sol-filter.is-active {
-  background: var(--sol-teal);
+.sol-filter:hover {
+  transform: translateY(-2px);
   color: #fff;
-  border-color: var(--sol-teal);
-  box-shadow: 0 8px 18px rgba(0, 49, 60, .22);
+  background: rgba(255, 255, 255, .11);
+  border-color: rgba(255, 255, 255, .3);
 }
-.sol-filter:focus-visible { outline: 3px solid rgba(16, 185, 129, .45); outline-offset: 2px; }
+.sol-filter.is-active {
+  color: #04222b;
+  background: linear-gradient(135deg, #a5f3fc, var(--sol-cyan));
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(34, 211, 238, .3);
+}
+.sol-filter:focus-visible { outline: 3px solid rgba(34, 211, 238, .55); outline-offset: 3px; }
 .sol-filter-count {
   font-size: .72rem;
+  font-weight: 700;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(0, 49, 60, .08);
+  background: rgba(255, 255, 255, .14);
 }
-.sol-filter.is-active .sol-filter-count { background: rgba(255, 255, 255, .18); }
+.sol-filter.is-active .sol-filter-count { background: rgba(4, 34, 43, .16); }
 
 /* ---- grid ---- */
 .solutions-grid {
   display: grid;
-  gap: 24px;
+  gap: clamp(20px, 2.2vw, 28px);
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* ---- card ---- */
 .sol-card {
-  --accent: var(--color-secondary);
-  --accent-2: #fb923c;
-  --accent-soft: rgba(249, 115, 22, .14);
+  --accent: #0891b2;
+  --accent-2: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, .15);
   --mx: 50%;
   --my: 0%;
   position: relative;
@@ -139,12 +236,14 @@
 }
 .sol-card:focus-within { border-color: var(--accent); }
 
-.sol-card--orange  { --accent: #F97316; --accent-2: #fb923c; --accent-soft: rgba(249, 115, 22, .14); }
-.sol-card--emerald { --accent: #10B981; --accent-2: #34d399; --accent-soft: rgba(16, 185, 129, .14); }
-.sol-card--green   { --accent: #16a34a; --accent-2: #4ade80; --accent-soft: rgba(22, 163, 74, .14); }
-.sol-card--violet  { --accent: #A855F7; --accent-2: #c084fc; --accent-soft: rgba(168, 85, 247, .14); }
-.sol-card--teal    { --accent: #0e7490; --accent-2: #22d3ee; --accent-soft: rgba(14, 116, 144, .14); }
-.sol-card--sky     { --accent: #2563eb; --accent-2: #60a5fa; --accent-soft: rgba(37, 99, 235, .14); }
+/* A cool spectrum with six separable hues. The class names still match the
+   `accent` values in the SOLUTIONS data, so no data change was needed. */
+.sol-card--orange  { --accent: #0891b2; --accent-2: #22d3ee; --accent-soft: rgba(34, 211, 238, .15); }
+.sol-card--emerald { --accent: #0d9488; --accent-2: #2dd4bf; --accent-soft: rgba(45, 212, 191, .15); }
+.sol-card--green   { --accent: #059669; --accent-2: #34d399; --accent-soft: rgba(52, 211, 153, .15); }
+.sol-card--violet  { --accent: #4f46e5; --accent-2: #818cf8; --accent-soft: rgba(99, 102, 241, .15); }
+.sol-card--teal    { --accent: #0284c7; --accent-2: #38bdf8; --accent-soft: rgba(56, 189, 248, .15); }
+.sol-card--sky     { --accent: #6d28d9; --accent-2: #a78bfa; --accent-soft: rgba(139, 92, 246, .15); }
 
 /* pointer-following highlight */
 .sol-card::before {
@@ -344,6 +443,10 @@
 @media (prefers-reduced-motion: reduce) {
   .sol-bg, .sol-icon-ring { animation: none !important; }
   .sol-card, .sol-stat { opacity: 1; transform: none; transition: none; }
+  /* these start hidden, so cancelling the animation without restoring the
+     end state would blank the header */
+  .sol-head > * { opacity: 1; transform: none; animation: none !important; }
+  .sol-eyebrow-dot, .sol-head::after { animation: none !important; }
   .sol-card.is-visible:hover, .sol-card:hover .sol-icon, .sol-card:hover .sol-icon svg { transform: none; }
 }
 
