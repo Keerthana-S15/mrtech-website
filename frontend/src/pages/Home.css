@@ -171,9 +171,26 @@
           background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  /* a very soft bloom; static, so nothing pulses or blinks */
+  filter: drop-shadow(0 0 18px rgba(34, 211, 238, .22));
 }
-.mr-home .hero-title-accent--green  { background-image: linear-gradient(92deg, #99f6e4, var(--mr-green)); }
-.mr-home .hero-title-accent--violet { background-image: linear-gradient(92deg, #a5b4fc, var(--mr-violet)); }
+.mr-home .hero-title-accent--green  { background-image: linear-gradient(92deg, #99f6e4, var(--mr-green)); filter: drop-shadow(0 0 18px rgba(45, 212, 191, .22)); }
+.mr-home .hero-title-accent--violet { background-image: linear-gradient(92deg, #a5b4fc, var(--mr-violet)); filter: drop-shadow(0 0 20px rgba(99, 102, 241, .26)); }
+
+/* ---- heading word reveal ----
+   Each word is its own inline-block so it can carry a delay. Spaces between
+   them are real text nodes, so wrapping is unchanged. One pass only. */
+.mr-home .hero-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(.42em);
+  animation: mr-word-in .58s var(--mr-ease) both;
+  animation-delay: calc(var(--w, 0) * 62ms + 90ms);
+}
+@keyframes mr-word-in {
+  from { opacity: 0; transform: translateY(.42em); filter: blur(5px); }
+  to   { opacity: 1; transform: none; filter: blur(0); }
+}
 
 .mr-home .hero-sub {
   color: rgba(255, 255, 255, .72);
@@ -574,6 +591,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mr-home * { animation: none !important; transition-duration: .01ms !important; }
+  /* the rule above cancels mr-word-in, so the words need their end state
+     spelled out or they would stay invisible */
+  .mr-home .hero-word { opacity: 1; transform: none; filter: none; }
 }
 
 /* ---------------------------------------------------------------------

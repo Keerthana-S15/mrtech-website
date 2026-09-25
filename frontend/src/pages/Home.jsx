@@ -527,6 +527,22 @@ function HeroNetwork() {
   );
 }
 
+/* The hero heading, split into words so each can be revealed on its own
+   delay. The strings below concatenate to exactly the previous heading:
+   "AI-Powered Innovation for Healthcare, Agriculture & Digital Transformation".
+   `accent` carries the same gradient classes the phrases had before. */
+const HERO_WORDS = [
+  { text: "AI-Powered" },
+  { text: "Innovation" },
+  { text: "for" },
+  { text: "Healthcare", accent: "hero-title-accent", tail: "," },
+  { text: "Agriculture", accent: "hero-title-accent hero-title-accent--green" },
+  { text: "\u0026" },
+  // kept as one unit so its gradient stays continuous across both words,
+  // exactly as before; it still wraps internally at narrow widths
+  { text: "Digital Transformation", accent: "hero-title-accent hero-title-accent--violet" },
+];
+
 const SERV_APP_LINK = "https://play.google.com/store/apps/details?id=com.serv.serv_app";
 
 export default function Home() {
@@ -692,15 +708,17 @@ export default function Home() {
             </span>
 
             <h1 className="hero-title">
-              AI-Powered Innovation for{" "}
-              <span className="hero-title-accent">Healthcare</span>,{" "}
-              <span className="hero-title-accent hero-title-accent--green">
-                Agriculture
-              </span>{" "}
-              &amp;{" "}
-              <span className="hero-title-accent hero-title-accent--violet">
-                Digital Transformation
-              </span>
+              {HERO_WORDS.map((w, i) => (
+                <React.Fragment key={w.text + i}>
+                  <span className="hero-word" style={{ "--w": i }}>
+                    {w.accent ? <span className={w.accent}>{w.text}</span> : w.text}
+                    {w.tail}
+                  </span>
+                  {/* a real space between the inline-blocks, so the heading
+                      still wraps naturally at every width */}
+                  {i < HERO_WORDS.length - 1 ? " " : null}
+                </React.Fragment>
+              ))}
             </h1>
 
             <p className="hero-sub">
