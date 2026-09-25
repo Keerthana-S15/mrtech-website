@@ -497,6 +497,26 @@ const NET_EDGES = [
   [13, 14], [14, 15], [15, 16], [16, 17], [17, 18],
 ];
 
+/* Circuit traces: right-angled routes with a pad at the end, the way a board
+   is actually laid out. Each entry is a run of points in viewBox units. */
+const NET_TRACES = [
+  [[2, 38], [12, 38], [16, 34], [30, 34], [34, 38], [44, 38]],
+  [[56, 20], [66, 20], [70, 24], [84, 24], [88, 20], [98, 20]],
+  [[58, 66], [68, 66], [72, 70], [86, 70], [90, 66], [99, 66]],
+  [[4, 92], [18, 92], [22, 88], [36, 88], [40, 92], [52, 92]],
+  [[70, 3], [70, 12], [74, 16], [74, 30]],
+  [[26, 97], [26, 86], [30, 82], [30, 67]],
+];
+
+/* Floating particles. Fixed coordinates rather than random, so the layer
+   renders identically on every load and between server and client. */
+const NET_MOTES = [
+  [12, 64, 0.34], [21, 31, 0.26], [33, 77, 0.30], [39, 17, 0.22],
+  [47, 49, 0.38], [55, 84, 0.26], [63, 37, 0.30], [69, 72, 0.22],
+  [77, 25, 0.34], [83, 58, 0.26], [89, 88, 0.30], [95, 44, 0.22],
+  [17, 92, 0.26], [44, 6, 0.30],
+];
+
 function HeroNetwork() {
   return (
     <svg
@@ -506,6 +526,21 @@ function HeroNetwork() {
       aria-hidden="true"
       focusable="false"
     >
+      <g className="hero-net-traces">
+        {NET_TRACES.map((pts, i) => (
+          <polyline
+            key={`t${i}`}
+            points={pts.map((pt) => pt.join(",")).join(" ")}
+            style={{ "--d": `${(i % 4) * 1.1}s` }}
+          />
+        ))}
+      </g>
+      <g className="hero-net-pads">
+        {NET_TRACES.map((pts, i) => {
+          const [x, y] = pts[pts.length - 1];
+          return <circle key={`p${i}`} cx={x} cy={y} r={0.6} style={{ "--d": `${(i % 4) * 1.1}s` }} />;
+        })}
+      </g>
       <g className="hero-net-edges">
         {NET_EDGES.map(([a, b], i) => (
           <line
@@ -521,6 +556,17 @@ function HeroNetwork() {
       <g className="hero-net-nodes">
         {NET_NODES.map(([x, y], i) => (
           <circle key={`n${i}`} cx={x} cy={y} r={i % 5 === 0 ? 0.75 : 0.45} style={{ "--d": `${(i % 6) * 0.5}s` }} />
+        ))}
+      </g>
+      <g className="hero-motes">
+        {NET_MOTES.map(([x, y, r], i) => (
+          <circle
+            key={`m${i}`}
+            cx={x}
+            cy={y}
+            r={r}
+            style={{ "--d": `${(i % 7) * 2.3}s`, "--dur": `${16 + (i % 5) * 3}s` }}
+          />
         ))}
       </g>
     </svg>

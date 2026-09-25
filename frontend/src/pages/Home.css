@@ -851,6 +851,34 @@
   animation-delay: var(--d, 0s);
 }
 
+/* circuit traces — angular routes, quieter than the inference-graph edges
+   so the two layers read as depth rather than clutter */
+.mr-home .hero-net-traces polyline {
+  fill: none;
+  stroke: rgba(103, 232, 249, .30);
+  stroke-width: .16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 2.5 5;
+  animation: mr-trace-flow 11s linear infinite;
+  animation-delay: var(--d, 0s);
+}
+.mr-home .hero-net-pads circle {
+  fill: none;
+  stroke: rgba(165, 243, 252, .42);
+  stroke-width: .18;
+  animation: mr-pad-pulse 5.5s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+/* floating particles: a slow rise and fade, transform/opacity only */
+.mr-home .hero-motes circle {
+  fill: #a5f3fc;
+  opacity: 0;
+  animation: mr-mote var(--dur, 18s) ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
 /* a single slow light sweep — the only motion that crosses the whole hero */
 .mr-home .hero-scan {
   position: absolute;
@@ -862,7 +890,15 @@
   animation: mr-scan 11s ease-in-out infinite;
 }
 
-@keyframes mr-net-flow  { to { stroke-dashoffset: -12; } }
+@keyframes mr-net-flow   { to { stroke-dashoffset: -12; } }
+@keyframes mr-trace-flow { to { stroke-dashoffset: -30; } }
+@keyframes mr-pad-pulse  { 0%, 100% { opacity: .30; } 50% { opacity: .85; } }
+@keyframes mr-mote {
+  0%   { opacity: 0;   transform: translateY(2.5px); }
+  18%  { opacity: .5; }
+  70%  { opacity: .32; }
+  100% { opacity: 0;   transform: translateY(-6px); }
+}
 @keyframes mr-net-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 @keyframes mr-scan      { 0% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
 
@@ -923,6 +959,10 @@
   .mr-home .hero-photo { animation: none !important; }
   .mr-home .hero-net-edges line,
   .mr-home .hero-net-nodes circle,
+  .mr-home .hero-net-traces polyline,
+  .mr-home .hero-net-pads circle,
   .mr-home .hero-scan { animation: none !important; }
+  /* motes start at opacity 0, so they need an explicit resting state */
+  .mr-home .hero-motes circle { animation: none !important; opacity: .32; transform: none; }
   .mr-home .service-card { opacity: 1 !important; transform: none !important; }
 }
