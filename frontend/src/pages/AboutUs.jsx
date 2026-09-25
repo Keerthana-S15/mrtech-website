@@ -419,9 +419,24 @@ export default function AboutUs() {
     };
     cards.forEach((c) => c.addEventListener("pointermove", onMove));
 
+    // Ambient glow that follows the pointer across the section background.
+    const onSectionMove = (e) => {
+      const r = root.getBoundingClientRect();
+      root.style.setProperty("--ax", `${((e.clientX - r.left) / r.width) * 100}%`);
+      root.style.setProperty("--ay", `${((e.clientY - r.top) / r.height) * 100}%`);
+      root.dataset.pointer = "1";
+    };
+    const onSectionLeave = () => {
+      delete root.dataset.pointer;
+    };
+    root.addEventListener("pointermove", onSectionMove);
+    root.addEventListener("pointerleave", onSectionLeave);
+
     return () => {
       io.disconnect();
       cards.forEach((c) => c.removeEventListener("pointermove", onMove));
+      root.removeEventListener("pointermove", onSectionMove);
+      root.removeEventListener("pointerleave", onSectionLeave);
     };
   }, []);
 
@@ -432,6 +447,7 @@ export default function AboutUs() {
       <div className="about-orb about-orb--b" aria-hidden="true" />
       <div className="about-orb about-orb--c" aria-hidden="true" />
       <div className="about-grid-lines" aria-hidden="true" />
+      <div className="about-aura" aria-hidden="true" />
 
       <div className="about-inner">
         <header className="about-head">
