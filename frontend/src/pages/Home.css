@@ -14,9 +14,15 @@
   --mr-muted: #4b5563;
   --mr-teal: var(--color-primary);
   --mr-teal-2: #0b4a58;
+  /* Orange stays the brand CTA colour, but it is no longer one of three
+     co-equal accents. The old saffron + emerald + white trio read as a
+     national flag; the accent ramp is now a cool enterprise spectrum and
+     orange is reserved for primary actions. */
   --mr-orange: var(--color-secondary);
-  --mr-green: var(--color-accent1);
-  --mr-violet: var(--color-accent2);
+  --mr-cyan: #22D3EE;
+  --mr-green: #2DD4BF;   /* cooled from emerald */
+  --mr-violet: #6366F1;  /* indigo */
+  --mr-ink-dark: #041b22;
   --mr-radius: 22px;
   --mr-ease: cubic-bezier(.22, 1, .36, 1);
   font-family: var(--mr-font);
@@ -29,25 +35,35 @@
 .mr-home .hero {
   position: relative;
   isolation: isolate;
-  min-height: min(calc(100vh - 70px), 860px);
-  padding: clamp(56px, 8vw, 96px) 20px clamp(80px, 10vw, 120px);
+  min-height: min(calc(100vh - 70px), 880px);
+  padding: clamp(56px, 8vw, 104px) 20px clamp(80px, 10vw, 128px);
   display: flex;
   align-items: center;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
   color: #fff;
+  background: var(--mr-ink-dark);
 }
 
-/* brand-tinted overlay: deep teal from the left, fading to let the photo show */
+/* Depth is built rather than photographed: a near-black teal base with cool
+   light sources, so the section reads as product UI instead of stock art. */
 .mr-home .hero::before {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: -4;
+  background: linear-gradient(165deg, #06303b 0%, #042630 46%, #02171d 100%);
+}
+
+/* mesh gradient — the "premium gradient" layer */
+.mr-home .hero-mesh {
+  position: absolute;
+  inset: 0;
   z-index: -3;
+  pointer-events: none;
   background:
-    linear-gradient(100deg, rgba(0, 49, 60, .96) 0%, rgba(0, 49, 60, .88) 42%, rgba(0, 49, 60, .55) 72%, rgba(0, 24, 30, .70) 100%),
-    radial-gradient(60% 60% at 85% 20%, rgba(249, 115, 22, .22), transparent 60%);
+    radial-gradient(42% 46% at 14% 18%, rgba(34, 211, 238, .20), transparent 62%),
+    radial-gradient(38% 42% at 82% 12%, rgba(99, 102, 241, .22), transparent 64%),
+    radial-gradient(46% 50% at 70% 88%, rgba(45, 212, 191, .16), transparent 66%),
+    radial-gradient(34% 38% at 96% 56%, rgba(249, 115, 22, .12), transparent 62%);
 }
 
 /* fine grid texture */
@@ -56,11 +72,11 @@
   inset: 0;
   z-index: -2;
   background-image:
-    linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .06) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000 30%, transparent 100%);
-          mask-image: radial-gradient(80% 70% at 50% 40%, #000 30%, transparent 100%);
+    linear-gradient(rgba(148, 233, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 233, 255, .045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(75% 68% at 48% 42%, #000 18%, transparent 100%);
+          mask-image: radial-gradient(75% 68% at 48% 42%, #000 18%, transparent 100%);
   pointer-events: none;
 }
 
@@ -69,14 +85,14 @@
   position: absolute;
   z-index: -1;
   border-radius: 50%;
-  filter: blur(70px);
-  opacity: .55;
+  filter: blur(96px);
+  opacity: .30;
   pointer-events: none;
-  animation: mr-orb 14s ease-in-out infinite alternate;
+  animation: mr-orb 20s ease-in-out infinite alternate;
 }
-.mr-home .hero-orb--orange { width: 420px; height: 420px; right: -80px;  top: -120px;  background: var(--mr-orange); }
-.mr-home .hero-orb--emerald{ width: 360px; height: 360px; right: 22%;    bottom: -160px; background: var(--mr-green);  animation-delay: -5s; }
-.mr-home .hero-orb--violet { width: 300px; height: 300px; left: -120px;  bottom: 8%;   background: var(--mr-violet); animation-delay: -9s; opacity: .35; }
+.mr-home .hero-orb--orange { width: 400px; height: 400px; right: -110px; top: -150px;   background: var(--mr-orange); opacity: .18; }
+.mr-home .hero-orb--emerald{ width: 380px; height: 380px; right: 24%;    bottom: -180px; background: var(--mr-cyan);   animation-delay: -7s; }
+.mr-home .hero-orb--violet { width: 330px; height: 330px; left: -140px;  bottom: 6%;    background: var(--mr-violet); animation-delay: -13s; opacity: .26; }
 
 @keyframes mr-orb {
   from { transform: translate3d(0, 0, 0) scale(1); }
@@ -144,14 +160,14 @@
 .mr-home .hero-title-accent {
   position: relative;
   display: inline;
-  background: linear-gradient(92deg, #ffb46b, var(--mr-orange));
+  background: linear-gradient(92deg, #a5f3fc, var(--mr-cyan));
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
-.mr-home .hero-title-accent--green  { background-image: linear-gradient(92deg, #6ee7b7, var(--mr-green)); }
-.mr-home .hero-title-accent--violet { background-image: linear-gradient(92deg, #d8b4fe, var(--mr-violet)); }
+.mr-home .hero-title-accent--green  { background-image: linear-gradient(92deg, #99f6e4, var(--mr-green)); }
+.mr-home .hero-title-accent--violet { background-image: linear-gradient(92deg, #a5b4fc, var(--mr-violet)); }
 
 .mr-home .hero-sub {
   color: rgba(255, 255, 255, .82);
@@ -253,7 +269,7 @@
   color: rgba(255, 255, 255, .8);
 }
 .mr-home .hero-trust li { display: inline-flex; align-items: center; gap: 8px; }
-.mr-home .hero-trust svg { color: var(--mr-green); font-size: .95rem; flex: none; }
+.mr-home .hero-trust svg { color: var(--mr-cyan); font-size: .95rem; flex: none; }
 
 /* ---- right column: glass panel ---- */
 .mr-home .hero-right {
@@ -359,12 +375,12 @@
   transform-origin: left;
   animation: mr-bar 1.4s .5s var(--mr-ease) both;
 }
-.mr-home .hero-panel-item--orange .hero-panel-icon { background: linear-gradient(135deg, #fb923c, #ea580c); }
-.mr-home .hero-panel-item--orange .hero-panel-bar i { background: linear-gradient(90deg, #fdba74, var(--mr-orange)); }
-.mr-home .hero-panel-item--green  .hero-panel-icon { background: linear-gradient(135deg, #34d399, #059669); }
-.mr-home .hero-panel-item--green  .hero-panel-bar i { background: linear-gradient(90deg, #6ee7b7, var(--mr-green)); }
-.mr-home .hero-panel-item--violet .hero-panel-icon { background: linear-gradient(135deg, #c084fc, #7e22ce); }
-.mr-home .hero-panel-item--violet .hero-panel-bar i { background: linear-gradient(90deg, #d8b4fe, var(--mr-violet)); }
+.mr-home .hero-panel-item--orange .hero-panel-icon { background: linear-gradient(135deg, #67e8f9, #0891b2); }
+.mr-home .hero-panel-item--orange .hero-panel-bar i { background: linear-gradient(90deg, #a5f3fc, var(--mr-cyan)); }
+.mr-home .hero-panel-item--green  .hero-panel-icon { background: linear-gradient(135deg, #5eead4, #0d9488); }
+.mr-home .hero-panel-item--green  .hero-panel-bar i { background: linear-gradient(90deg, #99f6e4, var(--mr-green)); }
+.mr-home .hero-panel-item--violet .hero-panel-icon { background: linear-gradient(135deg, #a5b4fc, #4338ca); }
+.mr-home .hero-panel-item--violet .hero-panel-bar i { background: linear-gradient(90deg, #c7d2fe, var(--mr-violet)); }
 
 
 /* ---------------------------------------------------------------------
@@ -415,8 +431,8 @@
 }
 
 .mr-home .service-card {
-  --svc-color: var(--mr-orange);
-  --svc-soft: rgba(249, 115, 22, .12);
+  --svc-color: var(--mr-cyan);
+  --svc-soft: rgba(34, 211, 238, .12);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -428,8 +444,8 @@
   overflow: hidden;
   transition: transform .35s var(--mr-ease), box-shadow .35s var(--mr-ease), border-color .35s var(--mr-ease);
 }
-.mr-home .service-card--agriculture { --svc-color: var(--mr-green);  --svc-soft: rgba(16, 185, 129, .12); }
-.mr-home .service-card--digital     { --svc-color: var(--mr-violet); --svc-soft: rgba(168, 85, 247, .12); }
+.mr-home .service-card--agriculture { --svc-color: var(--mr-green);  --svc-soft: rgba(45, 212, 191, .12); }
+.mr-home .service-card--digital     { --svc-color: var(--mr-violet); --svc-soft: rgba(99, 102, 241, .12); }
 
 /* gradient top accent */
 .mr-home .service-card::before {
@@ -727,4 +743,102 @@
 .popup-form .btn-primary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+
+/* ---------------------------------------------------------------------
+   AI VISUAL LAYERS  (added in the enterprise redesign)
+   --------------------------------------------------------------------- */
+
+/* Node mesh — an inference-graph motif. Drawn as SVG so it scales cleanly
+   and costs nothing at runtime beyond two CSS animations. */
+.mr-home .hero-net {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: .55;
+  -webkit-mask-image: radial-gradient(70% 76% at 62% 44%, #000 12%, transparent 92%);
+          mask-image: radial-gradient(70% 76% at 62% 44%, #000 12%, transparent 92%);
+}
+.mr-home .hero-net-edges line {
+  stroke: rgba(103, 232, 249, .34);
+  stroke-width: .12;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 3 3;
+  animation: mr-net-flow 7s linear infinite;
+  animation-delay: var(--d, 0s);
+}
+.mr-home .hero-net-nodes circle {
+  fill: #a5f3fc;
+  opacity: .8;
+  animation: mr-net-pulse 4.5s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+/* a single slow light sweep — the only motion that crosses the whole hero */
+.mr-home .hero-scan {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(165, 243, 252, .07) 50%, transparent 62%);
+  background-size: 260% 100%;
+  animation: mr-scan 11s ease-in-out infinite;
+}
+
+@keyframes mr-net-flow  { to { stroke-dashoffset: -12; } }
+@keyframes mr-net-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes mr-scan      { 0% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
+
+/* ---- service cards: scroll reveal + pointer spotlight ---- */
+.mr-home .services[data-visible] .service-card,
+.mr-home .services:not([data-visible]) .service-card { will-change: transform, opacity; }
+
+.mr-home .service-card {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity .7s var(--mr-ease) calc(var(--i, 0) * 110ms),
+    transform .7s var(--mr-ease) calc(var(--i, 0) * 110ms),
+    box-shadow .35s var(--mr-ease),
+    border-color .35s var(--mr-ease);
+}
+.mr-home .services[data-visible] .service-card { opacity: 1; transform: none; }
+.mr-home .services[data-visible] .service-card:hover { transform: translateY(-8px); }
+
+/* the highlight follows the cursor; --mx/--my are written by the component */
+.mr-home .service-spot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .35s var(--mr-ease);
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--svc-color) 16%, transparent),
+    transparent 70%
+  );
+}
+.mr-home .service-card[data-hot] .service-spot { opacity: 1; }
+/* keep content above the spotlight */
+.mr-home .service-card > *:not(.service-spot) { position: relative; z-index: 1; }
+
+/* a hairline that lights up in the accent colour on hover */
+.mr-home .service-card {
+  border-color: rgba(0, 49, 60, .09);
+}
+.mr-home .service-card[data-hot] {
+  border-color: color-mix(in srgb, var(--svc-color) 42%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mr-home .hero-net-edges line,
+  .mr-home .hero-net-nodes circle,
+  .mr-home .hero-scan { animation: none !important; }
+  .mr-home .service-card { opacity: 1 !important; transform: none !important; }
 }

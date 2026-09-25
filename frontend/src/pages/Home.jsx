@@ -430,7 +430,7 @@
 
 
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./Home.css";
 import {
   FaShoppingCart,
@@ -480,6 +480,52 @@ const SERVICES = [
   },
 ];
 
+/* Animated node mesh behind the hero — an "AI compute graph" motif drawn as
+   plain SVG so it costs no library and stays crisp at any size. Purely
+   decorative: hidden from assistive tech. */
+const NET_NODES = [
+  [8, 22], [22, 10], [37, 26], [52, 12], [66, 30], [80, 16], [93, 34],
+  [14, 50], [30, 44], [46, 58], [61, 46], [76, 62], [90, 52],
+  [10, 78], [26, 70], [42, 86], [58, 74], [72, 90], [88, 80],
+];
+const NET_EDGES = [
+  [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6],
+  [0, 7], [2, 8], [8, 9], [4, 10], [10, 11], [6, 12],
+  [7, 8], [9, 10], [11, 12],
+  [7, 13], [8, 14], [9, 15], [10, 16], [11, 17], [12, 18],
+  [13, 14], [14, 15], [15, 16], [16, 17], [17, 18],
+];
+
+function HeroNetwork() {
+  return (
+    <svg
+      className="hero-net"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g className="hero-net-edges">
+        {NET_EDGES.map(([a, b], i) => (
+          <line
+            key={`e${i}`}
+            x1={NET_NODES[a][0]}
+            y1={NET_NODES[a][1]}
+            x2={NET_NODES[b][0]}
+            y2={NET_NODES[b][1]}
+            style={{ "--d": `${(i % 7) * 0.45}s` }}
+          />
+        ))}
+      </g>
+      <g className="hero-net-nodes">
+        {NET_NODES.map(([x, y], i) => (
+          <circle key={`n${i}`} cx={x} cy={y} r={i % 5 === 0 ? 0.75 : 0.45} style={{ "--d": `${(i % 6) * 0.5}s` }} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 const SERV_APP_LINK = "https://play.google.com/store/apps/details?id=com.serv.serv_app";
 
 export default function Home() {
@@ -498,6 +544,48 @@ export default function Home() {
     email: "",
     mobile: "",
   });
+
+  const servicesRef = useRef(null);
+
+  // Reveal the service cards as they scroll in. Uses a data attribute rather
+  // than a class so a React re-render can't wipe it.
+  useEffect(() => {
+    const el = servicesRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !("IntersectionObserver" in window)) {
+      el.dataset.visible = "1";
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.dataset.visible = "1";
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    const fallback = setTimeout(() => (el.dataset.visible = "1"), 2200);
+    return () => {
+      io.disconnect();
+      clearTimeout(fallback);
+    };
+  }, []);
+
+  // Pointer-tracked highlight on the service cards. Writes CSS custom
+  // properties so all the actual rendering stays in the stylesheet.
+  const handleCardMove = (e) => {
+    const card = e.currentTarget;
+    const r = card.getBoundingClientRect();
+    card.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    card.style.setProperty("--my", `${e.clientY - r.top}px`);
+    card.dataset.hot = "1";
+  };
+  const handleCardLeave = (e) => {
+    delete e.currentTarget.dataset.hot;
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -580,17 +668,15 @@ export default function Home() {
   return (
     <div className="mr-home">
       {/* HERO SECTION */}
-      <section
-        className="hero"
-        style={{
-          backgroundImage: "url('/digital-art-ai-technology-background.jpg')",
-        }}
-      >
-        {/* decorative layers */}
+      <section className="hero">
+        {/* decorative layers — a built AI visual rather than a stock photo */}
+        <div className="hero-mesh" aria-hidden="true" />
         <div className="hero-grid" aria-hidden="true" />
+        <HeroNetwork />
         <div className="hero-orb hero-orb--orange" aria-hidden="true" />
         <div className="hero-orb hero-orb--emerald" aria-hidden="true" />
         <div className="hero-orb hero-orb--violet" aria-hidden="true" />
+        <div className="hero-scan" aria-hidden="true" />
 
         <div className="hero-inner">
           <div className="hero-left">
@@ -713,7 +799,7 @@ export default function Home() {
       </section>
 
       {/* SERVICES SECTION */}
-      <section className="services" aria-labelledby="services-title">
+      <section className="services" aria-labelledby="services-title" ref={servicesRef}>
         <div className="services-inner">
           <header className="services-head">
             <span className="services-eyebrow">What we build</span>
@@ -733,7 +819,11 @@ export default function Home() {
               <article
                 className={`service-card service-card--${svc.id}`}
                 key={svc.id}
+                style={{ "--i": i }}
+                onMouseMove={handleCardMove}
+                onMouseLeave={handleCardLeave}
               >
+                <span className="service-spot" aria-hidden="true" />
                 <span className="service-index">0{i + 1}</span>
                 <div className="service-icon">{svc.icon}</div>
                 <h3 className="service-title">{svc.title}</h3>
