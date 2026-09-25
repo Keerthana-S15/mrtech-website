@@ -395,7 +395,7 @@ const Navbar = () => {
             <ul className="dropdown-menu show">
               <li>
                 <Link to="/team/ai-scientists" onClick={() => { closeDropdown(); closeMobileMenu(); }}>
-                  AI Scientists 
+                  AI Engineers 
                 </Link>
               </li>
               <li>

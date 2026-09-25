@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/static/css/main.fb1155a4.css",
-    "main.js": "/static/js/main.c6c29d14.js",
+    "main.css": "/static/css/main.e53fc520.css",
+    "main.js": "/static/js/main.b342232a.js",
     "static/media/ai-neural.jpg": "/static/media/ai-neural.868ae17e6edd124b3d9d.jpg",
     "index.html": "/index.html",
-    "main.fb1155a4.css.map": "/static/css/main.fb1155a4.css.map",
-    "main.c6c29d14.js.map": "/static/js/main.c6c29d14.js.map"
+    "main.e53fc520.css.map": "/static/css/main.e53fc520.css.map",
+    "main.b342232a.js.map": "/static/js/main.b342232a.js.map"
   },
   "entrypoints": [
-    "static/css/main.fb1155a4.css",
-    "static/js/main.c6c29d14.js"
+    "static/css/main.e53fc520.css",
+    "static/js/main.b342232a.js"
   ]
 }

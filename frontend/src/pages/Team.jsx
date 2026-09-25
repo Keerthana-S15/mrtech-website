@@ -703,7 +703,9 @@ const teamData = {
 };
 
 const categoryTitles = {
-  "ai-scientists": "AI Scientists",
+  // Display label only. The route slug and the image folder stay
+  // "ai-scientists", so existing links and photo paths keep working.
+  "ai-scientists": "AI Engineers",
   healthcare: "Healthcare Technologists",
   "data-engineers": "Data Engineers",
   "social-entrepreneurs": "Social Entrepreneurs",
@@ -740,9 +742,20 @@ const Team = () => {
     );
     cards.forEach((c) => io.observe(c));
     const fallback = setTimeout(() => cards.forEach((c) => (c.dataset.visible = "1")), 1500);
+
+    // Highlight that follows the pointer across a card front.
+    const onMove = (e) => {
+      const card = e.currentTarget;
+      const r = card.getBoundingClientRect();
+      card.style.setProperty("--mx", `${((e.clientX - r.left) / r.width) * 100}%`);
+      card.style.setProperty("--my", `${((e.clientY - r.top) / r.height) * 100}%`);
+    };
+    cards.forEach((c) => c.addEventListener("pointermove", onMove));
+
     return () => {
       io.disconnect();
       clearTimeout(fallback);
+      cards.forEach((c) => c.removeEventListener("pointermove", onMove));
     };
   }, [category]);
 
