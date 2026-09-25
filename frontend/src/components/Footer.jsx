@@ -57,9 +57,25 @@ export default function Footer() {
     );
     io.observe(el);
     const fallback = setTimeout(() => (el.dataset.visible = "1"), 2000);
+
+    // Ambient glow that follows the pointer across the footer.
+    const onMove = (e) => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty("--ax", `${((e.clientX - r.left) / r.width) * 100}%`);
+      el.style.setProperty("--ay", `${((e.clientY - r.top) / r.height) * 100}%`);
+      el.dataset.pointer = "1";
+    };
+    const onLeave = () => {
+      delete el.dataset.pointer;
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+
     return () => {
       io.disconnect();
       clearTimeout(fallback);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
     };
   }, []);
 
@@ -71,6 +87,7 @@ export default function Footer() {
       <div className="ft-orb ft-orb--a" aria-hidden="true" />
       <div className="ft-orb ft-orb--b" aria-hidden="true" />
       <div className="ft-grid-lines" aria-hidden="true" />
+      <div className="ft-aura" aria-hidden="true" />
 
       <div className="ft-inner">
         {/* ---- brand ---- */}
