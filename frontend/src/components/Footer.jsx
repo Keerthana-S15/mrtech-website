@@ -117,7 +117,7 @@ export default function Footer() {
         </div>
 
         {/* ---- link columns ---- */}
-        <FooterColumn title="Solutions" links={SOLUTIONS} index={1} />
+        <FooterColumn title="Solutions" links={SOLUTIONS} index={1} lead />
         <FooterColumn title="Company" links={COMPANY} index={2} />
         <FooterColumn title="Legal" links={LEGAL} index={3} />
       </div>
@@ -138,9 +138,9 @@ export default function Footer() {
   );
 }
 
-function FooterColumn({ title, links, index }) {
+function FooterColumn({ title, links, index, lead = false }) {
   return (
-    <div className="ft-col" style={{ "--i": index }}>
+    <div className={`ft-col${lead ? " ft-col--lead" : ""}`} style={{ "--i": index }}>
       <h4 className="ft-heading">
         {title}
         <span className="ft-heading-bar" aria-hidden="true" />
