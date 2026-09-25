@@ -2335,6 +2335,28 @@ const stockInfo = (stock) => {
   return { key: "in", label: "In stock" };
 };
 
+// Product photos served from the repo instead of the server's /uploads folder.
+// Render's disk is ephemeral, so anything uploaded through the admin panel is
+// wiped on the next deploy; these two products lost their files that way.
+// Keyed by the product name, trimmed and lowercased.
+const LOCAL_PRODUCT_IMAGES = {
+  "urine container": "/images/products/urine-container.jpg",
+  // exact match only, so "Syringe Destroyer" keeps its own image
+  syringe: "/images/products/syringe.jpg",
+};
+
+const resolveProductImage = (product) => {
+  const name = product?.name?.trim().toLowerCase();
+  if (!name) return product?.image;
+  // Cart items carry their options in the name, e.g. "syringe - 3ml / green",
+  // so fall back to the part before the options when the full name misses.
+  return (
+    LOCAL_PRODUCT_IMAGES[name] ||
+    LOCAL_PRODUCT_IMAGES[name.split(" - ")[0].trim()] ||
+    product?.image
+  );
+};
+
 // Product image that falls back to the placeholder if the file is missing
 const ProductImage = ({ src, alt, fallbackClass = "shop-card-emoji" }) => {
   const [failed, setFailed] = useState(false);
@@ -2830,7 +2852,7 @@ const Purchase = () => {
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedProduct(product)}
                     aria-label={`View ${product.name}`}
                   >
-                    <ProductImage src={product.image} alt={product.name} />
+                    <ProductImage src={resolveProductImage(product)} alt={product.name} />
                     <span className="shop-badge shop-badge--cat">{product.category}</span>
                     <span className={`shop-badge shop-badge--stock shop-badge--${stock.key}`}>{stock.label}</span>
                     {qtyInCart > 0 && (
@@ -2912,7 +2934,7 @@ const Purchase = () => {
                   cartItems.map((item) => (
                     <div key={item.id} className="shop-drawer-item">
                       <div className="shop-drawer-thumb">
-                        <ProductImage src={item.image} alt={item.name} fallbackClass="" />
+                        <ProductImage src={resolveProductImage(item)} alt={item.name} fallbackClass="" />
                       </div>
                       <div className="shop-drawer-info">
                         <h4>{item.name}</h4>
@@ -2972,7 +2994,7 @@ const Purchase = () => {
               </button>
 
               <div className="shop-modal-media">
-                <ProductImage src={selectedProduct.image} alt={selectedProduct.name} fallbackClass="shop-modal-emoji" />
+                <ProductImage src={resolveProductImage(selectedProduct)} alt={selectedProduct.name} fallbackClass="shop-modal-emoji" />
                 <span className={`shop-badge shop-badge--stock shop-badge--${stockInfo(selectedProduct.stock).key}`}>
                   {stockInfo(selectedProduct.stock).label}
                 </span>
