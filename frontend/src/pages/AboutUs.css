@@ -12,7 +12,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding: clamp(64px, 8vw, 104px) 20px;
+  padding: clamp(76px, 9vw, 128px) 20px clamp(72px, 8vw, 112px);
   font-family: var(--ab-font);
   color: #fff;
   /* Deep navy easing into brand teal, lit by cool glows. The previous
@@ -79,49 +79,94 @@
 .about-inner { max-width: 1180px; margin: 0 auto; position: relative; }
 
 /* ---- heading ---- */
-.about-head { text-align: center; max-width: 680px; margin: 0 auto 48px; }
+.about-head { text-align: center; max-width: 720px; margin: 0 auto clamp(48px, 5vw, 72px); }
+
+/* eyebrow as a status pill — reads as product UI rather than a caption */
 .about-eyebrow {
-  display: inline-block;
-  font-size: .76rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 15px 7px 12px;
+  border-radius: 999px;
+  font-size: .72rem;
   font-weight: 700;
-  letter-spacing: .16em;
+  letter-spacing: .15em;
   text-transform: uppercase;
-  color: #6ee7b7;
-  margin-bottom: 12px;
+  color: rgba(255, 255, 255, .88);
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .13);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  margin-bottom: 20px;
 }
+.about-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22D3EE;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, .18);
+  animation: ab-pulse 2.6s ease-in-out infinite;
+}
+
 .about h2 {
-  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
+  font-size: clamp(2.1rem, 4.4vw, 3.2rem);
   font-weight: 800;
-  letter-spacing: -.02em;
-  line-height: 1.1;
-  margin: 0 0 12px;
+  letter-spacing: -.03em;
+  line-height: 1.06;
+  margin: 0 0 16px;
   color: #fff;
 }
+.about-title-accent {
+  background: linear-gradient(94deg, #a5f3fc, #22D3EE 45%, #6366F1);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
 .about-lead {
-  margin: 0;
-  color: rgba(255, 255, 255, .72);
-  font-size: 1.02rem;
-  line-height: 1.6;
+  margin: 0 auto;
+  max-width: 56ch;
+  color: rgba(255, 255, 255, .66);
+  font-size: clamp(1rem, 1.5vw, 1.09rem);
+  line-height: 1.7;
 }
 
 /* ---- grid ---- */
 .about-cards {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: clamp(24px, 2.4vw, 34px);
+}
+
+/* A rail threading the three cards, so 01 -> 02 -> 03 reads as one pipeline
+   rather than three unrelated panels. Drawn behind them, desktop only. */
+.about-cards::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 12%;
+  right: 12%;
+  top: 58px;
+  height: 1px;
+  background:
+    linear-gradient(90deg, transparent, rgba(34, 211, 238, .5) 12%, rgba(45, 212, 191, .5) 50%, rgba(99, 102, 241, .5) 88%, transparent),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .18) 0 2px, transparent 2px 10px);
+  background-size: 200% 100%, auto;
+  animation: ab-rail 9s linear infinite;
 }
 
 /* ---- glass card ---- */
 .about-glass {
-  --accent: var(--color-accent1);
-  --accent-soft: rgba(16, 185, 129, .22);
+  --accent: #22D3EE;
+  --accent-soft: rgba(34, 211, 238, .22);
   --mx: 50%;
   --my: 0%;
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 28px 26px 30px;
-  border-radius: 22px;
+  padding: clamp(28px, 2.4vw, 34px) clamp(26px, 2.2vw, 32px) clamp(30px, 2.6vw, 36px);
+  border-radius: 24px;
   background: var(--ab-glass);
   border: 1px solid var(--ab-glass-border);
   box-shadow:
@@ -141,9 +186,11 @@
 }
 .about-glass.is-visible { opacity: 1; transform: none; }
 
-.about-glass--who     { --accent: var(--color-accent1);  --accent-soft: rgba(16, 185, 129, .22); }
-.about-glass--mission { --accent: var(--color-secondary); --accent-soft: rgba(249, 115, 22, .22); }
-.about-glass--vision  { --accent: var(--color-accent2);  --accent-soft: rgba(168, 85, 247, .22); }
+/* Cool accent ramp, the same cyan -> teal -> indigo used on the homepage.
+   Orange is reserved for the CTA. */
+.about-glass--who     { --accent: #22D3EE; --accent-soft: rgba(34, 211, 238, .22); }
+.about-glass--mission { --accent: #2DD4BF; --accent-soft: rgba(45, 212, 191, .22); }
+.about-glass--vision  { --accent: #6366F1; --accent-soft: rgba(99, 102, 241, .22); }
 
 /* pointer-following light */
 .about-glass::before {
@@ -157,15 +204,18 @@
 }
 .about-glass:hover::before { opacity: 1; }
 
-/* accent rule across the top */
+/* accent rule across the top — grows to the full width on hover */
 .about-glass::after {
   content: "";
   position: absolute;
-  left: 26px; right: 26px; top: 0;
+  left: 0; top: 0;
+  width: 46%;
   height: 2px;
   background: linear-gradient(90deg, var(--accent), transparent);
-  opacity: .9;
+  opacity: .85;
+  transition: width .5s var(--ab-ease), opacity .4s var(--ab-ease);
 }
+.about-glass:hover::after { width: 100%; opacity: 1; }
 
 /* diagonal shine sweep on hover */
 .about-glass-shine {
@@ -197,9 +247,9 @@
   margin-bottom: 18px;
 }
 .about-icon {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
   display: grid;
   place-items: center;
   font-size: 1.45rem;
@@ -209,16 +259,24 @@
   transition: transform .35s var(--ab-ease);
 }
 .about-glass:hover .about-icon { transform: rotate(-6deg) scale(1.06); }
+/* the step number, treated as a large quiet numeral */
 .about-label {
-  font-size: .8rem;
+  font-size: 2.1rem;
   font-weight: 800;
-  letter-spacing: .12em;
-  color: rgba(255, 255, 255, .45);
+  letter-spacing: -.03em;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, .28);
+  transition: color .4s var(--ab-ease), -webkit-text-stroke-color .4s var(--ab-ease);
+}
+.about-glass:hover .about-label {
+  color: color-mix(in srgb, var(--accent) 22%, transparent);
+  -webkit-text-stroke-color: color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .about-glass h3 {
-  margin: 0 0 10px;
-  font-size: 1.3rem;
+  margin: 0 0 12px;
+  font-size: clamp(1.3rem, 1.7vw, 1.45rem);
   font-weight: 800;
   letter-spacing: -.01em;
   color: #fff;
@@ -226,9 +284,9 @@
 .about-body p,
 .about-body ul {
   margin: 0;
-  color: rgba(255, 255, 255, .8);
+  color: rgba(255, 255, 255, .74);
   font-size: .96rem;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 .about-body ul { list-style: none; padding: 0; display: grid; gap: 10px; }
 .about-body li {
@@ -240,22 +298,22 @@
   position: absolute;
   left: 0;
   top: .62em;
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
-  transition: transform .3s var(--ab-ease);
+  transition: transform .3s var(--ab-ease), box-shadow .3s var(--ab-ease);
 }
 .about-glass:hover .about-body li::before { transform: scale(1.25); }
 
 /* ---- CTA ---- */
-.about-cta { display: flex; justify-content: center; margin-top: 44px; }
+.about-cta { display: flex; justify-content: center; margin-top: clamp(48px, 5vw, 68px); }
 .about-btn {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 30px;
+  padding: 15px 34px;
   border-radius: 999px;
   font-weight: 700;
   font-size: .95rem;
@@ -292,4 +350,30 @@
   .about-glass--vision { max-width: none; }
   .about-glass { padding: 24px 20px 26px; }
   .about-head { margin-bottom: 36px; }
+}
+
+/* ---- added in the redesign ---- */
+@keyframes ab-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.82); } }
+@keyframes ab-rail  { to { background-position: -200% 0, 0 0; } }
+
+/* header reveal, in step with the cards */
+.about-head > * {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: ab-head-in .8s var(--ab-ease) both;
+}
+.about-head > *:nth-child(1) { animation-delay: .05s; }
+.about-head > *:nth-child(2) { animation-delay: .15s; }
+.about-head > *:nth-child(3) { animation-delay: .25s; }
+@keyframes ab-head-in { to { opacity: 1; transform: none; } }
+
+@media (max-width: 900px) {
+  /* the rail only makes sense while the cards sit in a row */
+  .about-cards::before { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-eyebrow-dot,
+  .about-cards::before { animation: none !important; }
+  .about-head > * { opacity: 1; transform: none; animation: none !important; }
 }

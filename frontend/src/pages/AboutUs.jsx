@@ -451,8 +451,13 @@ export default function AboutUs() {
 
       <div className="about-inner">
         <header className="about-head">
-          <span className="about-eyebrow">Myth Reality Technologies</span>
-          <h2 id="about-title">About Us</h2>
+          <span className="about-eyebrow">
+            <i className="about-eyebrow-dot" aria-hidden="true" />
+            Myth Reality Technologies
+          </span>
+          <h2 id="about-title">
+            About <span className="about-title-accent">Us</span>
+          </h2>
           <p className="about-lead">
             Technology with a human purpose — from hospital diagnostics to the farmer’s field.
           </p>
