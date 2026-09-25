@@ -752,7 +752,10 @@ const Team = () => {
         <div className="team-bg team-bg--a" aria-hidden="true" />
         <div className="team-bg team-bg--b" aria-hidden="true" />
         <header className="team-head">
-          <span className="team-eyebrow">People behind MRT</span>
+          <span className="team-eyebrow">
+            <i className="team-eyebrow-dot" aria-hidden="true" />
+            People behind MRT
+          </span>
           <h1 className="team-title">Our Team</h1>
           <p className="team-subtitle">
             Choose a team category from the navigation menu to view our talented professionals.
@@ -785,7 +788,10 @@ const Team = () => {
       <div className="team-bg team-bg--b" aria-hidden="true" />
 
       <header className="team-head">
-        <span className="team-eyebrow">People behind MRT</span>
+        <span className="team-eyebrow">
+            <i className="team-eyebrow-dot" aria-hidden="true" />
+            People behind MRT
+          </span>
         <h1 className="team-title">{title}</h1>
         <p className="team-subtitle">
           Meet our {members.length} talented {categoryTitles[category]?.toLowerCase()}

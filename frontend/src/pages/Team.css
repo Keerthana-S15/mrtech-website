@@ -9,16 +9,22 @@
   --tm-font: "Inter", "Segoe UI", Arial, sans-serif;
   --tm-ease: cubic-bezier(.22, 1, .36, 1);
   --tm-teal: var(--color-primary);
+  --tm-cyan: #22D3EE;
+  --tm-indigo: #6366F1;
   --tm-muted: #4b5563;
+  --tm-muted-2: #64748b;
   position: relative;
   isolation: isolate;
   overflow: hidden;
   min-height: 100vh;
-  padding: clamp(48px, 6vw, 80px) 20px clamp(64px, 8vw, 96px);
+  padding: clamp(40px, 5vw, 64px) 20px clamp(64px, 8vw, 104px);
   text-align: center;
   font-family: var(--tm-font);
   color: var(--color-text);
-  background: var(--color-bg);
+  background:
+    radial-gradient(50% 32% at 88% 4%, rgba(34, 211, 238, .07), transparent 62%),
+    radial-gradient(44% 28% at 4% 52%, rgba(99, 102, 241, .06), transparent 62%),
+    var(--color-bg);
 }
 
 /* soft brand tints */
@@ -26,59 +32,136 @@
   position: absolute;
   z-index: -1;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: .26;
+  filter: blur(96px);
+  opacity: .20;
   pointer-events: none;
   animation: tm-drift 18s ease-in-out infinite alternate;
 }
-.team-bg--a { width: 520px; height: 520px; left: -200px; top: -160px;  background: var(--color-accent1); }
-.team-bg--b { width: 460px; height: 460px; right: -180px; bottom: 5%;   background: var(--color-accent2); animation-delay: -8s; }
+.team-bg--a { width: 560px; height: 560px; left: -220px; top: -180px;  background: var(--tm-cyan); }
+.team-bg--b { width: 480px; height: 480px; right: -190px; bottom: 5%;   background: var(--tm-indigo); animation-delay: -8s; }
 
-/* ---- header ---- */
-.team-head { max-width: 720px; margin: 0 auto 40px; }
-.team-eyebrow {
-  display: inline-block;
-  font-size: .78rem;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--color-secondary);
-  margin-bottom: 12px;
+/* ---- header ----
+   A contained hero panel on the same navy-to-teal surface as the Solutions
+   pages, so the team pages sit inside the same system. Contained rather than
+   full-bleed, which keeps it responsive with no 100vw scrollbar tricks. */
+.team-head {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  max-width: 1180px;
+  margin: 0 auto clamp(32px, 4vw, 48px);
+  padding: clamp(44px, 5.5vw, 72px) clamp(20px, 4vw, 48px) clamp(36px, 4.5vw, 52px);
+  border-radius: clamp(20px, 2.4vw, 30px);
+  color: #fff;
+  background:
+    radial-gradient(58% 64% at 84% 2%, rgba(34, 211, 238, .18), transparent 62%),
+    radial-gradient(52% 58% at 8% 100%, rgba(99, 102, 241, .20), transparent 64%),
+    linear-gradient(166deg, #081a2c 0%, #062733 42%, #04303c 72%, #02181f 100%);
+  box-shadow: 0 26px 60px rgba(0, 24, 32, .22);
 }
+.team-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(rgba(125, 211, 252, .022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .022) 1px, transparent 1px);
+  background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
+  -webkit-mask-image: radial-gradient(70% 80% at 50% 40%, #000 8%, transparent 100%);
+          mask-image: radial-gradient(70% 80% at 50% 40%, #000 8%, transparent 100%);
+  pointer-events: none;
+}
+.team-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 38%, rgba(165, 243, 252, .06) 50%, transparent 62%);
+  background-size: 260% 100%;
+  animation: tm-scan 13s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tm-scan { 0% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
+
+.team-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 15px 7px 12px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .88);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .14);
+  margin-bottom: 20px;
+}
+.team-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tm-cyan);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, .18);
+  animation: tm-pulse 2.6s ease-in-out infinite;
+}
+
 .team-title {
-  font-size: clamp(1.9rem, 3.8vw, 2.7rem);
-  font-weight: 800;
-  letter-spacing: -.02em;
+  font-size: clamp(1.95rem, 4vw, 2.9rem);
+  font-weight: 700;
+  letter-spacing: -.028em;
   line-height: 1.1;
-  margin: 0 0 12px;
-  color: var(--tm-teal);
+  margin: 0 0 14px;
+  color: #fff;
+  text-wrap: balance;
+  background: linear-gradient(94deg, #fff 32%, #a5f3fc);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .team-subtitle {
-  font-size: 1.04rem;
-  line-height: 1.6;
-  color: var(--tm-muted);
-  margin: 0 0 18px;
+  max-width: 56ch;
+  margin: 0 auto 20px;
+  font-size: clamp(1rem, 1.3vw, 1.08rem);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, .70);
 }
 .team-count-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
-  font-size: .82rem;
+  font-size: .8rem;
   font-weight: 700;
-  color: var(--tm-teal);
-  background: #fff;
-  border: 1px solid rgba(0, 49, 60, .12);
-  box-shadow: 0 6px 16px rgba(0, 49, 60, .08);
+  letter-spacing: .02em;
+  color: #a5f3fc;
+  background: rgba(34, 211, 238, .12);
+  border: 1px solid rgba(34, 211, 238, .3);
 }
 .team-count-dot {
-  width: 8px; height: 8px;
+  width: 7px; height: 7px;
   border-radius: 50%;
-  background: var(--color-accent1);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, .25);
-  animation: tm-pulse 2s ease-in-out infinite;
+  background: var(--tm-cyan);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, .2);
+  animation: tm-pulse 2.6s ease-in-out infinite;
 }
+
+/* header items reveal in sequence */
+.team-head > * {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: tm-head-in .75s var(--tm-ease) both;
+}
+.team-head > *:nth-child(1) { animation-delay: .06s; }
+.team-head > *:nth-child(2) { animation-delay: .15s; }
+.team-head > *:nth-child(3) { animation-delay: .24s; }
+.team-head > *:nth-child(4) { animation-delay: .33s; }
+@keyframes tm-head-in { to { opacity: 1; transform: none; } }
 
 /* ---- category overview (no category selected) ---- */
 .team-stats {
@@ -90,7 +173,7 @@
 }
 .team-stat-card {
   --accent: var(--color-secondary);
-  --accent-soft: rgba(249, 115, 22, .14);
+  --accent-soft: rgba(34, 211, 238, .15);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -107,10 +190,10 @@
   animation: tm-rise .6s calc(var(--i, 0) * 90ms) var(--tm-ease) both;
   transition: transform .35s var(--tm-ease), box-shadow .35s var(--tm-ease), border-color .35s var(--tm-ease);
 }
-.team-stat-card--0 { --accent: var(--color-secondary); --accent-soft: rgba(249, 115, 22, .14); }
-.team-stat-card--1 { --accent: var(--color-accent1);  --accent-soft: rgba(16, 185, 129, .14); }
-.team-stat-card--2 { --accent: var(--color-accent2);  --accent-soft: rgba(168, 85, 247, .14); }
-.team-stat-card--3 { --accent: #0e7490;               --accent-soft: rgba(14, 116, 144, .14); }
+.team-stat-card--0 { --accent: #0891b2; --accent-soft: rgba(34, 211, 238, .15); }
+.team-stat-card--1 { --accent: #0d9488; --accent-soft: rgba(45, 212, 191, .15); }
+.team-stat-card--2 { --accent: #4f46e5; --accent-soft: rgba(99, 102, 241, .15); }
+.team-stat-card--3 { --accent: #0284c7; --accent-soft: rgba(56, 189, 248, .15); }
 .team-stat-card::before {
   content: "";
   position: absolute;
@@ -156,9 +239,9 @@
 
 /* ---- flip card ---- */
 .team-card {
-  --accent: var(--color-secondary);
-  --accent-2: #fb923c;
-  --accent-soft: rgba(249, 115, 22, .16);
+  --accent: #0891b2;
+  --accent-2: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, .16);
   position: relative;
   width: 100%;
   height: 300px;
@@ -171,10 +254,11 @@
   transition: opacity .6s var(--tm-ease) calc(var(--i, 0) * 60ms), transform .6s var(--tm-ease) calc(var(--i, 0) * 60ms);
 }
 .team-card[data-visible] { opacity: 1; transform: none; }
-.team-card--0 { --accent: var(--color-secondary); --accent-2: #fb923c; --accent-soft: rgba(249, 115, 22, .16); }
-.team-card--1 { --accent: var(--color-accent1);  --accent-2: #34d399; --accent-soft: rgba(16, 185, 129, .16); }
-.team-card--2 { --accent: var(--color-accent2);  --accent-2: #c084fc; --accent-soft: rgba(168, 85, 247, .16); }
-.team-card--3 { --accent: #0e7490;               --accent-2: #22d3ee; --accent-soft: rgba(14, 116, 144, .16); }
+/* cool spectrum, four separable hues */
+.team-card--0 { --accent: #0891b2; --accent-2: #22d3ee; --accent-soft: rgba(34, 211, 238, .16); }
+.team-card--1 { --accent: #0d9488; --accent-2: #2dd4bf; --accent-soft: rgba(45, 212, 191, .16); }
+.team-card--2 { --accent: #4f46e5; --accent-2: #818cf8; --accent-soft: rgba(99, 102, 241, .16); }
+.team-card--3 { --accent: #0284c7; --accent-2: #38bdf8; --accent-soft: rgba(56, 189, 248, .16); }
 
 .team-card-inner {
   position: relative;
@@ -231,9 +315,13 @@
   position: absolute;
   inset: -5px;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, var(--accent), var(--accent-2), #fff 60%, var(--accent));
-  opacity: .9;
-  transition: transform .5s var(--tm-ease);
+  background: conic-gradient(from 0deg, var(--accent), var(--accent-2), #e8fdff 62%, var(--accent));
+  opacity: .92;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 34%, transparent));
+  transition: transform .5s var(--tm-ease), filter .5s var(--tm-ease);
+}
+.team-card:hover .team-avatar-ring {
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--accent) 55%, transparent));
 }
 .team-card:hover .team-avatar-ring { animation: tm-spin 4s linear infinite; }
 .team-card-front img,
@@ -245,7 +333,9 @@
   object-fit: cover;
   object-position: top;
   border: 5px solid #fff;
-  box-shadow: 0 10px 22px rgba(0, 49, 60, .18);
+  box-shadow:
+    0 10px 24px rgba(0, 49, 60, .2),
+    0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
   background: #f0f0f0;
   transition: transform .45s var(--tm-ease);
 }
@@ -392,4 +482,14 @@
   .team-card-front img, .team-img { width: 85px; height: 85px; border-width: 4px; }
   .team-card-front h3 { font-size: .95rem; }
   .team-role, .team-card-back .bio { font-size: .78rem; }
+}
+
+/* ---- added in the redesign ---- */
+@media (prefers-reduced-motion: reduce) {
+  /* the header items start at opacity 0, so cancelling the animation without
+     restoring the end state would blank the panel */
+  .team-head > * { opacity: 1; transform: none; animation: none !important; }
+  .team-eyebrow-dot,
+  .team-count-dot,
+  .team-head::after { animation: none !important; }
 }
