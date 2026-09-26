@@ -46,6 +46,18 @@ if (!API_KEY) {
       : "⚠️  Fast2SMS: API key set but neither DLT (SENDER_ID + TEMPLATE_ID) nor Smart OTP (OTP_ID) is configured"
   );
 
+  // OTPs now go out on DLT only, so a missing DLT config means no SMS at all
+  // rather than a quiet downgrade. Say so loudly.
+  if (!fast2smsConfig.dltReady) {
+    console.warn(
+      [
+        "⚠️  DLT is not configured, and OTPs are sent on the DLT route only.",
+        "   Needs FAST2SMS_SENDER_ID and FAST2SMS_TEMPLATE_ID (the Fast2SMS Message ID).",
+        "   Until then every OTP send will fail — there is no Smart OTP fallback.",
+      ].join("\n")
+    );
+  }
+
   // Fast2SMS wants the short Message ID from its own DLT Manager here, not the
   // 19-digit template ID issued by the operator's DLT portal. Passing the
   // latter makes every DLT send fail with 424 "Invalid Message ID", which
@@ -182,51 +194,31 @@ export async function sendSmartOtp(mobile, otp, { expiryMinutes = 5 } = {}) {
 }
 
 /**
- * Deliver `otp` to `mobile`, preferring the DLT route.
+ * Deliver `otp` to `mobile` over the registered DLT route.
  *
- * Why the order matters for delivery, not just for style:
+ * DLT (`/bulkV2`, route=dlt) is transactional traffic sent under our own
+ * header (MYTRTC) and approved template, so it is delivered to numbers on the
+ * DND/DNC registry. That is the route OTPs are meant to take.
  *
- *  • DLT (`/bulkV2`, route=dlt) is registered transactional traffic sent under
- *    our own header and template. TRAI-registered transactional SMS is
- *    delivered to numbers on the DND / DNC registry.
+ * There is deliberately no Smart OTP fallback any more. It existed only
+ * because FAST2SMS_TEMPLATE_ID held the 19-digit operator template ID, which
+ * made every DLT send fail with 424 and silently pushed traffic onto the
+ * shared Smart OTP sender — a route operators do not deliver to DND handsets.
+ * With the correct Fast2SMS Message ID configured, DLT carries every message
+ * and falling back would only ever downgrade delivery.
  *
- *  • Smart OTP (`/otp/send`) goes out on Fast2SMS's shared OTP sender. The API
- *    answers `return: true` as soon as it accepts the request, but operators
- *    drop that traffic for DND-registered handsets. Nothing in the response
- *    says so, which is exactly why some numbers "never receive the OTP" while
- *    others work every time.
- *
- * So: try DLT, fall back to Smart OTP. A number that DLT reaches is never sent
- * a second message, so this costs no extra credits.
- *
- * Returns { route, requestId, attempts } so callers can log which path carried
- * the message and, critically, the Fast2SMS request_id. There is no delivery
- * status API — reports live only in the Fast2SMS dashboard — so the request_id
- * is the only handle the team has for looking up what happened to one specific
- * message when a user says they never received it.
+ * Returns { route, requestId } so callers can log the Fast2SMS request_id,
+ * which is the only handle into the dashboard delivery report.
  */
-export async function sendOtpSms(mobile, otp, { expiryMinutes = 5 } = {}) {
-  const attempts = [];
-
-  if (fast2smsConfig.dltReady) {
-    try {
-      const data = await sendDltOtp(mobile, otp);
-      return { route: "dlt", requestId: data?.request_id ?? null, attempts };
-    } catch (err) {
-      attempts.push({ route: "dlt", code: err.code ?? "?", message: err.message });
-      // A timeout may mean the message did go out; sending again on another
-      // route risks a duplicate, so stop here rather than double-send.
-      const timedOut = err instanceof Fast2SmsError && err.code === "TIMEOUT";
-      if (timedOut || !fast2smsConfig.smartOtpReady) throw err;
-    }
+export async function sendOtpSms(mobile, otp) {
+  if (!fast2smsConfig.dltReady) {
+    throw new Fast2SmsError(
+      "DLT route is not configured (needs FAST2SMS_API_KEY, FAST2SMS_SENDER_ID and FAST2SMS_TEMPLATE_ID)",
+      { code: "DLT_NOT_CONFIGURED" }
+    );
   }
-
-  if (fast2smsConfig.smartOtpReady) {
-    const data = await sendSmartOtp(mobile, otp, { expiryMinutes });
-    return { route: "smart", requestId: data?.request_id ?? null, attempts };
-  }
-
-  throw new Fast2SmsError("SMS service is not configured", { code: "NOT_CONFIGURED" });
+  const data = await sendDltOtp(mobile, otp);
+  return { route: "dlt", requestId: data?.request_id ?? null, attempts: [] };
 }
 
 /**

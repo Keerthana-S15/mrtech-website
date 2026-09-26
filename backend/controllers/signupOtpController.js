@@ -58,6 +58,7 @@ function describeSmsFailure(error) {
   }
   switch (error.code) {
     case "NOT_CONFIGURED":
+    case "DLT_NOT_CONFIGURED":
     case "SMART_NOT_CONFIGURED":
       return {
         status: 503,
@@ -152,7 +153,7 @@ export const sendPhoneOtp = async (req, res) => {
     });
   }
 
-  if (!fast2smsConfig.configured) {
+  if (!fast2smsConfig.dltReady) {
     return res.status(503).json({
       error: "SMS service is not configured. Please use email verification or contact support.",
     });
@@ -182,15 +183,7 @@ export const sendPhoneOtp = async (req, res) => {
     // We pass our own code so it can be verified locally. sendOtpSms tries the
     // DLT route first, which is what reaches DND-registered numbers; Smart OTP
     // is the fallback and is what this flow used to use exclusively.
-    const { route, requestId, attempts } = await sendOtpSms(phone, otp, {
-      expiryMinutes: PHONE_OTP_TTL_MS / 60000,
-    });
-    if (attempts.length) {
-      console.warn(
-        `⚠️  Signup OTP for ${maskMobile(phone)} fell back to ${route}: ` +
-          attempts.map((a) => `${a.route} [${a.code}] ${a.message}`).join("; ")
-      );
-    }
+    const { route, requestId } = await sendOtpSms(phone, otp);
 
     const windowOpen = existing && now - existing.windowStart <= PHONE_SEND_WINDOW_MS;
     phoneOtpStore.set(phone, {
