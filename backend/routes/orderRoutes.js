@@ -66,6 +66,7 @@ import {
   getCustomerStats,
   getRecentOrders,
   updateOrderStatus,
+  deleteOrder,
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -81,5 +82,6 @@ router.get("/orders/customer/:email/recent", getRecentOrders);
 // ✅ NEW: Admin-only, company-scoped
 router.get("/orders", requireAdmin, getAdminOrders);
 router.put("/orders/:orderId", requireAdmin, updateOrderStatus);
+router.delete("/orders/:orderId", requireAdmin, deleteOrder);
 
 export default router;

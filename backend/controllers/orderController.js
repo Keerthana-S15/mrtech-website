@@ -1898,6 +1898,44 @@ const STATUS_MESSAGES = {
 
 // ✅ NEW: verifies the order belongs to the logged-in admin's company
 // before allowing a status update — unless they're the super admin.
+/**
+ * Delete an order. Company-scoped exactly like updateOrderStatus: a non-super
+ * admin can only delete orders belonging to their own company.
+ *
+ * The document is copied into `deleted_orders` before removal so an accidental
+ * delete is recoverable — Firestore has no undo, and a mis-click would
+ * otherwise destroy the only record of a customer's purchase.
+ */
+export const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { companyId, isSuperAdmin, email } = req.admin;
+
+    const snapshot = await db.collection("orders").where("orderId", "==", orderId).get();
+    if (snapshot.empty) return res.status(404).json({ success: false, error: "Order not found" });
+
+    const docId = snapshot.docs[0].id;
+    const order = snapshot.docs[0].data();
+
+    if (!isSuperAdmin && order.companyId !== companyId) {
+      return res.status(403).json({ success: false, error: "You do not have access to this order" });
+    }
+
+    await db.collection("deleted_orders").doc(docId).set({
+      ...order,
+      deletedAt: new Date().toISOString(),
+      deletedBy: email || "unknown admin",
+    });
+    await db.collection("orders").doc(docId).delete();
+
+    console.log(`🗑️  Order ${orderId} deleted by ${email || "unknown admin"} (archived to deleted_orders/${docId})`);
+    res.json({ success: true, message: `Order ${orderId} deleted` });
+  } catch (error) {
+    console.error("🔥 Delete Order Error:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
