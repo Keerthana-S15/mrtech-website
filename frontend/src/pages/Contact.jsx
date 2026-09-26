@@ -168,7 +168,7 @@ export default function Contact() {
                 <span className="c-row-body">
                   <span className="c-label">Office:</span>
                   <span className="c-value">
-                    Registered Office Address<br />Tamil Nadu, India
+                    No: 3 R.L Tower 25 (OPPOSITE TO G H), Gandhipuram, Thiruvallur - 602001
                   </span>
                 </span>
               </div>
