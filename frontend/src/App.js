@@ -224,6 +224,7 @@ import Footer from "./components/Footer";
 // Main pages
 import Home from "./pages/Home";
 import AboutUs from "./pages/AboutUs";
+import ForgotPassword from "./pages/ForgotPassword";
 import Solutions from "./pages/Solutions";
 import Partners from "./pages/Partners";
 import Contact from "./pages/Contact";
@@ -284,6 +285,7 @@ export default function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/about" element={<AboutUs />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/solutions" element={<Solutions />} />
                     <Route path="/partners" element={<Partners />} />
                     <Route path="/contact" element={<Contact />} />

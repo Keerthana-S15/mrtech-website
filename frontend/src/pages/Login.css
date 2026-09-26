@@ -615,3 +615,21 @@
     padding: 40px 20px;
   }
 }
+/* ---- forgot password link (added with the reset flow) ---- */
+.lg-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px 0 4px;
+  animation: lg-field-in .6s calc(var(--i, 0) * 80ms + .25s) var(--lg-ease) both;
+}
+.lg-forgot {
+  font-size: .84rem;
+  font-weight: 700;
+  color: #0e7490;
+  text-decoration: none;
+  padding: 4px 2px;
+  border-radius: 6px;
+  transition: color .25s var(--lg-ease);
+}
+.lg-forgot:hover { color: #0891b2; text-decoration: underline; }
+.lg-forgot:focus-visible { outline: 2px solid var(--lg-cyan); outline-offset: 3px; }

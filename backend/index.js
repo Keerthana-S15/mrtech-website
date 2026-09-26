@@ -12,6 +12,7 @@ import signupOtpRoutes from "./routes/signupOtpRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import geocodeRoutes from "./routes/geocodeRoutes.js";
+import passwordResetRoutes from "./routes/passwordResetRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,7 @@ app.use("/api", signupOtpRoutes);
 app.use("/api", orderRoutes);
 app.use("/api", productRoutes);
 app.use("/api", geocodeRoutes);
+app.use("/api", passwordResetRoutes);
 
 // Admin Setup
 app.post("/api/setup-admin", async (req, res) => {

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "./Login.css";
 import {
   FaUser,
@@ -190,11 +191,17 @@ export default function Login() {
               </div>
             </div>
 
+            <div className="lg-forgot-row" style={{ "--i": 2 }}>
+              <Link to="/forgot-password" className="lg-forgot">
+                Forgot password?
+              </Link>
+            </div>
+
             <button
               type="submit"
               className={`lg-btn${loading ? " is-loading" : ""}`}
               disabled={loading}
-              style={{ "--i": 2 }}
+              style={{ "--i": 3 }}
             >
               <span className="lg-btn-label">{loading ? "Logging in..." : "Login"}</span>
               {loading ? (
@@ -205,7 +212,7 @@ export default function Login() {
               <span className="lg-btn-shine" aria-hidden="true" />
             </button>
 
-            <p className="lg-bottom" style={{ "--i": 3 }}>
+            <p className="lg-bottom" style={{ "--i": 4 }}>
               Don't have an account? <a href="/signup">Sign Up</a>
             </p>
           </form>
