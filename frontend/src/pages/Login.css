@@ -9,9 +9,13 @@
   --lg-ease: cubic-bezier(.22, 1, .36, 1);
   --lg-teal: #00313C;
   --lg-teal-2: #0b4a58;
+  /* Orange is now reserved for the submit button, the one primary action
+     on these pages. Everything else takes the cool cyan/teal/indigo ramp
+     shared with the rest of the site. */
   --lg-orange: #F97316;
-  --lg-green: #10B981;
-  --lg-violet: #A855F7;
+  --lg-cyan: #22D3EE;
+  --lg-green: #2DD4BF;   /* cooled from emerald */
+  --lg-violet: #6366F1;  /* indigo */
   --lg-text: #111827;
   --lg-muted: #6b7280;
   display: grid;
@@ -35,18 +39,20 @@
   padding: 56px 40px;
   color: #fff;
   background:
-    radial-gradient(70% 55% at 100% 0%, rgba(249, 115, 22, .22), transparent 60%),
-    radial-gradient(60% 50% at 0% 100%, rgba(16, 185, 129, .20), transparent 60%),
-    linear-gradient(160deg, #00313c 0%, #063f4b 55%, #002b34 100%);
+    radial-gradient(64% 56% at 96% 0%, rgba(34, 211, 238, .18), transparent 62%),
+    radial-gradient(56% 50% at 0% 100%, rgba(99, 102, 241, .20), transparent 62%),
+    linear-gradient(166deg, #081a2c 0%, #062733 42%, #04303c 72%, #02181f 100%);
 }
 .lg-brand-grid {
   position: absolute;
   inset: 0;
   z-index: -2;
   background-image:
-    linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .06) 1px, transparent 1px);
-  background-size: 52px 52px;
+    linear-gradient(rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .05) 1px, transparent 1px),
+    linear-gradient(rgba(125, 211, 252, .022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, .022) 1px, transparent 1px);
+  background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
   -webkit-mask-image: radial-gradient(80% 75% at 50% 50%, #000 20%, transparent 100%);
           mask-image: radial-gradient(80% 75% at 50% 50%, #000 20%, transparent 100%);
   animation: lg-grid 24s linear infinite;
@@ -60,7 +66,7 @@
   pointer-events: none;
   animation: lg-drift 16s ease-in-out infinite alternate;
 }
-.lg-orb--orange  { width: 380px; height: 380px; right: -140px; top: -120px;  background: var(--lg-orange); }
+.lg-orb--orange  { width: 380px; height: 380px; right: -140px; top: -120px;  background: var(--lg-cyan); }
 .lg-orb--emerald { width: 340px; height: 340px; left: -140px; bottom: -120px; background: var(--lg-green);  animation-delay: -6s; }
 .lg-orb--violet  { width: 260px; height: 260px; left: 40%;   top: 55%;      background: var(--lg-violet); animation-delay: -11s; opacity: .3; }
 
@@ -81,11 +87,11 @@
   animation: lg-dash 14s linear infinite;
 }
 .lg-net-nodes circle {
-  fill: #a7f3d0;
+  fill: #a5f3fc;
   filter: drop-shadow(0 0 6px rgba(167, 243, 208, .8));
   animation: lg-node 3.2s ease-in-out infinite;
 }
-.lg-net-nodes circle:nth-child(2n) { fill: #fdba74; filter: drop-shadow(0 0 6px rgba(253, 186, 116, .8)); animation-delay: -1.2s; }
+.lg-net-nodes circle:nth-child(2n) { fill: #a5b4fc; filter: drop-shadow(0 0 6px rgba(165, 180, 252, .8)); animation-delay: -1.2s; }
 .lg-net-nodes circle:nth-child(3n) { animation-delay: -2.1s; }
 
 .lg-brand-inner {
@@ -110,7 +116,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, var(--lg-orange), var(--lg-green), var(--lg-violet), var(--lg-orange));
+  background: conic-gradient(from 0deg, var(--lg-cyan), var(--lg-green), var(--lg-violet), var(--lg-cyan));
   filter: blur(10px);
   opacity: .8;
   animation: lg-spin 9s linear infinite;
@@ -159,7 +165,7 @@
   animation: lg-rise .7s calc(.28s + var(--i, 0) * .1s) var(--lg-ease) both;
   transition: background .3s var(--lg-ease), transform .3s var(--lg-ease), border-color .3s var(--lg-ease);
 }
-.lg-feature:hover { background: rgba(255, 255, 255, .12); transform: translateX(6px); border-color: rgba(249, 115, 22, .5); }
+.lg-feature:hover { background: rgba(255, 255, 255, .12); transform: translateX(6px); border-color: rgba(34, 211, 238, .55); }
 .lg-feature p { margin: 0; font-weight: 600; font-size: .95rem; }
 .lg-tick {
   flex: none;
@@ -170,8 +176,8 @@
   place-items: center;
   font-size: .72rem;
   color: var(--lg-teal);
-  background: linear-gradient(135deg, #fdba74, var(--lg-orange));
-  box-shadow: 0 6px 14px rgba(249, 115, 22, .4);
+  background: linear-gradient(135deg, #67e8f9, #0891b2);
+  box-shadow: 0 6px 14px rgba(34, 211, 238, .4);
   transition: transform .3s var(--lg-ease);
 }
 .lg-feature:hover .lg-tick { transform: rotate(-10deg) scale(1.1); }
@@ -194,8 +200,8 @@
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(50% 40% at 100% 0%, rgba(16, 185, 129, .12), transparent 70%),
-    radial-gradient(45% 40% at 0% 100%, rgba(249, 115, 22, .12), transparent 70%);
+    radial-gradient(50% 40% at 100% 0%, rgba(34, 211, 238, .12), transparent 70%),
+    radial-gradient(45% 40% at 0% 100%, rgba(99, 102, 241, .11), transparent 70%);
 }
 
 .lg-card {
@@ -220,9 +226,9 @@
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: #047857;
-  background: rgba(16, 185, 129, .12);
-  border: 1px solid rgba(16, 185, 129, .3);
+  color: #0e7490;
+  background: rgba(34, 211, 238, .12);
+  border: 1px solid rgba(34, 211, 238, .32);
   margin-bottom: 16px;
 }
 .lg-title {
@@ -274,17 +280,17 @@
 .lg-input-wrap input::placeholder { color: #9ca3af; }
 .lg-input-wrap input:hover { border-color: rgba(0, 49, 60, .3); }
 .lg-input-wrap input:focus {
-  border-color: var(--lg-orange);
-  box-shadow: 0 0 0 4px rgba(249, 115, 22, .16), 0 10px 24px rgba(0, 49, 60, .08);
+  border-color: var(--lg-cyan);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, .18), 0 10px 24px rgba(0, 49, 60, .08);
   transform: translateY(-1px);
 }
-.lg-input-wrap:focus-within .lg-input-icon { color: var(--lg-orange); transform: scale(1.12); }
+.lg-input-wrap:focus-within .lg-input-icon { color: var(--lg-cyan); transform: scale(1.12); }
 .lg-input-line {
   position: absolute;
   left: 16px; right: 16px; bottom: 0;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--lg-orange), var(--lg-green));
+  background: linear-gradient(90deg, var(--lg-cyan), var(--lg-violet));
   transform: scaleX(0);
   transform-origin: left;
   transition: transform .35s var(--lg-ease);
@@ -309,7 +315,7 @@
 }
 .lg-eye:hover { color: var(--lg-teal); background: rgba(0, 49, 60, .06); }
 .lg-eye:active { transform: scale(.92); }
-.lg-eye:focus-visible { outline: 2px solid var(--lg-orange); outline-offset: 2px; }
+.lg-eye:focus-visible { outline: 2px solid var(--lg-cyan); outline-offset: 2px; }
 
 /* login button */
 .lg-btn {
@@ -378,7 +384,7 @@
   left: 0; right: 0; bottom: -2px;
   height: 2px;
   border-radius: 2px;
-  background: var(--lg-orange);
+  background: var(--lg-cyan);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform .3s var(--lg-ease);
