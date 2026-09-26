@@ -168,7 +168,10 @@ export const requestPasswordReset = async (req, res) => {
       await deliverEmailOtp(identifier, otp);
     } else {
       // DLT first so DND-registered numbers are reached; Smart OTP as fallback
-      await sendOtpSms(mobile, otp, { expiryMinutes: OTP_TTL_MS / 60000 });
+      const sms = await sendOtpSms(mobile, otp, { expiryMinutes: OTP_TTL_MS / 60000 });
+      console.log(
+        `🔐 Reset OTP accepted for ${maskMobile(mobile)} via ${sms.route} (request_id: ${sms.requestId ?? "n/a"})`
+      );
     }
 
     console.log(`🔐 Password reset code issued for ${key.startsWith("email") ? maskEmail(identifier) : maskMobile(mobile)}`);

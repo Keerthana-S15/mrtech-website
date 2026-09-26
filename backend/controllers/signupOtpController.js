@@ -182,7 +182,7 @@ export const sendPhoneOtp = async (req, res) => {
     // We pass our own code so it can be verified locally. sendOtpSms tries the
     // DLT route first, which is what reaches DND-registered numbers; Smart OTP
     // is the fallback and is what this flow used to use exclusively.
-    const { route, attempts } = await sendOtpSms(phone, otp, {
+    const { route, requestId, attempts } = await sendOtpSms(phone, otp, {
       expiryMinutes: PHONE_OTP_TTL_MS / 60000,
     });
     if (attempts.length) {
@@ -203,7 +203,12 @@ export const sendPhoneOtp = async (req, res) => {
     });
 
     // The code itself is deliberately not logged.
-    console.log(`✅ Signup OTP sent to ${maskMobile(phone)} via ${route}`);
+    // request_id is the handle for the Fast2SMS dashboard delivery report —
+    // the only place a per-recipient failure reason can be read.
+    console.log(
+      `✅ Signup OTP accepted for ${maskMobile(phone)} via ${route} (request_id: ${requestId ?? "n/a"}). ` +
+        "Accepted != delivered; check the Fast2SMS delivery report for this id if the user reports no SMS."
+    );
     return res.json({
       success: true,
       message: "OTP sent to your phone",

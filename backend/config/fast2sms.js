@@ -199,16 +199,19 @@ export async function sendSmartOtp(mobile, otp, { expiryMinutes = 5 } = {}) {
  * So: try DLT, fall back to Smart OTP. A number that DLT reaches is never sent
  * a second message, so this costs no extra credits.
  *
- * Returns { route: "dlt" | "smart", attempts: [...] } so callers can log which
- * path actually carried the message.
+ * Returns { route, requestId, attempts } so callers can log which path carried
+ * the message and, critically, the Fast2SMS request_id. There is no delivery
+ * status API — reports live only in the Fast2SMS dashboard — so the request_id
+ * is the only handle the team has for looking up what happened to one specific
+ * message when a user says they never received it.
  */
 export async function sendOtpSms(mobile, otp, { expiryMinutes = 5 } = {}) {
   const attempts = [];
 
   if (fast2smsConfig.dltReady) {
     try {
-      await sendDltOtp(mobile, otp);
-      return { route: "dlt", attempts };
+      const data = await sendDltOtp(mobile, otp);
+      return { route: "dlt", requestId: data?.request_id ?? null, attempts };
     } catch (err) {
       attempts.push({ route: "dlt", code: err.code ?? "?", message: err.message });
       // A timeout may mean the message did go out; sending again on another
@@ -219,8 +222,8 @@ export async function sendOtpSms(mobile, otp, { expiryMinutes = 5 } = {}) {
   }
 
   if (fast2smsConfig.smartOtpReady) {
-    await sendSmartOtp(mobile, otp, { expiryMinutes });
-    return { route: "smart", attempts };
+    const data = await sendSmartOtp(mobile, otp, { expiryMinutes });
+    return { route: "smart", requestId: data?.request_id ?? null, attempts };
   }
 
   throw new Fast2SmsError("SMS service is not configured", { code: "NOT_CONFIGURED" });

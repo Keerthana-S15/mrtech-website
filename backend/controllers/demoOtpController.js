@@ -351,13 +351,13 @@ async function deliverMobileOtp(mobile) {
 
   // Shared with the signup and password-reset flows: DLT first because it is
   // what reaches DND-registered numbers, Smart OTP as the fallback.
-  const { route, attempts } = await sendOtpSms(mobile, otp, {
+  const { route, requestId, attempts } = await sendOtpSms(mobile, otp, {
     expiryMinutes: OTP_TTL_MS / 60000,
   });
   attempts.forEach((a) =>
     console.error(`❌ Fast2SMS ${a.route} send failed for ${masked} [${a.code}]: ${a.message} — fell back`)
   );
-  console.log(`✅ Demo mobile OTP sent via Fast2SMS ${route} to ${masked}`);
+  console.log(`✅ Demo mobile OTP accepted for ${masked} via ${route} (request_id: ${requestId ?? "n/a"})`);
   return { method: route, otp };
 }
 
