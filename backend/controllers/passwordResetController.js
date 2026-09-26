@@ -19,7 +19,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "../config/firebase.js";
 import transporter from "../config/email.js";
-import { sendSmartOtp, normaliseMobile, maskMobile } from "../config/fast2sms.js";
+import { sendOtpSms, normaliseMobile, maskMobile } from "../config/fast2sms.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -167,7 +167,8 @@ export const requestPasswordReset = async (req, res) => {
     if (looksLikeEmail) {
       await deliverEmailOtp(identifier, otp);
     } else {
-      await sendSmartOtp(mobile, otp, { expiryMinutes: OTP_TTL_MS / 60000 });
+      // DLT first so DND-registered numbers are reached; Smart OTP as fallback
+      await sendOtpSms(mobile, otp, { expiryMinutes: OTP_TTL_MS / 60000 });
     }
 
     console.log(`🔐 Password reset code issued for ${key.startsWith("email") ? maskEmail(identifier) : maskMobile(mobile)}`);

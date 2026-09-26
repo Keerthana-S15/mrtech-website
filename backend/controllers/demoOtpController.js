@@ -302,12 +302,9 @@
 import transporter from "../config/email.js";
 import { db } from "../config/firebase.js";
 import {
-  fast2smsConfig,
-  Fast2SmsError,
   maskMobile,
   normaliseMobile,
-  sendDltOtp,
-  sendSmartOtp,
+  sendOtpSms,
 } from "../config/fast2sms.js";
 
 /**
@@ -352,28 +349,16 @@ async function deliverMobileOtp(mobile) {
   const masked = maskMobile(mobile);
   const otp = generateOtp();
 
-  if (fast2smsConfig.dltReady) {
-    try {
-      await sendDltOtp(mobile, otp);
-      console.log(`✅ Demo mobile OTP sent via Fast2SMS DLT to ${masked}`);
-      return { method: "dlt", otp };
-    } catch (err) {
-      const canFallBack = fast2smsConfig.smartOtpReady && !(err.retryable && err.code === "TIMEOUT");
-      console.error(
-        `❌ Fast2SMS DLT send failed for ${masked} [${err.code ?? "?"}]: ${err.message}` +
-          (canFallBack ? " — falling back to Smart OTP" : "")
-      );
-      if (!canFallBack) throw err;
-    }
-  }
-
-  if (fast2smsConfig.smartOtpReady) {
-    await sendSmartOtp(mobile, otp, { expiryMinutes: OTP_TTL_MS / 60000 });
-    console.log(`✅ Demo mobile OTP sent via Fast2SMS Smart OTP to ${masked}`);
-    return { method: "smart", otp };
-  }
-
-  throw new Fast2SmsError("SMS service is not configured", { code: "NOT_CONFIGURED" });
+  // Shared with the signup and password-reset flows: DLT first because it is
+  // what reaches DND-registered numbers, Smart OTP as the fallback.
+  const { route, attempts } = await sendOtpSms(mobile, otp, {
+    expiryMinutes: OTP_TTL_MS / 60000,
+  });
+  attempts.forEach((a) =>
+    console.error(`❌ Fast2SMS ${a.route} send failed for ${masked} [${a.code}]: ${a.message} — fell back`)
+  );
+  console.log(`✅ Demo mobile OTP sent via Fast2SMS ${route} to ${masked}`);
+  return { method: route, otp };
 }
 
 /** Send the email OTP through Brevo. Returns the OTP, or throws. */

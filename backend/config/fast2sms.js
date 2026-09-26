@@ -45,6 +45,22 @@ if (!API_KEY) {
       ? `✅ Fast2SMS ready: ${modes.join(" + ")}`
       : "⚠️  Fast2SMS: API key set but neither DLT (SENDER_ID + TEMPLATE_ID) nor Smart OTP (OTP_ID) is configured"
   );
+
+  // Fast2SMS wants the short Message ID from its own DLT Manager here, not the
+  // 19-digit template ID issued by the operator's DLT portal. Passing the
+  // latter makes every DLT send fail with 424 "Invalid Message ID", which
+  // silently drops us onto the Smart OTP route — and that route is not
+  // delivered to DND-registered handsets. Worth shouting about at boot.
+  if (TEMPLATE_ID && /^\d{15,}$/.test(String(TEMPLATE_ID))) {
+    console.warn(
+      [
+        `⚠️  FAST2SMS_TEMPLATE_ID looks like an operator DLT template ID (${String(TEMPLATE_ID).length} digits).`,
+        "   Fast2SMS expects the Message ID from its own DLT Manager. While this is wrong,",
+        "   DLT sends fail and OTPs fall back to the Smart OTP route, which DND-registered",
+        "   numbers do not receive — the usual cause of 'some numbers never get the OTP'.",
+      ].join("\n")
+    );
+  }
 }
 
 /** Error type that carries the Fast2SMS status code so callers can decide what to do. */
@@ -163,6 +179,51 @@ export async function sendSmartOtp(mobile, otp, { expiryMinutes = 5 } = {}) {
     otp: String(otp),
     otp_expiry: expiryMinutes,
   });
+}
+
+/**
+ * Deliver `otp` to `mobile`, preferring the DLT route.
+ *
+ * Why the order matters for delivery, not just for style:
+ *
+ *  • DLT (`/bulkV2`, route=dlt) is registered transactional traffic sent under
+ *    our own header and template. TRAI-registered transactional SMS is
+ *    delivered to numbers on the DND / DNC registry.
+ *
+ *  • Smart OTP (`/otp/send`) goes out on Fast2SMS's shared OTP sender. The API
+ *    answers `return: true` as soon as it accepts the request, but operators
+ *    drop that traffic for DND-registered handsets. Nothing in the response
+ *    says so, which is exactly why some numbers "never receive the OTP" while
+ *    others work every time.
+ *
+ * So: try DLT, fall back to Smart OTP. A number that DLT reaches is never sent
+ * a second message, so this costs no extra credits.
+ *
+ * Returns { route: "dlt" | "smart", attempts: [...] } so callers can log which
+ * path actually carried the message.
+ */
+export async function sendOtpSms(mobile, otp, { expiryMinutes = 5 } = {}) {
+  const attempts = [];
+
+  if (fast2smsConfig.dltReady) {
+    try {
+      await sendDltOtp(mobile, otp);
+      return { route: "dlt", attempts };
+    } catch (err) {
+      attempts.push({ route: "dlt", code: err.code ?? "?", message: err.message });
+      // A timeout may mean the message did go out; sending again on another
+      // route risks a duplicate, so stop here rather than double-send.
+      const timedOut = err instanceof Fast2SmsError && err.code === "TIMEOUT";
+      if (timedOut || !fast2smsConfig.smartOtpReady) throw err;
+    }
+  }
+
+  if (fast2smsConfig.smartOtpReady) {
+    await sendSmartOtp(mobile, otp, { expiryMinutes });
+    return { route: "smart", attempts };
+  }
+
+  throw new Fast2SmsError("SMS service is not configured", { code: "NOT_CONFIGURED" });
 }
 
 /**

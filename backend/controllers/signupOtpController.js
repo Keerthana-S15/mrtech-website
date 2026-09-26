@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import transporter from "../config/email.js";
 import {
-  sendSmartOtp,
+  sendOtpSms,
   normaliseMobile,
   maskMobile,
   Fast2SmsError,
@@ -152,7 +152,7 @@ export const sendPhoneOtp = async (req, res) => {
     });
   }
 
-  if (!fast2smsConfig.smartOtpReady) {
+  if (!fast2smsConfig.configured) {
     return res.status(503).json({
       error: "SMS service is not configured. Please use email verification or contact support.",
     });
@@ -179,9 +179,18 @@ export const sendPhoneOtp = async (req, res) => {
   const otp = sixDigits();
 
   try {
-    // We pass our own code so it can be verified locally; Fast2SMS still does
-    // the delivery over the same Smart OTP route as before.
-    await sendSmartOtp(phone, otp, { expiryMinutes: PHONE_OTP_TTL_MS / 60000 });
+    // We pass our own code so it can be verified locally. sendOtpSms tries the
+    // DLT route first, which is what reaches DND-registered numbers; Smart OTP
+    // is the fallback and is what this flow used to use exclusively.
+    const { route, attempts } = await sendOtpSms(phone, otp, {
+      expiryMinutes: PHONE_OTP_TTL_MS / 60000,
+    });
+    if (attempts.length) {
+      console.warn(
+        `⚠️  Signup OTP for ${maskMobile(phone)} fell back to ${route}: ` +
+          attempts.map((a) => `${a.route} [${a.code}] ${a.message}`).join("; ")
+      );
+    }
 
     const windowOpen = existing && now - existing.windowStart <= PHONE_SEND_WINDOW_MS;
     phoneOtpStore.set(phone, {
@@ -194,7 +203,7 @@ export const sendPhoneOtp = async (req, res) => {
     });
 
     // The code itself is deliberately not logged.
-    console.log(`✅ Signup OTP sent to ${maskMobile(phone)}`);
+    console.log(`✅ Signup OTP sent to ${maskMobile(phone)} via ${route}`);
     return res.json({
       success: true,
       message: "OTP sent to your phone",
