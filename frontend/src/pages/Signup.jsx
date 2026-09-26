@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaEye,
   FaEyeSlash,
@@ -30,6 +30,9 @@ export default function Signup() {
   const [phoneOtp, setPhoneOtp] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  // seconds left before another phone OTP may be requested; the backend
+  // enforces the same cooldown, this just stops a pointless round trip
+  const [phoneCooldown, setPhoneCooldown] = useState(0);
   const [loading, setLoading] = useState("");
 
   // ✅ NEW: Show/hide password toggles
@@ -87,8 +90,15 @@ export default function Signup() {
     setLoading("");
   };
 
+  useEffect(() => {
+    if (phoneCooldown <= 0) return undefined;
+    const t = setTimeout(() => setPhoneCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phoneCooldown]);
+
   const handlePhoneOtp = async () => {
     if (!formData.phone) return alert("Please enter your phone number!");
+    if (phoneCooldown > 0) return;
     setLoading("phoneSend");
     try {
       const res = await fetch("/api/signup/send-phone-otp", {
@@ -96,15 +106,19 @@ export default function Signup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: formData.phone }),
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setPhoneOtpSent(true);
-        alert("OTP sent to your phone!");
+        setPhoneOtp("");
+        setPhoneCooldown(data.resendAfterSeconds || 15);
+        alert(`OTP sent to ${data.sentTo || "your phone"}.`);
       } else {
+        // 429 carries how long to wait; everything else is a real failure
+        if (data.retryAfterSeconds) setPhoneCooldown(data.retryAfterSeconds);
         alert(data.error || "Failed to send OTP. Please try again.");
       }
     } catch {
-      alert("Server error. Please try again.");
+      alert("Network error. Please check your connection and try again.");
     }
     setLoading("");
   };
@@ -118,15 +132,17 @@ export default function Signup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: formData.phone, otp: phoneOtp }),
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setPhoneVerified(true);
         alert("Phone verified successfully!");
       } else {
+        // an expired or exhausted code means they need a fresh one
+        if (/expired|Resend/i.test(data.error || "")) setPhoneCooldown(0);
         alert(data.error || "Invalid OTP. Please try again.");
       }
     } catch {
-      alert("Server error. Please try again.");
+      alert("Network error. Please check your connection and try again.");
     }
     setLoading("");
   };
@@ -324,9 +340,15 @@ export default function Signup() {
                   <span className="su-input-line" aria-hidden="true" />
                 </div>
                 {!phoneVerified && (
-                  <button type="button" className={`su-otp-btn${phoneOtpSent ? " is-resend" : ""}`} onClick={handlePhoneOtp} disabled={loading === "phoneSend"}>
+                  <button type="button" className={`su-otp-btn${phoneOtpSent ? " is-resend" : ""}`} onClick={handlePhoneOtp} disabled={loading === "phoneSend" || phoneCooldown > 0}>
                     {loading === "phoneSend" ? <span className="su-spinner su-spinner--dark" /> : <FaPaperPlane />}
-                    {loading === "phoneSend" ? "Sending..." : phoneOtpSent ? "Resend" : "Send OTP"}
+                    {loading === "phoneSend"
+                      ? "Sending..."
+                      : phoneCooldown > 0
+                      ? `Resend in ${phoneCooldown}s`
+                      : phoneOtpSent
+                      ? "Resend"
+                      : "Send OTP"}
                   </button>
                 )}
               </div>
