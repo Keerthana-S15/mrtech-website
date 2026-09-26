@@ -3514,16 +3514,28 @@ export default function AdminDashboard() {
               ) : orders.length === 0 ? (
                 <p>No orders yet</p>
               ) : (
-                <table className="admin-table">
+                <div className="table-scroll">
+                <table className="admin-table orders-table">
+                  {/* fixed widths so a long item list cannot push the other
+                      columns around from one row to the next */}
+                  <colgroup>
+                    <col className="ot-col-id" />
+                    <col className="ot-col-customer" />
+                    <col className="ot-col-items" />
+                    <col className="ot-col-total" />
+                    <col className="ot-col-status" />
+                    <col className="ot-col-date" />
+                    <col className="ot-col-action" />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th>Order ID</th>
                       <th>Customer</th>
                       <th>Items</th>
-                      <th>Total</th>
-                      <th>Status</th>
+                      <th className="ot-num">Total</th>
+                      <th className="ot-mid">Status</th>
                       <th>Date</th>
-                      <th>Action</th>
+                      <th className="ot-mid">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -3536,19 +3548,27 @@ export default function AdminDashboard() {
                     ) : (
                       filteredOrders.map((o) => (
                         <tr key={o.id}>
-                          <td>{o.id}</td>
-                          <td>{o.customer}</td>
-                          <td>{o.items}</td>
-                          <td>₹{o.total}</td>
-                          <td>
+                          <td className="ot-id">{o.id}</td>
+                          <td className="ot-customer" title={o.customer}>{o.customer}</td>
+                          {/* the joined item list can be long; clamp it and keep
+                              the full text in the tooltip rather than wrapping */}
+                          <td className="ot-items" title={o.items}>{o.items}</td>
+                          <td className="ot-num">₹{o.total}</td>
+                          <td className="ot-mid">
                             <span className={`status-badge ${statusColors[o.status]}`}>
                               {o.status}
                             </span>
                           </td>
-                          <td>{o.date}</td>
+                          <td className="ot-date">{o.date}</td>
                           <td>
                             <div className="order-actions">
-                              <button onClick={() => setSelectedOrder(o)}>👁 View</button>
+                              <button
+                                className="order-action order-action--view"
+                                onClick={() => setSelectedOrder(o)}
+                                title={`View ${o.id}`}
+                              >
+                                👁 View
+                              </button>
                               <button
                                 className="order-action order-action--pdf"
                                 onClick={() => handleDownloadOrderPdf(o)}
@@ -3570,6 +3590,7 @@ export default function AdminDashboard() {
                     )}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
 

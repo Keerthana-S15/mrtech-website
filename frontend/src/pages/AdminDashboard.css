@@ -1096,3 +1096,113 @@ button.stat-card { cursor: pointer; }
   .confirm-actions { flex-direction: column-reverse; }
   .confirm-btn { width: 100%; }
 }
+
+/* =====================================================================
+   ORDERS TABLE — fixed columns, consistent alignment, one row of actions
+   ===================================================================== */
+.orders-table {
+  /* fixed layout means the colgroup widths are honoured, so the columns do
+     not shift between rows when one order has a long item list */
+  table-layout: fixed;
+  min-width: 940px;          /* below this the wrapper scrolls instead of squashing */
+}
+
+.ot-col-id       { width: 120px; }
+.ot-col-customer { width: 150px; }
+.ot-col-items    { width: auto;  }   /* the only elastic column */
+.ot-col-total    { width: 100px; }
+.ot-col-status   { width: 118px; }
+.ot-col-date     { width: 104px; }
+.ot-col-action   { width: 268px; }
+
+.orders-table th,
+.orders-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+.orders-table th {
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.orders-table tbody tr { height: 60px; }
+
+/* one line per cell: wrapping is what made the rows ragged */
+.ot-id,
+.ot-customer,
+.ot-items,
+.ot-date {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ot-id { font-weight: 700; color: #0f172a; }
+.ot-customer { color: #334155; }
+.ot-items { color: #64748b; }
+.ot-date { color: #64748b; font-variant-numeric: tabular-nums; }
+
+/* numbers right-aligned and tabular so the decimal points line up */
+.orders-table th.ot-num,
+.orders-table td.ot-num {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.orders-table th.ot-mid,
+.orders-table td.ot-mid { text-align: center; }
+.orders-table td.ot-mid .status-badge { display: inline-block; min-width: 88px; }
+
+/* ---- actions: one row, equal sizes, never wrapping ---- */
+.orders-table .order-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.orders-table .order-action {
+  flex: 0 0 auto;
+  min-width: 76px;
+  height: 32px;
+  padding: 0 10px;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+.order-action--view { color: #0f172a; }
+.order-action--view:hover {
+  color: #fff;
+  background: linear-gradient(135deg, #334155, #0f172a);
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+/* ---- responsive: scroll the table rather than crush the columns ---- */
+@media (max-width: 1024px) {
+  .ot-col-customer { width: 132px; }
+  .ot-col-action   { width: 252px; }
+}
+@media (max-width: 720px) {
+  .orders-table th,
+  .orders-table td { padding: 10px 12px; }
+  .orders-table tbody tr { height: 56px; }
+  .orders-table .order-action { min-width: 68px; font-size: .74rem; }
+}
+
+/* A flex item defaults to min-width:auto, so .admin-main was growing to fit
+   the orders table's min-width instead of letting the wrapper scroll — which
+   pushed the whole admin layout wider than the viewport at ~1024px. */
+.admin-main { min-width: 0; }
+.admin-content,
+.admin-card { min-width: 0; }
+.table-scroll { max-width: 100%; }
+
+/* equal button widths at the small breakpoint: "Delete" is the widest label,
+   so the floor has to clear it or it ends up a pixel wider than the others */
+@media (max-width: 720px) {
+  .orders-table .order-action { min-width: 74px; }
+}
