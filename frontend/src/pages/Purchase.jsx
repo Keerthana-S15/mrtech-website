@@ -2256,6 +2256,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { resolveProductImage } from "./productImages";
 import "./Purchase.css";
 import {
   FaSearch,
@@ -2333,28 +2334,6 @@ const stockInfo = (stock) => {
   if (stock === 0) return { key: "out", label: "Out of stock" };
   if (stock <= 5) return { key: "low", label: `Only ${stock} left` };
   return { key: "in", label: "In stock" };
-};
-
-// Product photos served from the repo instead of the server's /uploads folder.
-// Render's disk is ephemeral, so anything uploaded through the admin panel is
-// wiped on the next deploy; these two products lost their files that way.
-// Keyed by the product name, trimmed and lowercased.
-const LOCAL_PRODUCT_IMAGES = {
-  "urine container": "/images/products/urine-container.jpg",
-  // exact match only, so "Syringe Destroyer" keeps its own image
-  syringe: "/images/products/syringe.jpg",
-};
-
-const resolveProductImage = (product) => {
-  const name = product?.name?.trim().toLowerCase();
-  if (!name) return product?.image;
-  // Cart items carry their options in the name, e.g. "syringe - 3ml / green",
-  // so fall back to the part before the options when the full name misses.
-  return (
-    LOCAL_PRODUCT_IMAGES[name] ||
-    LOCAL_PRODUCT_IMAGES[name.split(" - ")[0].trim()] ||
-    product?.image
-  );
 };
 
 // Product image that falls back to the placeholder if the file is missing

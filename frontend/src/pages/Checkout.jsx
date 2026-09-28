@@ -2007,15 +2007,45 @@
 
 
 // src/pages/Checkout.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useCart } from "../context/CartContext";
 import LocationMap from "./LocationMap";
 import "./Checkout.css";
+import { resolveProductImage } from "./productImages";
 
 // Your UPI details, shown as a scannable QR when the customer picks UPI
 const UPI_ID = "MYTHREALITYTECHNOLOGIESPRIV@iob";
+
+/**
+ * Cart-line thumbnail. Resolves the image the same way the shop does, and
+ * falls back to the box emoji when the file 404s — the previous markup only
+ * checked that `item.image` existed, so a dead /uploads path rendered a
+ * broken-image icon instead of the placeholder.
+ */
+function CartItemImage({ item, size }) {
+  const [failed, setFailed] = useState(false);
+  const src = resolveProductImage(item);
+  useEffect(() => setFailed(false), [src]);
+
+  if (!src || failed) {
+    return (
+      <span className="item-emoji" aria-hidden="true" style={{ fontSize: size * 0.7 }}>
+        📦
+      </span>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={item.name}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      style={{ width: size, height: size, objectFit: "cover", borderRadius: size > 36 ? 6 : 4 }}
+    />
+  );
+}
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -2597,15 +2627,7 @@ const Checkout = () => {
                   <h3>🛒 Order Items</h3>
                   {cartItems.map((item) => (
                     <div key={item.id} className="review-item">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }}
-                        />
-                      ) : (
-                        <span className="item-emoji">📦</span>
-                      )}
+                      <CartItemImage item={item} size={40} />
                       <div className="item-details">
                         <strong>{item.name}</strong>
                         <p>Qty: {item.quantity} × ₹{item.price}</p>
@@ -2654,15 +2676,7 @@ const Checkout = () => {
             <div className="summary-items">
               {cartItems.map((item) => (
                 <div key={item.id} className="summary-item">
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4 }}
-                    />
-                  ) : (
-                    <span>📦</span>
-                  )}
+                  <CartItemImage item={item} size={32} />
                   <div className="item-info">
                     <p>{item.name}</p>
                     <small>Qty: {item.quantity}</small>
