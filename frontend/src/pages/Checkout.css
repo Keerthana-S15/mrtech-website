@@ -603,3 +603,247 @@
     font-size: 28px;
   }
 }
+/* ==========================================================================
+   Cash on Delivery — mobile verification popup
+   Shown between "Place Order" and the order actually being created.
+   ========================================================================== */
+
+.cod-otp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(4px);
+  animation: codOtpFade 0.18s ease-out;
+}
+
+.cod-otp-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 36px 32px 28px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  text-align: center;
+  animation: codOtpRise 0.22s ease-out;
+}
+
+@keyframes codOtpFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes codOtpRise {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cod-otp-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.cod-otp-close:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.cod-otp-close:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cod-otp-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.cod-otp-modal h3 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cod-otp-sub {
+  margin: 0 0 22px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.cod-otp-sub strong {
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.cod-otp-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 10px;
+  text-align: center;
+  color: #0f172a;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.cod-otp-input::placeholder {
+  color: #cbd5e1;
+  letter-spacing: 10px;
+}
+
+.cod-otp-input:focus {
+  outline: none;
+  border-color: #ff6600;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 102, 0, 0.14);
+}
+
+.cod-otp-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cod-otp-timer {
+  min-height: 20px;
+  margin: 12px 0 4px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.cod-otp-expired {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.cod-otp-msg {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.cod-otp-msg-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.cod-otp-msg-ok {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.cod-otp-verify {
+  width: 100%;
+  margin-top: 18px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff6600, #ff8c00);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.cod-otp-verify:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(255, 102, 0, 0.38);
+}
+
+.cod-otp-verify:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cod-otp-resend {
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: #64748b;
+}
+
+.cod-otp-resend button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ff6600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cod-otp-resend button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.cod-otp-foot {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 12.5px;
+  color: #94a3b8;
+}
+
+@media (max-width: 480px) {
+  .cod-otp-modal {
+    padding: 32px 20px 24px;
+    border-radius: 16px;
+  }
+
+  .cod-otp-modal h3 {
+    font-size: 19px;
+  }
+
+  .cod-otp-input {
+    font-size: 22px;
+    letter-spacing: 8px;
+  }
+
+  .cod-otp-input::placeholder {
+    letter-spacing: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cod-otp-overlay,
+  .cod-otp-modal {
+    animation: none;
+  }
+
+  .cod-otp-verify:hover:not(:disabled) {
+    transform: none;
+  }
+}

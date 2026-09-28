@@ -2076,6 +2076,21 @@ const Checkout = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [pincodeChecking, setPincodeChecking] = useState(false);
 
+  // --- Cash on Delivery mobile verification -------------------------------
+  // COD takes no payment up front, so the delivery number is confirmed before
+  // the order is created. codToken is the proof the backend requires; without
+  // it POST /api/orders rejects a COD order outright.
+  const [codModalOpen, setCodModalOpen] = useState(false);
+  const [codOtp, setCodOtp] = useState("");
+  const [codToken, setCodToken] = useState("");
+  const [codSending, setCodSending] = useState(false);
+  const [codVerifying, setCodVerifying] = useState(false);
+  const [codError, setCodError] = useState("");
+  const [codNotice, setCodNotice] = useState("");
+  const [codSentTo, setCodSentTo] = useState("");
+  const [codResendIn, setCodResendIn] = useState(0);
+  const [codExpiresIn, setCodExpiresIn] = useState(0);
+
   // Auto-fill City & State from Pincode using India Post's free public API
   const lookupPincode = async (pincode) => {
     setPincodeChecking(true);
@@ -2119,6 +2134,40 @@ const Checkout = () => {
       navigate("/purchase");
     }
   }, [cartItems, navigate]);
+
+  // Resend cooldown and OTP expiry tick down once a second while the popup is up.
+  useEffect(() => {
+    if (codResendIn <= 0) return undefined;
+    const t = setTimeout(() => setCodResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [codResendIn]);
+
+  useEffect(() => {
+    if (codExpiresIn <= 0) return undefined;
+    const t = setTimeout(() => setCodExpiresIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [codExpiresIn]);
+
+  // Escape closes the popup, and the page behind it stays put while it is up.
+  useEffect(() => {
+    if (!codModalOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setCodModalOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [codModalOpen]);
+
+  const formatCountdown = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
@@ -2173,6 +2222,107 @@ const Checkout = () => {
     return true;
   };
 
+  // --- COD verification -----------------------------------------------------
+
+  // Sends (or resends) the OTP to the delivery number. Returns true on success
+  // so the caller can decide whether to keep the popup open.
+  const requestCodOtp = async ({ resend = false } = {}) => {
+    setCodSending(true);
+    setCodError("");
+    setCodNotice("");
+
+    try {
+      const res = await fetch("/api/orders/cod-otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: shippingInfo.phone }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setCodError(data.error || "Could not send the OTP. Please try again.");
+        // A 429 tells us exactly how long the cooldown has left.
+        if (data.retryAfterSeconds) setCodResendIn(data.retryAfterSeconds);
+        return false;
+      }
+
+      setCodSentTo(data.sentTo || "");
+      setCodResendIn(data.resendAfterSeconds || 30);
+      setCodExpiresIn(Math.round((data.expiresInMinutes || 5) * 60));
+      setCodOtp("");
+      if (resend) setCodNotice("A new OTP has been sent.");
+      return true;
+    } catch (error) {
+      console.error("COD OTP send failed:", error);
+      setCodError("Network error. Check your connection and try again.");
+      return false;
+    } finally {
+      setCodSending(false);
+    }
+  };
+
+  const openCodVerification = async () => {
+    setCodModalOpen(true);
+    setCodOtp("");
+    setCodError("");
+    setCodNotice("");
+    setCodSentTo("");
+    setCodResendIn(0);
+    setCodExpiresIn(0);
+    await requestCodOtp();
+  };
+
+  const closeCodVerification = () => {
+    if (codSending || codVerifying || loading) return;
+    setCodModalOpen(false);
+    setCodOtp("");
+    setCodError("");
+    setCodNotice("");
+  };
+
+  // Verifying exchanges the code for a single-use token, and the order is
+  // placed straight away with it — the order is never created before this.
+  const handleVerifyCodOtp = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!/^\d{6}$/.test(codOtp)) {
+      setCodError("Enter the 6-digit OTP from the SMS.");
+      return;
+    }
+
+    setCodVerifying(true);
+    setCodError("");
+    setCodNotice("");
+
+    try {
+      const res = await fetch("/api/orders/cod-otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: shippingInfo.phone, otp: codOtp }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setCodError(data.error || "Incorrect OTP. Please try again.");
+        // Expired or burnt through the attempt cap — only a resend helps now.
+        if (data.expired) {
+          setCodExpiresIn(0);
+          setCodOtp("");
+        }
+        return;
+      }
+
+      setCodToken(data.codToken);
+      setCodModalOpen(false);
+      await placeOrder(data.codToken);
+    } catch (error) {
+      console.error("COD OTP verify failed:", error);
+      setCodError("Network error. Check your connection and try again.");
+    } finally {
+      setCodVerifying(false);
+    }
+  };
+
   // Place Order with Backend API
   const handlePlaceOrder = async () => {
     if (!agreeTerms) {
@@ -2180,6 +2330,16 @@ const Checkout = () => {
       return;
     }
 
+    // COD is gated on mobile verification; Card and UPI are unchanged.
+    if (paymentMethod === "COD" && !codToken) {
+      await openCodVerification();
+      return;
+    }
+
+    await placeOrder(codToken);
+  };
+
+  const placeOrder = async (verificationToken) => {
     setLoading(true);
 
     try {
@@ -2202,6 +2362,8 @@ const Checkout = () => {
         shipping: shipping,
         tax: tax,
         totalAmount: total,
+        // Only meaningful for COD; the backend ignores it otherwise.
+        codToken: verificationToken || undefined,
       };
 
       const response = await fetch("/api/orders", {
@@ -2227,6 +2389,11 @@ const Checkout = () => {
             cartItems: cartItems,
           },
         });
+      } else if (result.codVerificationRequired) {
+        // Token expired or was already spent between verifying and ordering.
+        setCodToken("");
+        setCodError(result.error || "Please verify your mobile number again.");
+        await openCodVerification();
       } else {
         alert("Order failed: " + (result.error || "Unknown error"));
       }
@@ -2240,6 +2407,10 @@ const Checkout = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    // The COD token is bound to the number that was verified, so changing the
+    // phone number has to invalidate it — otherwise a verified number could
+    // be swapped for an unverified one before placing the order.
+    if (name === "phone" && value !== shippingInfo.phone) setCodToken("");
     setShippingInfo({ ...shippingInfo, [name]: value });
   };
 
@@ -2726,6 +2897,111 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      {/* Cash on Delivery — mobile verification popup.
+          The order is only submitted once the OTP here is accepted. */}
+      {codModalOpen && (
+        <div className="cod-otp-overlay" onClick={closeCodVerification}>
+          <div
+            className="cod-otp-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cod-otp-title"
+            aria-describedby="cod-otp-sub"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="cod-otp-close"
+              onClick={closeCodVerification}
+              disabled={codSending || codVerifying || loading}
+              aria-label="Close verification"
+            >
+              &times;
+            </button>
+
+            <div className="cod-otp-icon" aria-hidden="true">&#128241;</div>
+            <h3 id="cod-otp-title">Verify your mobile number</h3>
+            <p className="cod-otp-sub" id="cod-otp-sub">
+              {codSending && !codSentTo ? (
+                <>Sending a 6-digit OTP to <strong>{shippingInfo.phone}</strong>&hellip;</>
+              ) : (
+                <>
+                  Cash on Delivery needs a verified number. Enter the 6-digit OTP sent to{" "}
+                  <strong>{codSentTo || shippingInfo.phone}</strong>.
+                </>
+              )}
+            </p>
+
+            <form onSubmit={handleVerifyCodOtp}>
+              <input
+                className="cod-otp-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="------"
+                aria-label="6-digit OTP"
+                value={codOtp}
+                autoFocus
+                disabled={codSending || codVerifying}
+                onChange={(e) => {
+                  setCodOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  setCodError("");
+                }}
+              />
+
+              <div className="cod-otp-timer">
+                {codExpiresIn > 0 ? (
+                  <>OTP expires in <strong>{formatCountdown(codExpiresIn)}</strong></>
+                ) : codSentTo ? (
+                  <span className="cod-otp-expired">
+                    This OTP has expired. Tap Resend for a new one.
+                  </span>
+                ) : null}
+              </div>
+
+              {codError && (
+                <p className="cod-otp-msg cod-otp-msg-error" role="alert">
+                  {codError}
+                </p>
+              )}
+              {codNotice && !codError && (
+                <p className="cod-otp-msg cod-otp-msg-ok" role="status">
+                  {codNotice}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="cod-otp-verify"
+                disabled={codOtp.length !== 6 || codVerifying || codSending || loading}
+              >
+                {codVerifying || loading ? "Verifying…" : `Verify & Place Order - ₹${total}`}
+              </button>
+            </form>
+
+            <div className="cod-otp-resend">
+              Didn&rsquo;t get the OTP?{" "}
+              <button
+                type="button"
+                onClick={() => requestCodOtp({ resend: true })}
+                disabled={codResendIn > 0 || codSending || codVerifying || loading}
+              >
+                {codSending
+                  ? "Sending…"
+                  : codResendIn > 0
+                  ? `Resend in ${codResendIn}s`
+                  : "Resend OTP"}
+              </button>
+            </div>
+
+            <p className="cod-otp-foot">
+              Prefer not to verify? Close this and choose Card or UPI instead.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
