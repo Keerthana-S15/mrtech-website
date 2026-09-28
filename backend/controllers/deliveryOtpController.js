@@ -273,6 +273,66 @@ export const verifyDeliveryOtp = async (req, res) => {
       console.error(`🔥 Delivery confirmation email failed for ${orderId} (delivery still recorded):`, mailErr);
     }
 
+    // Separate notification to the admin, so cash collection lands in an inbox
+    // rather than only in the dashboard. Addressed to the company that owns the
+    // order — the same lookup createOrder uses for new-order alerts — so a
+    // company admin hears about their own deliveries, not MRtech's. Also best
+    // effort: the money is already recorded either way.
+    try {
+      let adminEmail = process.env.ADMIN_EMAIL;
+      let companyName = "MRtech";
+      if (order.companyId) {
+        const adminSnap = await db
+          .collection("admin")
+          .where("companyId", "==", order.companyId)
+          .limit(1)
+          .get();
+        if (!adminSnap.empty) {
+          adminEmail = adminSnap.docs[0].data().email || adminEmail;
+          companyName = adminSnap.docs[0].data().companyName || companyName;
+        }
+      }
+
+      const row = (label, value) => `
+        <tr>
+          <td style="padding:8px;border:1px solid #ddd;background:#fafafa;"><b>${label}</b></td>
+          <td style="padding:8px;border:1px solid #ddd;">${value}</td>
+        </tr>`;
+
+      await transporter.sendMail({
+        from: `"Myth Reality Technologies" <${process.env.ADMIN_EMAIL}>`,
+        to: adminEmail,
+        subject: `Order Delivered & Payment Collected - ${orderId}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;padding:20px;border-radius:8px;">
+            <h2 style="color:#16a34a;">&#128176; Order Delivered &amp; Payment Collected</h2>
+            <p>
+              Cash on Delivery for <b>${orderId}</b> has been collected and confirmed by the
+              customer's one-time code.
+            </p>
+            <table style="width:100%;border-collapse:collapse;margin-top:14px;">
+              ${row("Order ID", orderId)}
+              ${row("Company", companyName)}
+              ${row("Customer", `${order.customerName || "-"}<br/>${order.email || "-"}<br/>${order.phone || "-"}`)}
+              ${row("Amount Collected", `&#8377;${order.totalAmount}`)}
+              ${row("Payment Method", "Cash on Delivery")}
+              ${row("Payment Status", '<span style="color:#16a34a;font-weight:bold;">Collected</span>')}
+              ${row("Order Status", '<span style="color:#16a34a;font-weight:bold;">Delivered</span>')}
+              ${row("Delivered On", new Date(deliveredAt).toLocaleString("en-IN"))}
+              ${row("Verified By", req.admin?.email || req.admin?.adminId || "unknown")}
+            </table>
+            <hr style="margin-top:18px;"/>
+            <p style="color:gray;font-size:12px;">
+              Sent automatically when a delivery is verified. No action is needed.
+            </p>
+          </div>
+        `,
+      });
+      console.log(`✅ Admin notified of collection for ${orderId} (${maskEmail(adminEmail)})`);
+    } catch (mailErr) {
+      console.error(`🔥 Admin collection email failed for ${orderId} (delivery still recorded):`, mailErr);
+    }
+
     return res.json({
       success: true,
       message: "Delivered and payment collected",
