@@ -2109,9 +2109,14 @@ const Checkout = () => {
   };
 
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 5000 ? 0 : 100;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal + shipping + tax;
+  // Customers are charged the product subtotal only — GST is not added at
+  // checkout (the summary says so), and shipping is not billed separately.
+  // Both are still sent as 0 so the order document, the confirmation email
+  // and the invoice PDF keep the fields they already have.
+  const shipping = 0;
+  const tax = 0;
+  const total = subtotal;
+  const itemCount = cartItems.reduce((n, i) => n + i.quantity, 0);
 
   React.useEffect(() => {
     if (cartItems.length === 0) {
@@ -2688,33 +2693,22 @@ const Checkout = () => {
 
             <div className="summary-divider"></div>
 
-            <div className="summary-row">
-              <span>Subtotal</span>
-              <span>₹{subtotal}</span>
-            </div>
-            <div className="summary-row">
-              <span>Shipping</span>
-              <span className={shipping === 0 ? "free-shipping" : ""}>
-                {shipping === 0 ? "FREE" : `₹${shipping}`}
-              </span>
-            </div>
-            <div className="summary-row">
-              <span>Tax (18% GST)</span>
-              <span>₹{tax}</span>
-            </div>
-
-            <div className="summary-divider"></div>
-
+            {/* One number, stated plainly: what the customer pays is the
+                product total. No shipping or tax lines to reconcile. */}
             <div className="summary-total">
-              <span>Total Amount</span>
-              <span>₹{total}</span>
+              <div className="summary-total-label">
+                <span>Total Amount</span>
+                <small>
+                  {itemCount} item{itemCount === 1 ? "" : "s"}
+                </small>
+              </div>
+              <span className="summary-total-value">₹{total}</span>
             </div>
 
-            {shipping > 0 && (
-              <div className="free-shipping-banner">
-                💡 Add ₹{5000 - subtotal} more for FREE shipping!
-              </div>
-            )}
+            <p className="summary-gst-note">
+              <span className="gst-mark" aria-hidden="true">i</span>
+              Prices exclusive of GST
+            </p>
 
             <div className="secure-badge">
               <span>🔒</span>
