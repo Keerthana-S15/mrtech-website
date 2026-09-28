@@ -1049,6 +1049,13 @@ button.stat-card { cursor: pointer; }
   border-color: transparent;
   transform: translateY(-1px);
 }
+.order-action--collect { color: #047857; }
+.order-action--collect:hover {
+  color: #fff;
+  background: linear-gradient(135deg, #34d399, #059669);
+  border-color: transparent;
+  transform: translateY(-1px);
+}
 .order-action:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
 
 .confirm-modal { max-width: 460px; }
@@ -1205,4 +1212,153 @@ button.stat-card { cursor: pointer; }
    so the floor has to clear it or it ends up a pixel wider than the others */
 @media (max-width: 720px) {
   .orders-table .order-action { min-width: 74px; }
+}
+
+/* ==========================================================================
+   COD collection at the doorstep — delivery code popup
+   ========================================================================== */
+
+.collect-modal { max-width: 440px; }
+
+.collect-order {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: .95rem;
+  line-height: 1.6;
+  color: #14532d;
+}
+
+.collect-sub {
+  margin: 0 0 18px;
+  font-size: .88rem;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.collect-input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 10px;
+  text-align: center;
+  color: #0f172a;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.collect-input::placeholder { color: #cbd5e1; letter-spacing: 10px; }
+
+.collect-input:focus {
+  outline: none;
+  border-color: #059669;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, .14);
+}
+
+.collect-input:disabled { opacity: .6; cursor: not-allowed; }
+
+.collect-timer {
+  min-height: 20px;
+  margin: 11px 0 3px;
+  font-size: .8rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.collect-expired { color: #b45309; font-weight: 600; }
+
+.collect-msg {
+  margin: 8px 0 0;
+  padding: 10px 13px;
+  border-radius: 10px;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.collect-msg-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.collect-msg-ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+
+.collect-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.collect-cancel,
+.collect-confirm {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: .92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+}
+
+.collect-cancel {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+
+.collect-cancel:hover:not(:disabled) { background: #f8fafc; }
+
+.collect-confirm {
+  border: none;
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, .28);
+}
+
+.collect-confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, .34);
+}
+
+.collect-cancel:disabled,
+.collect-confirm:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.collect-resend {
+  margin-top: 15px;
+  font-size: .82rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.collect-resend button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #059669;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.collect-resend button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+@media (max-width: 480px) {
+  .collect-input { font-size: 21px; letter-spacing: 8px; }
+  .collect-input::placeholder { letter-spacing: 8px; }
+  .collect-actions { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-action--collect:hover,
+  .collect-confirm:hover:not(:disabled) { transform: none; }
 }

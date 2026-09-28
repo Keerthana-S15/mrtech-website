@@ -57,7 +57,7 @@
 
 import express from "express";
 import { requireAdmin } from "../middleware/authMiddleware.js";
-import { sendCodOtp, verifyCodOtp } from "../controllers/codOtpController.js";
+import { sendDeliveryOtp, verifyDeliveryOtp } from "../controllers/deliveryOtpController.js";
 import {
   createOrder,
   getAdminOrders,
@@ -72,11 +72,6 @@ import {
 
 const router = express.Router();
 
-// Cash-on-Delivery mobile verification — must pass before a COD order is
-// accepted. createOrder enforces it, so these are not optional UI steps.
-router.post("/orders/cod-otp/send", sendCodOtp);
-router.post("/orders/cod-otp/verify", verifyCodOtp);
-
 // Customer-facing — no login required
 router.post("/orders", createOrder);
 router.get("/orders/customer/:email", getOrdersByCustomer);
@@ -88,6 +83,11 @@ router.get("/orders/customer/:email/recent", getRecentOrders);
 // ✅ NEW: Admin-only, company-scoped
 router.get("/orders", requireAdmin, getAdminOrders);
 router.put("/orders/:orderId", requireAdmin, updateOrderStatus);
+
+// Cash-on-Delivery collection at the doorstep: email a code to the customer,
+// then verify it to mark the order delivered with the payment collected.
+router.post("/orders/:orderId/delivery-otp/send", requireAdmin, sendDeliveryOtp);
+router.post("/orders/:orderId/delivery-otp/verify", requireAdmin, verifyDeliveryOtp);
 router.delete("/orders/:orderId", requireAdmin, deleteOrder);
 
 export default router;

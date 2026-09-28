@@ -2534,6 +2534,20 @@ export default function AdminDashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   // order pending deletion; the confirm dialog is driven off this
   const [orderToDelete, setOrderToDelete] = useState(null);
+
+  // --- COD collection at the doorstep ------------------------------------
+  // Nothing is verified when a COD order is placed. The agent taps Complete
+  // Delivery here, we email a code to the customer, they read it out, and a
+  // correct code marks the order delivered with the cash collected.
+  const [orderToCollect, setOrderToCollect] = useState(null);
+  const [collectOtp, setCollectOtp] = useState("");
+  const [collectSending, setCollectSending] = useState(false);
+  const [collectVerifying, setCollectVerifying] = useState(false);
+  const [collectError, setCollectError] = useState("");
+  const [collectNotice, setCollectNotice] = useState("");
+  const [collectSentTo, setCollectSentTo] = useState("");
+  const [collectResendIn, setCollectResendIn] = useState(0);
+  const [collectExpiresIn, setCollectExpiresIn] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -2661,6 +2675,8 @@ export default function AdminDashboard() {
             : o.items,
           total: o.totalAmount,
           status: o.orderStatus,
+          paymentMethod: o.paymentMethod,
+          paymentStatus: o.paymentStatus,
           date: new Date(o.createdAt).toLocaleDateString(),
           address:
             typeof o.shippingAddress === "object"
@@ -2755,6 +2771,135 @@ export default function AdminDashboard() {
       } else alert("❌ " + data.error);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // --- COD collection: email a code, then confirm it at the doorstep ------
+
+  // Ticks the resend cooldown and the code expiry down once a second.
+  useEffect(() => {
+    if (collectResendIn <= 0) return undefined;
+    const t = setTimeout(() => setCollectResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [collectResendIn]);
+
+  useEffect(() => {
+    if (collectExpiresIn <= 0) return undefined;
+    const t = setTimeout(() => setCollectExpiresIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [collectExpiresIn]);
+
+  const formatCountdown = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
+
+  /** Emails a fresh code to the customer on `order`. */
+  const sendCollectionOtp = async (order, { resend = false } = {}) => {
+    setCollectSending(true);
+    setCollectError("");
+    setCollectNotice("");
+
+    try {
+      const res = await authFetch(`/api/orders/${order.id}/delivery-otp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setCollectError(data.error || "Could not send the code. Please try again.");
+        if (data.retryAfterSeconds) setCollectResendIn(data.retryAfterSeconds);
+        return false;
+      }
+
+      setCollectSentTo(data.sentTo || "");
+      setCollectResendIn(data.resendAfterSeconds || 30);
+      setCollectExpiresIn(Math.round((data.expiresInMinutes || 10) * 60));
+      setCollectOtp("");
+      if (resend) setCollectNotice("A new code has been emailed.");
+      return true;
+    } catch (err) {
+      console.error("Delivery code send failed:", err);
+      setCollectError("Network error. Check your connection and try again.");
+      return false;
+    } finally {
+      setCollectSending(false);
+    }
+  };
+
+  const openCollection = async (order) => {
+    setOrderToCollect(order);
+    setCollectOtp("");
+    setCollectError("");
+    setCollectNotice("");
+    setCollectSentTo("");
+    setCollectResendIn(0);
+    setCollectExpiresIn(0);
+    await sendCollectionOtp(order);
+  };
+
+  const closeCollection = () => {
+    if (collectSending || collectVerifying) return;
+    setOrderToCollect(null);
+    setCollectOtp("");
+    setCollectError("");
+    setCollectNotice("");
+  };
+
+  // A correct code is the customer confirming they received the goods and
+  // handed over the cash, so the backend marks the order delivered and the
+  // payment collected, then emails them the confirmation.
+  const handleConfirmCollection = async (e) => {
+    if (e) e.preventDefault();
+    if (!orderToCollect) return;
+
+    if (!/^\d{6}$/.test(collectOtp)) {
+      setCollectError("Enter the 6-digit code from the customer.");
+      return;
+    }
+
+    setCollectVerifying(true);
+    setCollectError("");
+    setCollectNotice("");
+
+    try {
+      const res = await authFetch(`/api/orders/${orderToCollect.id}/delivery-otp/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otp: collectOtp }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setCollectError(data.error || "Incorrect code. Please try again.");
+        if (data.expired) {
+          setCollectExpiresIn(0);
+          setCollectOtp("");
+        }
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderToCollect.id
+            ? { ...o, status: "delivered", paymentStatus: "paid" }
+            : o
+        )
+      );
+      if (selectedOrder && selectedOrder.id === orderToCollect.id) {
+        setSelectedOrder({ ...selectedOrder, status: "delivered", paymentStatus: "paid" });
+      }
+
+      setOrderToCollect(null);
+      setCollectOtp("");
+      alert("\u2705 Delivered and payment collected. Confirmation emailed to the customer.");
+    } catch (err) {
+      console.error("Delivery verification failed:", err);
+      setCollectError("Network error. Check your connection and try again.");
+    } finally {
+      setCollectVerifying(false);
     }
   };
 
@@ -3562,6 +3707,19 @@ export default function AdminDashboard() {
                           <td className="ot-date">{o.date}</td>
                           <td>
                             <div className="order-actions">
+                              {/* Only COD needs collecting; Card and UPI are
+                                  already paid and keep the status dropdown. */}
+                              {String(o.paymentMethod || "").toUpperCase() === "COD" &&
+                                o.status !== "delivered" &&
+                                o.status !== "cancelled" && (
+                                  <button
+                                    className="order-action order-action--collect"
+                                    onClick={() => openCollection(o)}
+                                    title={`Complete delivery and collect payment for ${o.id}`}
+                                  >
+                                    ✅ Complete Delivery
+                                  </button>
+                                )}
                               <button
                                 className="order-action order-action--view"
                                 onClick={() => setSelectedOrder(o)}
@@ -3593,6 +3751,113 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            {orderToCollect && (
+              <div className="modal-overlay" onClick={closeCollection}>
+                <div
+                  className="modal-content collect-modal"
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="collect-title"
+                >
+                  <div className="modal-header">
+                    <h2 id="collect-title">Complete delivery &amp; collect payment</h2>
+                  </div>
+
+                  <div className="modal-body">
+                    <p className="collect-order">
+                      <strong>{orderToCollect.id}</strong> &middot; {orderToCollect.customer}
+                      <br />
+                      Collect <strong>&#8377;{orderToCollect.total}</strong> in cash
+                    </p>
+
+                    <p className="collect-sub">
+                      {collectSending && !collectSentTo ? (
+                        <>Emailing a 6-digit code to the customer&hellip;</>
+                      ) : (
+                        <>
+                          A 6-digit code was emailed to <strong>{collectSentTo}</strong>. Ask the
+                          customer to read it out <strong>after</strong> handing over the cash.
+                        </>
+                      )}
+                    </p>
+
+                    <form onSubmit={handleConfirmCollection}>
+                      <input
+                        className="collect-input"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="------"
+                        aria-label="6-digit delivery code"
+                        value={collectOtp}
+                        autoFocus
+                        disabled={collectSending || collectVerifying}
+                        onChange={(e) => {
+                          setCollectOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                          setCollectError("");
+                        }}
+                      />
+
+                      <div className="collect-timer">
+                        {collectExpiresIn > 0 ? (
+                          <>Code expires in <strong>{formatCountdown(collectExpiresIn)}</strong></>
+                        ) : collectSentTo ? (
+                          <span className="collect-expired">
+                            This code has expired. Send a new one.
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {collectError && (
+                        <p className="collect-msg collect-msg-error" role="alert">
+                          {collectError}
+                        </p>
+                      )}
+                      {collectNotice && !collectError && (
+                        <p className="collect-msg collect-msg-ok" role="status">
+                          {collectNotice}
+                        </p>
+                      )}
+
+                      <div className="collect-actions">
+                        <button
+                          type="button"
+                          className="collect-cancel"
+                          onClick={closeCollection}
+                          disabled={collectSending || collectVerifying}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="collect-confirm"
+                          disabled={collectOtp.length !== 6 || collectSending || collectVerifying}
+                        >
+                          {collectVerifying ? "Confirming…" : "Mark Delivered & Paid"}
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="collect-resend">
+                      Customer didn&rsquo;t get the email?{" "}
+                      <button
+                        type="button"
+                        onClick={() => sendCollectionOtp(orderToCollect, { resend: true })}
+                        disabled={collectResendIn > 0 || collectSending || collectVerifying}
+                      >
+                        {collectSending
+                          ? "Sending…"
+                          : collectResendIn > 0
+                          ? `Resend in ${collectResendIn}s`
+                          : "Resend code"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {orderToDelete && (
               <div className="modal-overlay" onClick={() => !deleting && setOrderToDelete(null)}>

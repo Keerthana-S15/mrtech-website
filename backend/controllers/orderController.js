@@ -1406,7 +1406,6 @@
 import { db } from "../config/firebase.js";
 import { getEstimatedDelivery } from "../utils/helpers.js";
 import transporter from "../config/email.js";
-import { isCodTokenValidFor, consumeCodToken } from "./codOtpController.js";
 
 // ============================================
 // SHIPROCKET INTEGRATION
@@ -1517,24 +1516,11 @@ export const createOrder = async (req, res) => {
   try {
     const {
       customerName, email, phone, items, shippingAddress,
-      paymentMethod, subtotal, shipping, tax, totalAmount, codToken,
+      paymentMethod, subtotal, shipping, tax, totalAmount,
     } = req.body;
 
     if (!customerName || !email || !phone || !items || !shippingAddress || !paymentMethod || !totalAmount) {
       return res.status(400).json({ error: "All fields are required" });
-    }
-
-    // Cash on Delivery collects nothing up front, so the delivery number has
-    // to be proven first. The token is issued by /orders/cod-otp/verify and is
-    // bound to that number — checking it here, rather than only in the UI,
-    // is what stops a direct POST from skipping verification.
-    // Validated now but consumed later, so a failure below does not burn it.
-    const isCod = String(paymentMethod).toUpperCase() === "COD";
-    if (isCod && !isCodTokenValidFor(codToken, phone)) {
-      return res.status(403).json({
-        error: "Mobile verification is required for Cash on Delivery. Please verify and try again.",
-        codVerificationRequired: true,
-      });
     }
 
     const parentOrderId = "ORD" + Date.now();
@@ -1559,15 +1545,6 @@ export const createOrder = async (req, res) => {
       if (!groups[cid]) groups[cid] = [];
       groups[cid].push(item);
     });
-
-    // Everything else has validated; burn the token before the first write so
-    // a double-submitted Place Order cannot turn one verification into two orders.
-    if (isCod && !consumeCodToken(codToken, phone)) {
-      return res.status(403).json({
-        error: "That verification has already been used. Please verify your mobile number again.",
-        codVerificationRequired: true,
-      });
-    }
 
     const companyIds = Object.keys(groups);
     const multiVendor = companyIds.length > 1;
