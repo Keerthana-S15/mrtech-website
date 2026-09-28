@@ -1362,3 +1362,18 @@ button.stat-card { cursor: pointer; }
   .order-action--collect:hover,
   .collect-confirm:hover:not(:disabled) { transform: none; }
 }
+
+/* COD orders cannot be set delivered from the status list — point the admin
+   at Complete Delivery, which records the cash at the same time. */
+.status-cod-note {
+  margin: 12px 0 0;
+  padding: 10px 13px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: .82rem;
+  line-height: 1.6;
+  color: #14532d;
+}
+
+.status-cod-note strong { color: #047857; }

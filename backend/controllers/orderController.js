@@ -1954,6 +1954,23 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(403).json({ success: false, error: "You do not have access to this order" });
     }
 
+    // A COD order reaches "delivered" only through the verified collection
+    // flow, which is what records the cash as collected. Setting it here would
+    // leave the order delivered with paymentStatus still "pending" — an order
+    // handed over with no record of payment. The dropdown hides the option,
+    // but the rule belongs on the server: a direct PUT must be refused too.
+    // Every other status, and every non-COD order, is unaffected.
+    const isCod = String(order.paymentMethod || "").toUpperCase() === "COD";
+    if (isCod && String(orderStatus).toLowerCase() === "delivered") {
+      return res.status(409).json({
+        success: false,
+        error:
+          "Cash on Delivery orders are marked delivered through Complete Delivery, " +
+          "so the payment is recorded at the same time.",
+        requiresDeliveryVerification: true,
+      });
+    }
+
     await db.collection("orders").doc(docId).update({ orderStatus, updatedAt: new Date().toISOString() });
 
     try {

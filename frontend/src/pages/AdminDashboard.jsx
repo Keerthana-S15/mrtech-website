@@ -3928,7 +3928,13 @@ export default function AdminDashboard() {
                     <div className="detail-section">
                       <h3>Update Status</h3>
                       <div className="status-buttons">
-                        {["pending", "processing", "shipped", "delivered"].map((s) => (
+                        {/* COD reaches "delivered" only through Complete
+                            Delivery, which records the cash at the same
+                            time. Card/UPI keep the full list. */}
+                        {(String(selectedOrder.paymentMethod || "").toUpperCase() === "COD"
+                          ? ["pending", "processing", "shipped"]
+                          : ["pending", "processing", "shipped", "delivered"]
+                        ).map((s) => (
                           <button
                             key={s}
                             className={`status-update-btn ${
@@ -3940,6 +3946,14 @@ export default function AdminDashboard() {
                           </button>
                         ))}
                       </div>
+                      {String(selectedOrder.paymentMethod || "").toUpperCase() === "COD" &&
+                        selectedOrder.status !== "delivered" && (
+                          <p className="status-cod-note">
+                            Cash on Delivery: use <strong>Complete Delivery</strong> in the orders
+                            list to mark this delivered — it verifies the customer&rsquo;s code and
+                            records the payment at the same time.
+                          </p>
+                        )}
                     </div>
                   </div>
                   <div className="modal-footer">
