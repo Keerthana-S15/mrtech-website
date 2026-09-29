@@ -4084,7 +4084,9 @@ export default function AdminDashboard() {
 
         {currentTab === "products" && (
           <div className="admin-content">
-            <div className="admin-card">
+            {/* products-panel bounds the height; only .products-scroll scrolls, so
+                the heading, search, buttons and table header stay put */}
+            <div className="admin-card products-panel">
               <div
                 className="card-header"
                 style={{
@@ -4141,7 +4143,7 @@ export default function AdminDashboard() {
                 </p>
               )}
 
-              <div className="admin-table">
+              <div className="admin-table products-scroll">
                 <table>
                   <thead>
                     <tr>

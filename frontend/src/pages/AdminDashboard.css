@@ -1466,3 +1466,46 @@ button.stat-card { cursor: pointer; }
   .order-item-thumb { width: 40px; height: 40px; }
   .order-item-info strong { white-space: normal; }
 }
+
+/* ==========================================================================
+   Products tab — heading, search, buttons and table header stay put
+   while only the product rows scroll
+   ========================================================================== */
+
+.products-panel {
+  display: flex;
+  flex-direction: column;
+  /* bounded so the inner list owns the scrolling instead of the page.
+     The subtraction covers the admin header, page padding and card padding. */
+  max-height: calc(100vh - 190px);
+  min-height: 340px;
+}
+
+/* heading row and the "N results for ..." line never shrink or scroll */
+.products-panel > .card-header,
+.products-panel > p {
+  flex: none;
+}
+
+.products-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.products-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f9fafb;
+  /* a sticky header loses its own border under border-collapse, so the rule
+     is drawn as an inset shadow to keep the row looking exactly as before */
+  box-shadow: inset 0 -2px 0 #e5e7eb;
+}
+
+@media (max-width: 900px) {
+  /* the sidebar collapses here and the header wraps to more rows, so give the
+     list a little more room */
+  .products-panel { max-height: calc(100vh - 150px); }
+}
