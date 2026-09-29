@@ -2288,9 +2288,11 @@ const SYRINGE_ML_PRICES = {
 };
 
 // Test Tube also comes in different cap colors — edit this list to match your actual stock colors
-const TEST_TUBE_COLORS = ["Green", "Black", "Purple", "Red", "Gray", "Sky Blue"];
+const TEST_TUBE_COLORS = ["Purple", "Red", "Gray"];
 
-// swatch colours for the Test Tube colour picker (display only)
+// Swatch colours for the Test Tube colour picker (display only). Kept for
+// every colour we have ever stocked, not just the ones currently listed above,
+// so putting one back is a one-word edit to TEST_TUBE_COLORS.
 const COLOR_SWATCH = {
   Green: "#22c55e",
   Black: "#111827",
