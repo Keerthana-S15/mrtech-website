@@ -1042,13 +1042,6 @@ button.stat-card { cursor: pointer; }
   border-color: transparent;
   transform: translateY(-1px);
 }
-.order-action--delete { color: #b91c1c; }
-.order-action--delete:hover {
-  color: #fff;
-  background: linear-gradient(135deg, #f87171, #dc2626);
-  border-color: transparent;
-  transform: translateY(-1px);
-}
 .order-action--collect { color: #047857; }
 .order-action--collect:hover {
   color: #fff;
@@ -1111,16 +1104,23 @@ button.stat-card { cursor: pointer; }
   /* fixed layout means the colgroup widths are honoured, so the columns do
      not shift between rows when one order has a long item list */
   table-layout: fixed;
-  min-width: 940px;          /* below this the wrapper scrolls instead of squashing */
+  /* Sized for the widest real content: a full ORD<13-digit> id, a date like
+     "29 Sept 2026", and three action buttons. Below this the wrapper scrolls
+     rather than squashing a column into an ellipsis. */
+  min-width: 1110px;
 }
 
-.ot-col-id       { width: 120px; }
-.ot-col-customer { width: 150px; }
+/* Widths come from measuring the real content at 1440px, not from guessing:
+   a full ORD id needs 186px with padding, "29 Sept 2026" needs 124px, and the
+   three action buttons need 302px between them. The fixed columns total 990px,
+   which leaves the elastic Items column the rest of a 1120px content area. */
+.ot-col-id       { width: 190px; }
+.ot-col-customer { width: 132px; }
 .ot-col-items    { width: auto;  }   /* the only elastic column */
-.ot-col-total    { width: 100px; }
-.ot-col-status   { width: 118px; }
-.ot-col-date     { width: 104px; }
-.ot-col-action   { width: 268px; }
+.ot-col-total    { width: 88px;  }
+.ot-col-status   { width: 108px; }
+.ot-col-date     { width: 136px; }
+.ot-col-action   { width: 336px; }
 
 .orders-table th,
 .orders-table td {
@@ -1136,14 +1136,19 @@ button.stat-card { cursor: pointer; }
 .orders-table tbody tr { height: 60px; }
 
 /* one line per cell: wrapping is what made the rows ragged */
+/* The id column is sized so an ordinary ORD id shows in full. Multi-vendor
+   sub-orders append the company ("ORD<ts>-<companyId>") and can still exceed
+   it, so the ellipsis stays as a safety net - without it a long id overlaps
+   the Customer column instead of truncating. The full value is on the cell's
+   title either way. Date is sized to fit and never truncates. */
 .ot-id,
 .ot-customer,
-.ot-items,
-.ot-date {
+.ot-items {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.ot-date { white-space: nowrap; }
 .ot-id { font-weight: 700; color: #0f172a; }
 .ot-customer { color: #334155; }
 .ot-items { color: #64748b; }
@@ -1168,14 +1173,14 @@ button.stat-card { cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: nowrap;
 }
 .orders-table .order-action {
   flex: 0 0 auto;
-  min-width: 76px;
+  min-width: 70px;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 8px;
   justify-content: center;
   line-height: 1;
   white-space: nowrap;
@@ -1189,9 +1194,10 @@ button.stat-card { cursor: pointer; }
 }
 
 /* ---- responsive: scroll the table rather than crush the columns ---- */
+/* Below the min-width the wrapper scrolls; the columns keep their sizes so
+   nothing is ever cut off mid-word. */
 @media (max-width: 1024px) {
   .ot-col-customer { width: 132px; }
-  .ot-col-action   { width: 252px; }
 }
 @media (max-width: 720px) {
   .orders-table th,

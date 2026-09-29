@@ -2609,7 +2609,6 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   // order pending deletion; the confirm dialog is driven off this
-  const [orderToDelete, setOrderToDelete] = useState(null);
 
   // --- COD collection at the doorstep ------------------------------------
   // Nothing is verified when a COD order is placed. The agent taps Complete
@@ -2624,7 +2623,6 @@ export default function AdminDashboard() {
   const [collectSentTo, setCollectSentTo] = useState("");
   const [collectResendIn, setCollectResendIn] = useState(0);
   const [collectExpiresIn, setCollectExpiresIn] = useState(0);
-  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -2753,7 +2751,9 @@ export default function AdminDashboard() {
           status: o.orderStatus,
           paymentMethod: o.paymentMethod,
           paymentStatus: o.paymentStatus,
-          date: new Date(o.createdAt).toLocaleDateString(),
+          date: new Date(o.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric",
+          }),
           address:
             typeof o.shippingAddress === "object"
               ? `${o.shippingAddress.address}, ${o.shippingAddress.city}, ${o.shippingAddress.state} - ${o.shippingAddress.pincode}`
@@ -3241,31 +3241,6 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("PDF generation failed:", err);
       alert("Could not generate the PDF for this order.");
-    }
-  };
-
-  const handleDeleteOrder = async () => {
-    if (!orderToDelete || deleting) return;
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderToDelete.id)}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.success) {
-        // drop it locally so the table updates without a full refetch
-        setOrders((prev) => prev.filter((o) => o.id !== orderToDelete.id));
-        if (selectedOrder?.id === orderToDelete.id) setSelectedOrder(null);
-        setOrderToDelete(null);
-      } else {
-        alert(data.error || "Could not delete this order.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Network error. Please try again.");
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -3782,7 +3757,7 @@ export default function AdminDashboard() {
                     ) : (
                       filteredOrders.map((o) => (
                         <tr key={o.id}>
-                          <td className="ot-id">{o.id}</td>
+                          <td className="ot-id" title={o.id}>{o.id}</td>
                           <td className="ot-customer" title={o.customer}>{o.customer}</td>
                           {/* the joined item list can be long; clamp it and keep
                               the full text in the tooltip rather than wrapping */}
@@ -3822,13 +3797,6 @@ export default function AdminDashboard() {
                                 title={`Download PDF for ${o.id}`}
                               >
                                 ⬇ PDF
-                              </button>
-                              <button
-                                className="order-action order-action--delete"
-                                onClick={() => setOrderToDelete(o)}
-                                title={`Delete ${o.id}`}
-                              >
-                                🗑 Delete
                               </button>
                             </div>
                           </td>
@@ -3948,47 +3916,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {orderToDelete && (
-              <div className="modal-overlay" onClick={() => !deleting && setOrderToDelete(null)}>
-                <div
-                  className="modal-content confirm-modal"
-                  onClick={(e) => e.stopPropagation()}
-                  role="alertdialog"
-                  aria-modal="true"
-                  aria-labelledby="confirm-delete-title"
-                >
-                  <div className="modal-header">
-                    <h2 id="confirm-delete-title">Delete this order?</h2>
-                  </div>
-                  <div className="modal-body">
-                    <p className="confirm-target">
-                      <strong>{orderToDelete.id}</strong> — {orderToDelete.customer} — ₹{orderToDelete.total}
-                    </p>
-                    <p className="confirm-note">
-                      This removes the order from the admin list and from the customer&apos;s order
-                      history. A copy is archived server-side, but this cannot be undone from here.
-                    </p>
-                  </div>
-                  <div className="confirm-actions">
-                    <button
-                      className="confirm-btn confirm-btn--cancel"
-                      onClick={() => setOrderToDelete(null)}
-                      disabled={deleting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="confirm-btn confirm-btn--danger"
-                      onClick={handleDeleteOrder}
-                      disabled={deleting}
-                    >
-                      {deleting ? "Deleting..." : "Delete order"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {selectedOrder && (
               <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
                 <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
