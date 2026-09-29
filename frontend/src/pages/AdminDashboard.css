@@ -690,7 +690,11 @@
 }
 button.stat-card { cursor: pointer; }
 .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(15, 23, 42, .12); }
-.stat-top { display: flex; align-items: center; gap: 10px; }
+/* Some labels wrap to two lines and some do not, which left the numbers
+   underneath sitting at different heights across the row. Reserving two lines
+   keeps every card's value on the same baseline. */
+.stat-top { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.stat-top h3 { display: flex; align-items: center; min-height: 2.1em; }
 .stat-card h3 {
   margin: 0;
   font-size: .78rem;
@@ -978,7 +982,10 @@ button.stat-card { cursor: pointer; }
     box-shadow: 0 6px 16px rgba(15, 23, 42, .12);
   }
   .admin-nav-toggle span { display: block; width: 20px; height: 2px; border-radius: 2px; background: var(--ad-teal); }
-  .admin-dashboard { overflow-x: hidden; }
+  /* `hidden` here makes an ancestor a scroll container, which silently kills
+     position: sticky on the header below this breakpoint. `clip` contains the
+     same overflow without that side effect. */
+  .admin-dashboard { overflow-x: clip; }
   .admin-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
@@ -1514,4 +1521,104 @@ button.stat-card { cursor: pointer; }
   /* the sidebar collapses here and the header wraps to more rows, so give the
      list a little more room */
   .products-panel { max-height: calc(100vh - 150px); }
+}
+
+/* ==========================================================================
+   Dashboard — Recent orders
+   ========================================================================== */
+
+.recent-orders-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Sized so nothing needs horizontal scrolling on a laptop; the two elastic
+   text columns truncate rather than wrap the rows ragged.
+
+   Scoped to the table layout deliberately. These are nth-child rules, which
+   outrank a plain `.recent-orders-table td` reset on specificity, so leaving
+   them unscoped kept the percentage widths and the ellipsis alive in the
+   stacked mobile layout and cut every value short. */
+@media (min-width: 561px) {
+  .recent-orders-table th:nth-child(1),
+  .recent-orders-table td:nth-child(1) { width: 30%; }
+  .recent-orders-table th:nth-child(2),
+  .recent-orders-table td:nth-child(2) { width: 24%; }
+  .recent-orders-table th:nth-child(3),
+  .recent-orders-table td:nth-child(3) { width: 14%; text-align: right; }
+  .recent-orders-table th:nth-child(4),
+  .recent-orders-table td:nth-child(4) { width: 16%; }
+  .recent-orders-table th:nth-child(5),
+  .recent-orders-table td:nth-child(5) { width: 16%; white-space: nowrap; }
+
+  .recent-orders-table td:nth-child(1),
+  .recent-orders-table td:nth-child(2) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.recent-orders-table .ro-total { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* On a phone a five-column table can only scroll sideways, so each row becomes
+   a small card instead. data-label on every cell carries the column name. */
+@media (max-width: 560px) {
+  .recent-orders-table,
+  .recent-orders-table tbody,
+  .recent-orders-table tr,
+  .recent-orders-table td { display: block; width: auto; }
+
+
+  .recent-orders-table thead { display: none; }
+
+  .recent-orders-table tr {
+    margin-bottom: 10px;
+    padding: 4px 2px;
+    border: 1px solid var(--ad-line);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .recent-orders-table tr:last-child { margin-bottom: 0; }
+
+  /* The value is an anonymous box, which neither flex nor grid gives a track
+     of its own reliably - it collapsed under flex and shared the label's cell
+     under grid. Floating the label out of the flow leaves the value as normal
+     block text that wraps and aligns on its own. */
+  .recent-orders-table td {
+    display: block;
+    padding: 8px 12px;
+    border: none;
+    text-align: right;
+    font-size: .86rem;
+    overflow: hidden;   /* contains the float */
+  }
+  .recent-orders-table td + td { border-top: 1px dashed #f1f5f9; }
+
+  .recent-orders-table td::before {
+    content: attr(data-label);
+    float: left;
+    margin-right: 16px;
+    max-width: 45%;
+    white-space: nowrap;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1.55;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    text-align: left;
+  }
+
+  /* The value is an anonymous text node inside a flex cell. Clipping the cell
+     collapses it to nothing, so let long values wrap instead and cap the label
+     so it can never crowd the value out. */
+  .recent-orders-table td:nth-child(1) { font-weight: 700; }
+  .recent-orders-table td:nth-child(1),
+  .recent-orders-table td:nth-child(2) { word-break: break-word; }
+  .recent-orders-table td:nth-child(5) { white-space: normal; }
+
+
+  /* the wrapper no longer has anything to scroll */
+  .dash-panel .table-scroll { overflow-x: visible; }
 }

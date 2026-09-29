@@ -3535,7 +3535,7 @@ export default function AdminDashboard() {
                 <TopProducts items={analytics.topProducts} />
               </section>
 
-              <section className="admin-card dash-panel">
+              <section className="admin-card dash-panel dash-panel--wide">
                 <header className="dash-panel-head">
                   <div>
                     <h2>Low stock</h2>
@@ -3573,7 +3573,7 @@ export default function AdminDashboard() {
                 </header>
                 {analytics.recentOrders.length ? (
                   <div className="table-scroll">
-                    <table className="admin-table">
+                    <table className="admin-table recent-orders-table">
                       <thead>
                         <tr>
                           <th>Order ID</th>
@@ -3586,10 +3586,10 @@ export default function AdminDashboard() {
                       <tbody>
                         {analytics.recentOrders.map((o) => (
                           <tr key={o.id}>
-                            <td>{o.id}</td>
-                            <td>{o.customer}</td>
-                            <td>₹{Number(o.total || 0).toLocaleString("en-IN")}</td>
-                            <td>
+                            <td data-label="Order ID">{o.id}</td>
+                            <td data-label="Customer">{o.customer}</td>
+                            <td className="ro-total" data-label="Total">₹{Number(o.total || 0).toLocaleString("en-IN")}</td>
+                            <td data-label="Status">
                               <span
                                 className="status-dot-badge"
                                 style={{
@@ -3599,7 +3599,7 @@ export default function AdminDashboard() {
                                 {o.status}
                               </span>
                             </td>
-                            <td>{o.date}</td>
+                            <td data-label="Date">{o.date}</td>
                           </tr>
                         ))}
                       </tbody>
