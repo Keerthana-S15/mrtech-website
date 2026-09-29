@@ -2524,7 +2524,34 @@ import {
 } from "react-icons/fa";
 import { RevenueTrend, StatusMix, TopProducts, Sparkline, STATUS_COLORS } from "./AdminCharts";
 import { downloadOrderPdf } from "./orderPdf";
+import { printOrderInvoice } from "./orderInvoice";
+import { resolveProductImage } from "./productImages";
 import "./AdminDashboard.css";
+
+/**
+ * Product photo for one ordered line. Resolves the image the same way the shop
+ * and checkout do, and falls back to the box glyph when the file 404s —
+ * uploads do not survive a Render deploy, so a dead path is expected.
+ */
+function OrderItemThumb({ item }) {
+  const [failed, setFailed] = useState(false);
+  const src = resolveProductImage(item);
+  useEffect(() => setFailed(false), [src]);
+
+  if (!src || failed) {
+    return (
+      <span className="order-item-thumb order-item-thumb--empty" aria-hidden="true">
+        📦
+      </span>
+    );
+  }
+  return (
+    <span className="order-item-thumb">
+      <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+    </span>
+  );
+}
+
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -3145,6 +3172,19 @@ export default function AdminDashboard() {
       return acc;
     }, {})
   );
+
+  // Print Invoice was a dead button. It opens a printable invoice carrying the
+  // customer, the order, the items with their photos, the totals and the
+  // payment state — the photos are why this prints HTML instead of reusing the
+  // PDF, whose core fonts cannot embed images.
+  const handlePrintInvoice = (order) => {
+    const result = printOrderInvoice(order);
+    if (!result.ok && result.reason === "popup-blocked") {
+      alert(
+        "Your browser blocked the invoice window. Allow pop-ups for this site, then try again."
+      );
+    }
+  };
 
   const handleDownloadOrderPdf = async (order) => {
     try {
@@ -3922,8 +3962,31 @@ export default function AdminDashboard() {
                     </div>
                     <div className="detail-section">
                       <h3>📦 Items</h3>
-                      <p>{selectedOrder.items}</p>
-                      <p><strong>Total:</strong> ₹{selectedOrder.total}</p>
+                      {Array.isArray(selectedOrder.fullData?.items) &&
+                      selectedOrder.fullData.items.length > 0 ? (
+                        <ul className="order-item-list">
+                          {selectedOrder.fullData.items.map((it, i) => (
+                            <li className="order-item" key={`${it.id || it.name}-${i}`}>
+                              <OrderItemThumb item={it} />
+                              <div className="order-item-info">
+                                <strong>{it.name}</strong>
+                                <span>
+                                  Qty: {it.quantity} &times; &#8377;{it.price}
+                                </span>
+                              </div>
+                              <span className="order-item-amount">
+                                &#8377;{(Number(it.price) || 0) * (Number(it.quantity) || 0)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        /* very old rows only kept the joined name string */
+                        <p>{selectedOrder.items}</p>
+                      )}
+                      <p className="order-item-total">
+                        <strong>Total:</strong> &#8377;{selectedOrder.total}
+                      </p>
                     </div>
                     <div className="detail-section">
                       <h3>Update Status</h3>
@@ -3957,7 +4020,12 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button className="print-btn">🖨 Print Invoice</button>
+                    <button
+                      className="print-btn"
+                      onClick={() => handlePrintInvoice(selectedOrder)}
+                    >
+                      🖨 Print Invoice
+                    </button>
                   </div>
                 </div>
               </div>

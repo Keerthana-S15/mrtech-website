@@ -1377,3 +1377,92 @@ button.stat-card { cursor: pointer; }
 }
 
 .status-cod-note strong { color: #047857; }
+
+/* ==========================================================================
+   Order View modal — ordered items with their product photos
+   ========================================================================== */
+
+.order-item-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.order-item:last-child { border-bottom: none; }
+
+.order-item-thumb {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 9px;
+  border: 1px solid #e8eef4;
+  background: #f8fafc;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.order-item-thumb--empty { font-size: 22px; }
+
+.order-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.order-item-info strong {
+  font-size: .93rem;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-item-info span {
+  font-size: .8rem;
+  color: #64748b;
+}
+
+.order-item-amount {
+  flex: none;
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-item-total {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 2px solid #f1f5f9;
+  text-align: right;
+  font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+  .order-item { gap: 10px; }
+  .order-item-thumb { width: 40px; height: 40px; }
+  .order-item-info strong { white-space: normal; }
+}
