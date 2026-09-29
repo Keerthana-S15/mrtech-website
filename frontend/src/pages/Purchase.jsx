@@ -2287,21 +2287,6 @@ const SYRINGE_ML_PRICES = {
   "10ml": 100,
 };
 
-// Test Tube also comes in different cap colors — edit this list to match your actual stock colors
-const TEST_TUBE_COLORS = ["Purple", "Red", "Gray"];
-
-// Swatch colours for the Test Tube colour picker (display only). Kept for
-// every colour we have ever stocked, not just the ones currently listed above,
-// so putting one back is a one-word edit to TEST_TUBE_COLORS.
-const COLOR_SWATCH = {
-  Green: "#22c55e",
-  Black: "#111827",
-  Purple: "#a855f7",
-  Red: "#ef4444",
-  Gray: "#9ca3af",
-  "Sky Blue": "#38bdf8",
-};
-
 // Returns the option config for a given product:
 // { ml: [...] }               -> Syringe (actual syringe, not the destroyer machine): only ml dropdown
 // { ml: [...], color: [...] } -> Test Tube (the actual tube, NOT the stand): both ml + color dropdowns
@@ -2309,15 +2294,9 @@ const COLOR_SWATCH = {
 const getProductOptions = (product) => {
   const name = product.name?.toLowerCase() || "";
 
-  // "Test Tube Stand" contains "test tube" too, so explicitly exclude anything with "stand"
-  const isActualTestTube = name.includes("test tube") && !name.includes("stand");
-
   // "Syringe Destroyer" contains "syringe" too, so explicitly exclude anything with "destroyer"
   const isActualSyringe = name.includes("syringe") && !name.includes("destroyer");
 
-  if (isActualTestTube) {
-    return { color: TEST_TUBE_COLORS };
-  }
   if (isActualSyringe) {
     return { ml: ML_SIZE_OPTIONS, isSyringe: true };
   }
@@ -2360,8 +2339,6 @@ const Purchase = () => {
 
   // tracks chosen ml per product id, e.g. { productId: "10ml" }
   const [selectedMl, setSelectedMl] = useState({});
-  // tracks chosen color per product id, e.g. { productId: "Green" }
-  const [selectedColor, setSelectedColor] = useState({});
 
   // "loading" | "ready" | "error" — lets the UI tell "no products exist" apart
   // from "the API call failed", instead of silently showing a zero count.
@@ -2418,19 +2395,9 @@ const Purchase = () => {
     return selectedMl[product.id] || ml[0];
   };
 
-  // Currently chosen color for a product, or null if this product has no color option
-  const getSelectedColor = (product) => {
-    const { color } = getProductOptions(product);
-    if (!color) return null;
-    return selectedColor[product.id] || color[0];
-  };
 
   const setMl = (productId, ml) => {
     setSelectedMl((prev) => ({ ...prev, [productId]: ml }));
-  };
-
-  const setColor = (productId, color) => {
-    setSelectedColor((prev) => ({ ...prev, [productId]: color }));
   };
 
   // ✅ NEW: The price to actually charge/display for this product, given the
@@ -2447,36 +2414,29 @@ const Purchase = () => {
 
   // Build a unique cart-line id from whichever options apply to this product.
   // e.g. "12::10ml::Green", "45::20ml" (syringe), or just "9" (no options)
-  const buildCartId = (productId, ml, color) => {
+  const buildCartId = (productId, ml) => {
     let id = `${productId}`;
     if (ml) id += `::${ml}`;
-    if (color) id += `::${color}`;
     return id;
   };
 
   const handleAddToCart = (product) => {
     const ml = getSelectedMl(product);
-    const color = getSelectedColor(product);
 
-    if (!ml && !color) {
+    if (!ml) {
       // No options for this product — add as-is
       addToCart(product);
       showToast(product.name);
       return;
     }
 
-    const labelParts = [];
-    if (ml) labelParts.push(ml);
-    if (color) labelParts.push(color);
-
     const cartProduct = {
       ...product,
-      id: buildCartId(product.id, ml, color),
+      id: buildCartId(product.id, ml),
       baseProductId: product.id,
-      ml: ml || undefined,
-      color: color || undefined,
+      ml,
       price: getDisplayPrice(product), // ✅ use the size-specific price in the cart
-      name: `${product.name} - ${labelParts.join(" / ")}`,
+      name: `${product.name} - ${ml}`,
     };
     addToCart(cartProduct);
     showToast(cartProduct.name);
@@ -2492,8 +2452,7 @@ const Purchase = () => {
   // How many units of THIS product (+ selected ml/color, if any) are already in the cart
   const getCartQuantity = (product) => {
     const ml = getSelectedMl(product);
-    const color = getSelectedColor(product);
-    const cartId = buildCartId(product.id, ml, color);
+    const cartId = buildCartId(product.id, ml);
     const item = cartItems.find((i) => i.id === cartId);
     return item ? item.quantity : 0;
   };
@@ -2574,10 +2533,9 @@ const Purchase = () => {
 
   /* ---------- shared option pickers (card + modal) ---------- */
   const renderOptions = (product, size = "sm") => {
-    const { ml: mlOptions, color: colorOptions } = getProductOptions(product);
+    const { ml: mlOptions } = getProductOptions(product);
     const currentMl = getSelectedMl(product);
-    const currentColor = getSelectedColor(product);
-    if (!mlOptions && !colorOptions) return null;
+    if (!mlOptions) return null;
     return (
       <div className={`shop-options shop-options--${size}`}>
         {mlOptions && (
@@ -2602,31 +2560,6 @@ const Purchase = () => {
             </div>
           </div>
         )}
-        {colorOptions && (
-          <div className="shop-option">
-            <span className="shop-option-label">
-              Color · <strong>{currentColor}</strong>
-            </span>
-            <div className="shop-swatches" role="radiogroup" aria-label="Color">
-              {colorOptions.map((c) => (
-                <button
-                  type="button"
-                  key={c}
-                  role="radio"
-                  aria-checked={currentColor === c}
-                  aria-label={c}
-                  title={c}
-                  className={`shop-swatch${currentColor === c ? " is-active" : ""}`}
-                  style={{ "--swatch": COLOR_SWATCH[c] || "#999" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setColor(product.id, c);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -2634,7 +2567,7 @@ const Purchase = () => {
   /* ---------- add / buy / quantity controls (card + modal) ---------- */
   const renderActions = (product, size = "sm") => {
     const qtyInCart = getCartQuantity(product);
-    const cartId = buildCartId(product.id, getSelectedMl(product), getSelectedColor(product));
+    const cartId = buildCartId(product.id, getSelectedMl(product));
     const out = product.stock === 0;
 
     return (
