@@ -2525,6 +2525,7 @@ import {
 import { RevenueTrend, StatusMix, TopProducts, Sparkline, STATUS_COLORS } from "./AdminCharts";
 import { downloadOrderPdf } from "./orderPdf";
 import { printOrderInvoice } from "./orderInvoice";
+import AdminSettings, { loadPrefs } from "./AdminSettings";
 import { resolveProductImage } from "./productImages";
 import "./AdminDashboard.css";
 
@@ -2665,8 +2666,11 @@ export default function AdminDashboard() {
   // track the backend without a manual reload
   const [lastSync, setLastSync] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [revenueRange, setRevenueRange] = useState(14); // days shown in the trend
+  // Settings are per-browser preferences; seed the dashboard from them so a
+  // saved choice survives a reload.
+  const [adminPrefs, setAdminPrefs] = useState(loadPrefs);
+  const [autoRefresh, setAutoRefresh] = useState(adminPrefs.autoRefresh);
+  const [revenueRange, setRevenueRange] = useState(adminPrefs.revenueRange); // days shown in the trend
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile nav drawer
 
   // ✅ NEW: every admin API call must carry the JWT so the backend can scope
@@ -3362,7 +3366,7 @@ export default function AdminDashboard() {
           <div className="admin-user">
             <button type="button" className="admin-bell" aria-label={`${pendingOrders} pending orders`}>
               <FaBell />
-              {pendingOrders > 0 && <span className="admin-bell-dot" />}
+              {adminPrefs.pendingDot && pendingOrders > 0 && <span className="admin-bell-dot" />}
             </button>
             <div className="admin-avatar">
               {(currentUser.fullName || "Admin").trim().charAt(0).toUpperCase()}
@@ -4541,10 +4545,17 @@ export default function AdminDashboard() {
 
         {currentTab === "settings" && (
           <div className="admin-content">
-            <div className="admin-card">
-              <h2>⚙️ Settings</h2>
-              <p>Here you can manage profile, notifications, and system preferences.</p>
-            </div>
+            <AdminSettings
+              currentUser={currentUser}
+              prefs={adminPrefs}
+              companies={companies}
+              onPrefsChange={(next) => {
+                setAdminPrefs(next);
+                // apply straight away rather than waiting for a reload
+                setAutoRefresh(next.autoRefresh);
+                setRevenueRange(next.revenueRange);
+              }}
+            />
           </div>
         )}
       </main>
