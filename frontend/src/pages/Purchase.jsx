@@ -2280,11 +2280,13 @@ import {
 const ML_SIZE_OPTIONS = ["2ml", "3ml", "5ml", "10ml"];
 
 // ✅ NEW: price for each Syringe ml size — edit these numbers if prices change
+// Syringe is priced per size rather than from the product record, so these
+// carry the same 30% increase applied to every stored product price.
 const SYRINGE_ML_PRICES = {
-  "2ml": 50,
-  "3ml": 65,
-  "5ml": 75,
-  "10ml": 100,
+  "2ml": 65,
+  "3ml": 85,
+  "5ml": 98,
+  "10ml": 130,
 };
 
 // Returns the option config for a given product:
