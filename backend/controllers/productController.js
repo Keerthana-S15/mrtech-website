@@ -786,6 +786,7 @@
 
 
 import { db } from "../config/firebase.js";
+import { storeProductImage, deleteProductImage } from "./productImageController.js";
 
 // ============================================
 // PUBLIC (storefront) — shows ALL products from ALL companies (shared
@@ -911,7 +912,16 @@ export const addProduct = async (req, res) => {
       return res.status(400).json({ success: false, error: "companyId is required" });
     }
 
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : "";
+    // Stored in Firestore, not on the local disk — Render wipes runtime writes.
+    let imageUrl = "";
+    try {
+      imageUrl = await storeProductImage(req.file, { companyId: targetCompanyId });
+    } catch (imgErr) {
+      if (imgErr.code === "IMAGE_TOO_LARGE") {
+        return res.status(413).json({ success: false, error: imgErr.message });
+      }
+      throw imgErr;
+    }
 
     const docRef = await db.collection("products").add({
       name,
@@ -964,7 +974,18 @@ export const updateProduct = async (req, res) => {
     if (updates.description !== undefined) updateData.description = updates.description;
 
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
+      try {
+        updateData.image = await storeProductImage(req.file, {
+          companyId: existingDoc.data().companyId,
+        });
+      } catch (imgErr) {
+        if (imgErr.code === "IMAGE_TOO_LARGE") {
+          return res.status(413).json({ success: false, error: imgErr.message });
+        }
+        throw imgErr;
+      }
+      // the photo it replaces is now unreachable
+      await deleteProductImage(existingDoc.data().image);
     } else if (updates.image) {
       updateData.image = updates.image;
     }
@@ -997,6 +1018,7 @@ export const deleteProduct = async (req, res) => {
     }
 
     await db.collection("products").doc(id).delete();
+    await deleteProductImage(existingDoc.data().image);
 
     res.json({ success: true, message: "Product deleted successfully" });
   } catch (error) {

@@ -2529,6 +2529,55 @@ import { resolveProductImage } from "./productImages";
 import "./AdminDashboard.css";
 
 /**
+ * Shrinks a chosen photo before upload.
+ *
+ * Product images are stored in Firestore, which caps a document at 1 MiB, so a
+ * straight-from-the-phone JPEG would be rejected. Downscaling here rather than
+ * on the server keeps the backend free of a native image dependency and means
+ * the admin uploads far less over a slow connection.
+ *
+ * Returns the original file untouched if anything goes wrong — the server
+ * still enforces the real limit, so a failure here degrades to a clear error
+ * rather than a silently corrupted image.
+ */
+const MAX_UPLOAD_EDGE = 1200;
+const MAX_UPLOAD_BYTES = 700 * 1024;
+
+async function downscaleImage(file) {
+  if (!file || !file.type?.startsWith("image/") || file.type === "image/gif") return file;
+  if (file.size <= 120 * 1024) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_UPLOAD_EDGE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+
+    // step the quality down until it fits, rather than guessing once
+    for (const quality of [0.82, 0.7, 0.6, 0.5]) {
+      // eslint-disable-next-line no-await-in-loop
+      const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", quality));
+      if (!blob) break;
+      if (blob.size <= MAX_UPLOAD_BYTES) {
+        const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+        return new File([blob], name, { type: "image/jpeg" });
+      }
+    }
+    return file;
+  } catch {
+    return file;
+  }
+}
+
+
+/**
  * Product photo for one ordered line. Resolves the image the same way the shop
  * and checkout do, and falls back to the box glyph when the file 404s —
  * uploads do not survive a Render deploy, so a dead path is expected.
@@ -2755,7 +2804,7 @@ export default function AdminDashboard() {
       formDataToSend.append("description", formData.description);
 
       if (productImage) {
-        formDataToSend.append("image", productImage);
+        formDataToSend.append("image", await downscaleImage(productImage));
       }
 
       const url = editingProduct

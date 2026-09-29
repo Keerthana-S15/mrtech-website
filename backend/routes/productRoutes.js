@@ -23,8 +23,9 @@
 
 
 import express from "express";
-import upload from "../middleware/uploadMiddleware.js";
+import { uploadProductImage } from "../middleware/uploadMiddleware.js";
 import { requireAdmin } from "../middleware/authMiddleware.js";
+import { serveProductImage } from "../controllers/productImageController.js";
 import {
   addProduct,
   getAllProducts,
@@ -37,13 +38,18 @@ import {
 const router = express.Router();
 
 // Public storefront routes — unchanged, no login required
+// Product photos live in Firestore so they survive a redeploy; this serves
+// them. Public, like the product list, and cached hard — the id changes
+// whenever the photo does.
+router.get("/product-image/:id", serveProductImage);
+
 router.get("/products", getAllProducts);
 router.get("/products/:id", getProductById);
 
 // ✅ NEW: Admin-only, company-scoped routes
 router.get("/admin/products", requireAdmin, getAdminProducts);
-router.post("/products", requireAdmin, upload.single("image"), addProduct);
-router.put("/products/:id", requireAdmin, upload.single("image"), updateProduct);
+router.post("/products", requireAdmin, uploadProductImage, addProduct);
+router.put("/products/:id", requireAdmin, uploadProductImage, updateProduct);
 router.delete("/products/:id", requireAdmin, deleteProduct);
 
 export default router;
