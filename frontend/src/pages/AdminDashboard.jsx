@@ -2776,7 +2776,7 @@ export default function AdminDashboard() {
   // ✅ NEW: fetch the list of company admin accounts (super admin only)
   const fetchCompanies = async () => {
     try {
-      const res = await authFetch("/api/auth/admin/companies");
+      const res = await authFetch("/api/admin/companies");
       const data = await res.json();
       if (data.success) setCompanies(data.companies);
     } catch (err) {
@@ -4546,6 +4546,8 @@ export default function AdminDashboard() {
         {currentTab === "settings" && (
           <div className="admin-content">
             <AdminSettings
+              authFetch={authFetch}
+              onSignOut={handleLogout}
               currentUser={currentUser}
               prefs={adminPrefs}
               companies={companies}
