@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   FaUserCircle, FaKey, FaBell, FaBuilding, FaShieldAlt, FaSyncAlt,
   FaCheckCircle, FaExclamationTriangle, FaEye, FaEyeSlash, FaArrowLeft,
-  FaSignOutAlt, FaLock,
+  FaSignOutAlt, FaLock, FaRegCopy, FaCheck, FaSearch, FaClock,
 } from "react-icons/fa";
 
 /**
@@ -71,22 +71,82 @@ function readToken() {
 }
 
 const SECTIONS = [
-  { id: "profile", label: "Profile", icon: FaUserCircle },
-  { id: "password", label: "Password", icon: FaKey },
-  { id: "display", label: "Notifications", icon: FaBell },
-  { id: "company", label: "Company", icon: FaBuilding },
-  { id: "security", label: "Security", icon: FaShieldAlt },
+  { id: "profile", label: "Profile", icon: FaUserCircle, blurb: "Who you are signed in as" },
+  { id: "password", label: "Password", icon: FaKey, blurb: "Change it by email code" },
+  { id: "display", label: "Notifications", icon: FaBell, blurb: "Dashboard behaviour" },
+  { id: "company", label: "Company", icon: FaBuilding, blurb: "Scope and admin accounts" },
+  { id: "security", label: "Security", icon: FaShieldAlt, blurb: "Session and recovery" },
 ];
 
-const Row = ({ label, value, hint }) => (
-  <div className="set-row">
-    <span className="set-row-label">{label}</span>
-    <span className="set-row-value">
-      {value === undefined || value === null || value === "" ? <em>Not set</em> : value}
-      {hint && <small>{hint}</small>}
-    </span>
-  </div>
-);
+/** Initials for the avatar, falling back to the email's first letter. */
+function initialsOf(name, email) {
+  const from = String(name || "").trim();
+  if (from) {
+    const parts = from.split(/\s+/).filter(Boolean);
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  }
+  const e = String(email || "").trim();
+  return e ? e[0].toUpperCase() : "?";
+}
+
+/**
+ * Advisory only. The API accepts six characters, so this never blocks a
+ * password it would have taken — it just says how strong the choice is.
+ */
+function strengthOf(pw) {
+  const checks = {
+    length: pw.length >= 8,
+    letter: /[a-zA-Z]/.test(pw),
+    number: /\d/.test(pw),
+    symbol: /[^a-zA-Z0-9]/.test(pw),
+  };
+  const met = Object.values(checks).filter(Boolean).length;
+  if (!pw) return { checks, met, score: 0, label: "", tone: "none" };
+  if (pw.length < 6) return { checks, met, score: 1, label: "Too short", tone: "weak" };
+  if (met <= 1) return { checks, met, score: 1, label: "Weak", tone: "weak" };
+  if (met === 2) return { checks, met, score: 2, label: "Fair", tone: "fair" };
+  if (met === 3) return { checks, met, score: 3, label: "Good", tone: "good" };
+  return { checks, met, score: 4, label: "Strong", tone: "strong" };
+}
+
+const Row = ({ label, value, hint, copy }) => {
+  const [done, setDone] = useState(false);
+  const text = value === undefined || value === null ? "" : String(value);
+  const canCopy = copy && text;
+
+  const doCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setDone(true);
+      setTimeout(() => setDone(false), 1600);
+    } catch {
+      /* clipboard blocked — the value is still on screen to select */
+    }
+  };
+
+  return (
+    <div className="set-row">
+      <span className="set-row-label">{label}</span>
+      <span className="set-row-value">
+        <span className="set-row-main">
+          {text === "" ? <em>Not set</em> : text}
+          {canCopy && (
+            <button
+              type="button"
+              className={`set-copy${done ? " is-done" : ""}`}
+              onClick={doCopy}
+              aria-label={done ? `${label} copied` : `Copy ${label}`}
+              title={done ? "Copied" : "Copy"}
+            >
+              {done ? <FaCheck aria-hidden="true" /> : <FaRegCopy aria-hidden="true" />}
+            </button>
+          )}
+        </span>
+        {hint && <small>{hint}</small>}
+      </span>
+    </div>
+  );
+};
 
 const Toggle = ({ id, checked, onChange, label, hint, disabled }) => (
   <label className={`set-toggle${disabled ? " is-disabled" : ""}`} htmlFor={id}>
@@ -117,7 +177,9 @@ const Note = ({ kind, children }) =>
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsChange, onSignOut }) {
+export default function AdminSettings({
+  currentUser, authFetch, prefs, onPrefsChange, onSignOut, companies: companiesProp,
+}) {
   const [section, setSection] = useState("profile");
   const claims = useMemo(readToken, []);
   const email = currentUser.email || claims?.email || "";
@@ -126,19 +188,30 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
   const [draft, setDraft] = useState(prefs);
   const [prefNote, setPrefNote] = useState("");
   const [prefError, setPrefError] = useState("");
+  const [prefSaving, setPrefSaving] = useState(false);
 
   useEffect(() => setDraft(prefs), [prefs]);
   const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(prefs), [draft, prefs]);
 
+  // clear the confirmation on its own so it does not sit there indefinitely
+  useEffect(() => {
+    if (!prefNote) return undefined;
+    const t = setTimeout(() => setPrefNote(""), 4000);
+    return () => clearTimeout(t);
+  }, [prefNote]);
+
   const applyPrefs = () => {
     setPrefError("");
+    setPrefSaving(true);
     if (!savePrefs(draft)) {
       setPrefNote("");
       setPrefError("This browser is blocking storage, so the change was not kept.");
+      setPrefSaving(false);
       return;
     }
     onPrefsChange(draft);
     setPrefNote("Saved. The dashboard is using these now.");
+    setPrefSaving(false);
   };
 
   const cancelPrefs = () => {
@@ -184,6 +257,10 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
   useEffect(() => {
     if (step === 2 && codeRef.current) codeRef.current.focus();
   }, [step]);
+
+  const strength = useMemo(() => strengthOf(pw1), [pw1]);
+  const matches = pw1.length > 0 && pw1 === pw2;
+  const canSavePw = pw1.length >= 6 && matches && !busy;
 
   const resetFlow = useCallback(() => {
     setStep(1);
@@ -291,9 +368,19 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
 
   /* ---------------------------------------------------------------- company */
   const isSuper = Boolean(currentUser.isSuperAdmin || claims?.isSuperAdmin);
-  const [companies, setCompanies] = useState(null); // null = not loaded yet
+
+  // The dashboard has usually loaded this already, so start from what it has
+  // and only go to the network when there is nothing or a refresh is asked for.
+  const [companies, setCompanies] = useState(
+    Array.isArray(companiesProp) && companiesProp.length ? companiesProp : null
+  );
   const [coBusy, setCoBusy] = useState(false);
   const [coError, setCoError] = useState("");
+  const [coQuery, setCoQuery] = useState("");
+
+  useEffect(() => {
+    if (Array.isArray(companiesProp) && companiesProp.length) setCompanies(companiesProp);
+  }, [companiesProp]);
 
   const loadCompanies = useCallback(async () => {
     if (!isSuper) return;
@@ -320,6 +407,16 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
     if (section === "company" && isSuper && companies === null && !coBusy) loadCompanies();
   }, [section, isSuper, companies, coBusy, loadCompanies]);
 
+  const shownCompanies = useMemo(() => {
+    if (!Array.isArray(companies)) return [];
+    const q = coQuery.trim().toLowerCase();
+    if (!q) return companies;
+    return companies.filter((c) =>
+      [c.companyName, c.companyId, c.email, c.fullName]
+        .some((f) => String(f || "").toLowerCase().includes(q))
+    );
+  }, [companies, coQuery]);
+
   /* --------------------------------------------------------------- security */
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -341,7 +438,14 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
     return `${m}m ${secondsLeft % 60}s remaining`;
   })();
 
+  // tokens are issued for 7 days, so that is the full bar
+  const SESSION_SECONDS = 7 * 24 * 3600;
+  const sessionPct = secondsLeft === null
+    ? null
+    : Math.max(0, Math.min(100, Math.round((secondsLeft / SESSION_SECONDS) * 100)));
+
   const role = isSuper ? "Super admin" : currentUser.userType === "admin" ? "Company admin" : currentUser.userType || "—";
+  const scope = isSuper ? "All companies" : currentUser.companyId || claims?.companyId || "—";
 
   /* ------------------------------------------------------------------ views */
   const panels = {
@@ -356,10 +460,10 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
         </header>
         <div className="set-body">
           <Row label="Name" value={currentUser.fullName} />
-          <Row label="Email" value={email} />
+          <Row label="Email" value={email} copy />
           <Row label="Role" value={role} />
           <Row label="Company" value={currentUser.companyId || claims?.companyId} />
-          <Row label="Account ID" value={claims?.adminId} hint="From the signed session token" />
+          <Row label="Account ID" value={claims?.adminId} hint="From the signed session token" copy />
         </div>
         <div className="set-actions">
           <button type="button" className="set-btn set-btn-primary" onClick={() => setSection("password")}>
@@ -381,6 +485,7 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
             <h2>Change password</h2>
             <p>Confirm by email, then choose a new one</p>
           </div>
+          {step === 4 && <span className="set-tag set-tag-ok">Changed</span>}
         </header>
 
         <ol className="set-steps" aria-label="Progress">
@@ -429,7 +534,7 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
               </label>
               <div className="set-meta">
                 {codeLeft > 0 ? (
-                  <span>Expires in <strong>{mmss(codeLeft)}</strong></span>
+                  <span><FaClock aria-hidden="true" /> Expires in <strong>{mmss(codeLeft)}</strong></span>
                 ) : (
                   <span className="set-meta-warn">This code has expired — send a new one.</span>
                 )}
@@ -460,6 +565,32 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
                   </button>
                 </div>
               </label>
+
+              {pw1 && (
+                <div className="set-strength" aria-live="polite">
+                  <div className={`set-strength-bar is-${strength.tone}`}>
+                    {[1, 2, 3, 4].map((n) => (
+                      <span key={n} className={n <= strength.score ? "is-on" : ""} />
+                    ))}
+                  </div>
+                  <span className="set-strength-label">{strength.label}</span>
+                </div>
+              )}
+
+              <ul className="set-checks" aria-label="Password suggestions">
+                {[
+                  ["length", "8 characters or more"],
+                  ["letter", "A letter"],
+                  ["number", "A number"],
+                  ["symbol", "A symbol"],
+                ].map(([key, text]) => (
+                  <li key={key} className={strength.checks[key] ? "is-met" : ""}>
+                    {strength.checks[key] ? <FaCheck aria-hidden="true" /> : <span className="set-check-dot" aria-hidden="true" />}
+                    {text}
+                  </li>
+                ))}
+              </ul>
+
               <label className="set-field">
                 <span>Confirm new password</span>
                 <input
@@ -470,9 +601,15 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
                   onChange={(e) => { setPw2(e.target.value); setPwError(""); }}
                 />
               </label>
+
               <div className="set-meta">
                 <span>Minimum 6 characters</span>
-                {tokenLeft > 0 && <span>Finish within <strong>{mmss(tokenLeft)}</strong></span>}
+                {pw2.length > 0 && (
+                  <span className={matches ? "set-meta-ok" : "set-meta-warn"}>
+                    {matches ? "Both entries match" : "The two entries differ"}
+                  </span>
+                )}
+                {tokenLeft > 0 && <span><FaClock aria-hidden="true" /> Finish within <strong>{mmss(tokenLeft)}</strong></span>}
               </div>
             </>
           )}
@@ -514,7 +651,7 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
               <button type="button" className="set-btn set-btn-ghost" onClick={resetFlow} disabled={busy}>
                 Cancel
               </button>
-              <button type="button" className="set-btn set-btn-primary" onClick={savePassword} disabled={busy || !pw1 || !pw2}>
+              <button type="button" className="set-btn set-btn-primary" onClick={savePassword} disabled={!canSavePw}>
                 {busy ? <><FaSyncAlt className="set-spin" /> Saving…</> : "Save new password"}
               </button>
             </>
@@ -536,7 +673,9 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
             <h2>Notifications &amp; display</h2>
             <p>Applied to the dashboard as soon as you save</p>
           </div>
-          <span className="set-tag set-tag-soft">This browser</span>
+          <span className={`set-tag${dirty ? " set-tag-dirty" : " set-tag-soft"}`}>
+            {dirty ? "Unsaved changes" : "This browser"}
+          </span>
         </header>
         <div className="set-body">
           <Toggle
@@ -578,7 +717,9 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
         <div className="set-actions">
           <button type="button" className="set-btn set-btn-ghost" onClick={defaultPrefs}>Reset to defaults</button>
           <button type="button" className="set-btn set-btn-ghost" onClick={cancelPrefs} disabled={!dirty}>Cancel</button>
-          <button type="button" className="set-btn set-btn-primary" onClick={applyPrefs} disabled={!dirty}>Save changes</button>
+          <button type="button" className="set-btn set-btn-primary" onClick={applyPrefs} disabled={!dirty || prefSaving}>
+            {prefSaving ? <><FaSyncAlt className="set-spin" /> Saving…</> : "Save changes"}
+          </button>
         </div>
         <p className="set-foot">
           There is no endpoint that stores admin preferences, so these live in this
@@ -617,15 +758,44 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
           {isSuper && (
             <>
               <Note kind="error">{coError}</Note>
-              {coBusy && companies === null && <p className="set-explain">Loading companies…</p>}
+
+              {Array.isArray(companies) && companies.length > 3 && (
+                <div className="set-search">
+                  <FaSearch aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={coQuery}
+                    placeholder="Filter by company, ID or email"
+                    aria-label="Filter companies"
+                    onChange={(e) => setCoQuery(e.target.value)}
+                  />
+                  <span className="set-count">
+                    {shownCompanies.length} of {companies.length}
+                  </span>
+                </div>
+              )}
+
+              {coBusy && companies === null && (
+                <ul className="set-list set-list--skeleton" aria-hidden="true">
+                  {[0, 1, 2].map((n) => (
+                    <li key={n}><span className="set-skel set-skel-a" /><span className="set-skel set-skel-b" /></li>
+                  ))}
+                </ul>
+              )}
+
               {!coBusy && companies !== null && companies.length === 0 && !coError && (
                 <p className="set-explain">
                   No company admins are registered yet. Create one from the Companies tab.
                 </p>
               )}
-              {companies !== null && companies.length > 0 && (
+
+              {Array.isArray(companies) && companies.length > 0 && shownCompanies.length === 0 && (
+                <p className="set-explain">Nothing matches “{coQuery}”.</p>
+              )}
+
+              {shownCompanies.length > 0 && (
                 <ul className="set-list">
-                  {companies.map((c) => (
+                  {shownCompanies.map((c) => (
                     <li key={c.id}>
                       <div>
                         <strong>{c.companyName || c.companyId || "Unnamed"}</strong>
@@ -657,15 +827,36 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
           </div>
         </header>
         <div className="set-body">
-          <Row
-            label="Session expires"
-            value={expiryText || "Unknown"}
-            hint={expiresAt ? new Date(expiresAt).toLocaleString("en-IN") : "No expiry claim in the token"}
-          />
+          {sessionPct !== null && (
+            <div className="set-session">
+              <div className="set-session-top">
+                <span>Session</span>
+                <strong className={secondsLeft === 0 ? "is-expired" : ""}>{expiryText}</strong>
+              </div>
+              <div
+                className="set-progress"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={sessionPct}
+                aria-label="Time left in this session"
+              >
+                <span
+                  className={`set-progress-fill${sessionPct < 15 ? " is-low" : ""}`}
+                  style={{ width: `${sessionPct}%` }}
+                />
+              </div>
+              <small>
+                Issued for 7 days
+                {expiresAt ? ` · expires ${new Date(expiresAt).toLocaleString("en-IN")}` : ""}
+              </small>
+            </div>
+          )}
+
           <Row label="Signed in as" value={email} hint={role} />
           <Row
             label="Scope"
-            value={isSuper ? "All companies" : currentUser.companyId || claims?.companyId}
+            value={scope}
             hint="Enforced by the API on every admin request, not just in the UI"
           />
 
@@ -689,26 +880,60 @@ export default function AdminSettings({ currentUser, authFetch, prefs, onPrefsCh
     ),
   };
 
-  return (
-    <div className="settings-shell">
-      <nav className="settings-nav" aria-label="Settings sections">
-        {SECTIONS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            className={`settings-nav-item${section === id ? " is-active" : ""}`}
-            aria-current={section === id ? "page" : undefined}
-            onClick={() => setSection(id)}
-          >
-            <Icon aria-hidden="true" />
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
+  const activeSection = SECTIONS.find((s) => s.id === section);
 
-      <section className="admin-card set-panel" aria-live="polite">
-        {panels[section]}
-      </section>
+  return (
+    <div className="settings-page">
+      <header className="set-hero">
+        <span className="set-hero-avatar" aria-hidden="true">
+          {initialsOf(currentUser.fullName, email)}
+        </span>
+        <div className="set-hero-main">
+          <h1>{currentUser.fullName || email || "Admin"}</h1>
+          <p>{email || "No email on this session"}</p>
+        </div>
+        <div className="set-hero-chips">
+          <span className={`set-chip${isSuper ? " is-super" : ""}`}>
+            <FaShieldAlt aria-hidden="true" /> {role}
+          </span>
+          <span className="set-chip">
+            <FaBuilding aria-hidden="true" /> {scope}
+          </span>
+          {expiryText && (
+            <span className={`set-chip${secondsLeft === 0 ? " is-warn" : ""}`}>
+              <FaClock aria-hidden="true" /> {expiryText}
+            </span>
+          )}
+        </div>
+      </header>
+
+      <div className="settings-shell">
+        <nav className="settings-nav" aria-label="Settings sections">
+          {SECTIONS.map(({ id, label, icon: Icon, blurb }) => (
+            <button
+              key={id}
+              type="button"
+              className={`settings-nav-item${section === id ? " is-active" : ""}`}
+              aria-current={section === id ? "page" : undefined}
+              onClick={() => setSection(id)}
+            >
+              <Icon aria-hidden="true" />
+              <span className="settings-nav-text">
+                {label}
+                <small>{blurb}</small>
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        <section
+          className="admin-card set-panel"
+          aria-live="polite"
+          aria-label={activeSection ? activeSection.label : "Settings"}
+        >
+          {panels[section]}
+        </section>
+      </div>
     </div>
   );
 }
