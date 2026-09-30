@@ -1406,6 +1406,7 @@
 import { db } from "../config/firebase.js";
 import { getEstimatedDelivery } from "../utils/helpers.js";
 import transporter from "../config/email.js";
+import { cached, invalidate, CACHE_KEYS, TTL } from "../utils/readCache.js";
 
 // ============================================
 // SHIPROCKET INTEGRATION
@@ -1718,6 +1719,7 @@ export const createOrder = async (req, res) => {
       console.error("🔥 Customer confirmation email failed (order still placed):", mailErr);
     }
 
+    invalidate("orders:");   // a new order must show at once
     res.json({
       success: true,
       message: "Order placed successfully",
@@ -1736,16 +1738,24 @@ export const getAdminOrders = async (req, res) => {
   try {
     const { companyId, isSuperAdmin } = req.admin;
 
-    let query = db.collection("orders").orderBy("createdAt", "desc");
-    if (!isSuperAdmin) {
-      query = db.collection("orders").where("companyId", "==", companyId);
-    }
+    // Held only briefly: long enough that several open dashboards polling at
+    // the same moment share one read, short enough that nothing looks stale.
+    // Every order write invalidates this key regardless.
+    const orders = await cached(
+      CACHE_KEYS.adminOrders(companyId, isSuperAdmin),
+      TTL.orders,
+      async () => {
+        let query = db.collection("orders").orderBy("createdAt", "desc");
+        if (!isSuperAdmin) {
+          query = db.collection("orders").where("companyId", "==", companyId);
+        }
+        const snapshot = await query.get();
+        const rows = [];
+        snapshot.forEach((doc) => rows.push({ id: doc.id, ...doc.data() }));
+        return rows;
+      }
+    );
 
-    const snapshot = await query.get();
-    if (snapshot.empty) return res.json({ success: true, orders: [] });
-
-    const orders = [];
-    snapshot.forEach((doc) => orders.push({ id: doc.id, ...doc.data() }));
     res.json({ success: true, orders });
   } catch (error) {
     console.error("🔥 Get Admin Orders Error:", error);
@@ -1927,6 +1937,7 @@ export const deleteOrder = async (req, res) => {
       deletedBy: email || "unknown admin",
     });
     await db.collection("orders").doc(docId).delete();
+    invalidate("orders:");   // the row is gone
 
     console.log(`🗑️  Order ${orderId} deleted by ${email || "unknown admin"} (archived to deleted_orders/${docId})`);
     res.json({ success: true, message: `Order ${orderId} deleted` });
@@ -1972,6 +1983,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     await db.collection("orders").doc(docId).update({ orderStatus, updatedAt: new Date().toISOString() });
+    invalidate("orders:");   // the list shows this status
 
     try {
       const statusLabel = orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1);

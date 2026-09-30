@@ -2514,7 +2514,7 @@
 
 
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -2711,16 +2711,34 @@ export default function AdminDashboard() {
   );
 
   // Poll every 30s while the tab is visible and auto-refresh is on.
+  //
+  // The visibility handler used to re-fetch on every single focus, so
+  // alt-tabbing repeatedly could fire far more reads than the timer ever did.
+  // It now only catches up when the data is actually older than one interval.
+  const POLL_MS = 30000;
+  const lastFetchRef = useRef(0);
+
   useEffect(() => {
     if (!autoRefresh) return undefined;
-    const tick = () => {
-      if (document.visibilityState === "visible") refreshData(true);
+
+    const run = () => {
+      lastFetchRef.current = Date.now();
+      refreshData(true);
     };
-    const id = setInterval(tick, 30000);
-    document.addEventListener("visibilitychange", tick);
+    const tick = () => {
+      if (document.visibilityState === "visible") run();
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastFetchRef.current < POLL_MS) return; // still fresh
+      run();
+    };
+
+    const id = setInterval(tick, POLL_MS);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(id);
-      document.removeEventListener("visibilitychange", tick);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [autoRefresh, refreshData]);
 

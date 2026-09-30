@@ -46,13 +46,29 @@ export const checkFirestore = async () => {
     firestoreStatus = { ok: true, checkedAt: new Date().toISOString(), error: null };
   } catch (error) {
     firestoreStatus = { ok: false, checkedAt: new Date().toISOString(), error: error.message };
-    console.error("🔥🔥🔥 FIRESTORE CREDENTIALS REJECTED 🔥🔥🔥");
-    console.error(`   ${error.message}`);
-    console.error(`   Credential source: ${credentialSource}`);
-    console.error("   The service-account key is revoked, expired or wrong. Every DB-backed");
-    console.error("   route (products, login, orders) will return 500 until it is replaced.");
-    console.error("   Fix: Firebase console → Project settings → Service accounts → Generate");
-    console.error("   new private key → paste the JSON into FIREBASE_SERVICE_ACCOUNT on Render.");
+
+    // A quota failure and a credential failure look identical from the call
+    // site but need opposite fixes, and the old message sent you to regenerate
+    // a key that was never the problem.
+    const quota = error.code === 8 || /RESOURCE_EXHAUSTED|Quota exceeded/i.test(error.message || "");
+
+    if (quota) {
+      console.error("🔥🔥🔥 FIRESTORE QUOTA EXHAUSTED 🔥🔥🔥");
+      console.error(`   ${error.message}`);
+      console.error("   The credentials are fine. This project has spent its daily read or");
+      console.error("   write allowance, so every DB-backed route will fail until the quota");
+      console.error("   resets (midnight US/Pacific) or the plan is upgraded.");
+      console.error("   Check Firebase console → Usage. If this recurs, look for repeated");
+      console.error("   full-collection reads rather than raising the limit.");
+    } else {
+      console.error("🔥🔥🔥 FIRESTORE CREDENTIALS REJECTED 🔥🔥🔥");
+      console.error(`   ${error.message}`);
+      console.error(`   Credential source: ${credentialSource}`);
+      console.error("   The service-account key is revoked, expired or wrong. Every DB-backed");
+      console.error("   route (products, login, orders) will return 500 until it is replaced.");
+      console.error("   Fix: Firebase console → Project settings → Service accounts → Generate");
+      console.error("   new private key → paste the JSON into FIREBASE_SERVICE_ACCOUNT on Render.");
+    }
   }
   return firestoreStatus;
 };

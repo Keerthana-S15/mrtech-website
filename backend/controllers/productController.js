@@ -787,6 +787,7 @@
 
 import { db } from "../config/firebase.js";
 import { storeProductImage, deleteProductImage } from "./productImageController.js";
+import { cached, invalidate, CACHE_KEYS, TTL } from "../utils/readCache.js";
 
 // ============================================
 // PUBLIC (storefront) — shows ALL products from ALL companies (shared
@@ -796,30 +797,30 @@ import { storeProductImage, deleteProductImage } from "./productImageController.
 
 export const getAllProducts = async (req, res) => {
   try {
-    console.log("📦 Fetching all products (public storefront)...");
+    // Every storefront visit used to read the whole catalogue. Identical reads
+    // inside the TTL now share one, and any product write invalidates the key.
+    const products = await cached(CACHE_KEYS.publicProducts, TTL.products, async () => {
+      console.log("📦 Fetching all products from Firestore (public storefront)...");
+      const snapshot = await db.collection("products").orderBy("createdAt", "desc").get();
+      console.log(`📦 Firestore returned ${snapshot.size} product document(s)`);
 
-    const snapshot = await db.collection("products").orderBy("createdAt", "desc").get();
-    console.log(`📦 Firestore returned ${snapshot.size} product document(s)`);
-
-    if (snapshot.empty) {
-      return res.json({ success: true, products: [], count: 0 });
-    }
-
-    const products = [];
-    snapshot.forEach((doc) => {
-      const productData = doc.data();
-      products.push({
-        id: doc.id,
-        name: productData.name,
-        category: productData.category,
-        price: productData.price,
-        stock: productData.stock,
-        sku: productData.sku,
-        image: productData.image || "",
-        description: productData.description || "",
-        companyId: productData.companyId || "mrtech",
-        createdAt: productData.createdAt,
+      const rows = [];
+      snapshot.forEach((doc) => {
+        const productData = doc.data();
+        rows.push({
+          id: doc.id,
+          name: productData.name,
+          category: productData.category,
+          price: productData.price,
+          stock: productData.stock,
+          sku: productData.sku,
+          image: productData.image || "",
+          description: productData.description || "",
+          companyId: productData.companyId || "mrtech",
+          createdAt: productData.createdAt,
+        });
       });
+      return rows;
     });
 
     res.json({ success: true, products, count: products.length });
@@ -870,21 +871,20 @@ export const getAdminProducts = async (req, res) => {
   try {
     const { companyId, isSuperAdmin } = req.admin;
 
-    let query = db.collection("products").orderBy("createdAt", "desc");
-    if (!isSuperAdmin) {
-      query = db.collection("products").where("companyId", "==", companyId);
-    }
-
-    const snapshot = await query.get();
-
-    if (snapshot.empty) {
-      return res.json({ success: true, products: [] });
-    }
-
-    const products = [];
-    snapshot.forEach((doc) => {
-      products.push({ id: doc.id, ...doc.data() });
-    });
+    const products = await cached(
+      CACHE_KEYS.adminProducts(companyId, isSuperAdmin),
+      TTL.products,
+      async () => {
+        let query = db.collection("products").orderBy("createdAt", "desc");
+        if (!isSuperAdmin) {
+          query = db.collection("products").where("companyId", "==", companyId);
+        }
+        const snapshot = await query.get();
+        const rows = [];
+        snapshot.forEach((doc) => rows.push({ id: doc.id, ...doc.data() }));
+        return rows;
+      }
+    );
 
     res.json({ success: true, products, count: products.length });
   } catch (error) {
@@ -935,6 +935,7 @@ export const addProduct = async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
+    invalidate("products:");   // the catalogue changed
     res.json({
       success: true,
       message: "Product added successfully",
@@ -992,6 +993,7 @@ export const updateProduct = async (req, res) => {
 
     await db.collection("products").doc(id).update(updateData);
 
+    invalidate("products:");   // the catalogue changed
     res.json({
       success: true,
       message: "Product updated successfully",
@@ -1020,6 +1022,7 @@ export const deleteProduct = async (req, res) => {
     await db.collection("products").doc(id).delete();
     await deleteProductImage(existingDoc.data().image);
 
+    invalidate("products:");   // the catalogue changed
     res.json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     console.error("🔥 Delete Product Error:", error);

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { db } from "../config/firebase.js";
 import transporter from "../config/email.js";
+import { invalidate } from "../utils/readCache.js";
 
 // ---------------------------------------------------------------------------
 // Cash-on-Delivery collection verification.
@@ -240,6 +241,7 @@ export const verifyDeliveryOtp = async (req, res) => {
       deliveryVerifiedBy: req.admin?.email || req.admin?.adminId || "unknown",
       updatedAt: deliveredAt,
     });
+    invalidate("orders:");   // delivered and paid must show at once
 
     console.log(`✅ ${orderId} delivered and payment collected (verified by ${req.admin?.email || "unknown"})`);
 
