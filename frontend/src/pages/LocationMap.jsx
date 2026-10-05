@@ -213,10 +213,12 @@ const AREA_MAX_ZOOM = 16;
 // Geocoding goes through our own backend, which talks to Nominatim with a proper
 // User-Agent and paces the calls. Calling Nominatim straight from the browser is
 // against its usage policy and gets blocked.
-const GEOCODE_SEARCH = "/api/geocode/search";
 const GEOCODE_RESOLVE = "/api/geocode/resolve";
 const GEOCODE_REVERSE = "/api/geocode/reverse";
-const SEARCH_DEBOUNCE_MS = 600; // Nominatim allows ~1 call/sec; do not crowd it
+// Two points closer together than this are the same doorstep as far as an
+// address is concerned, so moving the pin that little reuses the address we
+// already have instead of spending a Nominatim call on it.
+const SAME_PLACE_M = 20;
 
 // A result whose bounding box is wider than this is an area, not an address, so
 // its centre is not somewhere a courier can deliver to.
@@ -228,6 +230,17 @@ const round6 = (n) => Math.round(n * 1e6) / 1e6;
 // Words that say where something is rather than naming it, so they should not
 // count for or against whether a result matches what the customer typed.
 const FILLER = new Set(["near", "opposite", "behind", "beside", "india", "landmark"]);
+
+/** Metres between two [lat, lng] points. */
+function metresBetween(a, b) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
 
 /** Widest side of a Nominatim bounding box, in metres. */
 function spanMeters([south, north, west, east]) {
@@ -405,9 +418,6 @@ export default function LocationMap({ onLocationSelect }) {
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState("");
 
-  // Set when the code - not the customer - rewrites the search box, so the
-  // debounced search does not immediately re-query the address it just filled in.
-  const skipSearchRef = useRef(false);
   // Monotonic ticket: a reverse geocode only gets to write state if no newer pick
   // has started. Without it a slow lookup for an old point can land last and
   // overwrite the address of the point the customer actually chose.
@@ -415,18 +425,22 @@ export default function LocationMap({ onLocationSelect }) {
   // Latest suggestions, readable from the submit handler without re-creating it.
   const suggestionsRef = useRef([]);
   suggestionsRef.current = suggestions;
-  // Handles on the in-flight typeahead so an explicit search can call it off.
-  // Pressing Enter lands before the debounce fires, so without this the stale
-  // typeahead answers afterwards and wipes the message the search just set.
-  const typeTimerRef = useRef(null);
-  const typeAbortRef = useRef(null);
 
-  const cancelTypeahead = useCallback(() => {
-    if (typeTimerRef.current) clearTimeout(typeTimerRef.current);
-    if (typeAbortRef.current) typeAbortRef.current.abort();
-    typeTimerRef.current = null;
-    typeAbortRef.current = null;
-  }, []);
+  // In-flight requests, so a new one can call off the one it replaces rather
+  // than letting both reach the geocoder.
+  const searchAbortRef = useRef(null);
+  const reverseAbortRef = useRef(null);
+  // The last point we actually resolved, and what it resolved to.
+  const lastResolvedRef = useRef(null);
+
+  // Nothing should outlive the component.
+  useEffect(
+    () => () => {
+      if (searchAbortRef.current) searchAbortRef.current.abort();
+      if (reverseAbortRef.current) reverseAbortRef.current.abort();
+    },
+    []
+  );
 
   const clean = useCallback((list, trust) => {
     return (Array.isArray(list) ? list : [])
@@ -434,23 +448,27 @@ export default function LocationMap({ onLocationSelect }) {
       .filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng));
   }, []);
 
-  /** Typeahead: one plain query, for the dropdown only. */
-  const fetchCandidates = useCallback(
-    async (text, signal) => {
-      const res = await fetch(`${GEOCODE_SEARCH}?q=${encodeURIComponent(text)}`, { signal });
-      if (!res.ok) throw new Error(`Search request failed (${res.status})`);
-      return clean(await res.json(), "exact");
-    },
-    [clean]
-  );
-
   /**
    * Explicit search: the backend walks its fallback ladder and reports how much
-   * of the address it had to drop to find anything.
+   * of the address it had to drop to find anything. Any previous search is
+   * called off first, so only the newest one is ever in flight.
    */
   const resolveAddress = useCallback(
     async (text) => {
-      const res = await fetch(`${GEOCODE_RESOLVE}?q=${encodeURIComponent(text)}`);
+      if (searchAbortRef.current) searchAbortRef.current.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+
+      const res = await fetch(`${GEOCODE_RESOLVE}?q=${encodeURIComponent(text)}`, {
+        signal: controller.signal,
+      });
+      if (res.status === 429) {
+        const body = await res.json().catch(() => ({}));
+        const err = new Error(body.message || "Address lookup is busy.");
+        err.name = "RateLimited";
+        err.retryAfter = body.retryAfter || 5;
+        throw err;
+      }
       if (!res.ok) throw new Error(`Search request failed (${res.status})`);
       const data = await res.json();
       const found = clean(data.results, data.trust);
@@ -464,69 +482,47 @@ export default function LocationMap({ onLocationSelect }) {
     [clean]
   );
 
-  // Live suggestions while typing. These only populate the dropdown - the map
-  // never moves off a keystroke, only off an explicit search or a chosen result.
-  useEffect(() => {
-    if (skipSearchRef.current) {
-      skipSearchRef.current = false;
-      return;
-    }
-    const text = query.trim();
-    if (text.length < 3) {
-      setSuggestions([]);
-      setActiveIndex(-1);
-      setLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    typeAbortRef.current = controller;
-    setLoading(true);
-    const timer = setTimeout(async () => {
-      typeTimerRef.current = null;
-      try {
-        const found = await fetchCandidates(text, controller.signal);
-        setSuggestions(found);
-        setActiveIndex(-1);
-        setLoading(false);
-        if (!found.length) {
-          setNotice("No match for that address yet - keep typing, or tap the map.");
-        } else {
-          setNotice("");
-        }
-      } catch (err) {
-        // a newer keystroke already owns the spinner - leave it alone
-        if (err.name === "AbortError") return;
-        console.error("Address search failed:", err);
-        setSuggestions([]);
-        setNotice("Search is unavailable right now - tap the map to drop your pin.");
-        setLoading(false);
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    typeTimerRef.current = timer;
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-      if (typeTimerRef.current === timer) typeTimerRef.current = null;
-      if (typeAbortRef.current === controller) typeAbortRef.current = null;
-    };
-  }, [query, fetchCandidates]);
 
   /**
    * Turns a point into an address. Always resolves to something usable: if the
    * geocoder is unreachable we return the coordinates themselves, because the pin
    * the customer placed must still reach the order.
    */
-  const describePoint = useCallback(async ([lat, lng]) => {
+  const describePoint = useCallback(async (point) => {
+    const [lat, lng] = point;
     const fallback = `Pinned location (${round6(lat)}, ${round6(lng)})`;
+
+    // Nudging the pin a few metres does not change the address. Reuse the last
+    // one instead of spending a request - a single drag can otherwise fire a
+    // lookup per adjustment.
+    const last = lastResolvedRef.current;
+    if (last && metresBetween(last.point, point) < SAME_PLACE_M) {
+      return last.address;
+    }
+
+    if (reverseAbortRef.current) reverseAbortRef.current.abort();
+    const controller = new AbortController();
+    reverseAbortRef.current = controller;
+
     try {
-      const res = await fetch(`${GEOCODE_REVERSE}?lat=${lat}&lon=${lng}`);
+      const res = await fetch(`${GEOCODE_REVERSE}?lat=${lat}&lon=${lng}`, {
+        signal: controller.signal,
+      });
+      if (res.status === 429) {
+        // The pin still stands; it just keeps its coordinates as its label.
+        setNotice(
+          "Address lookup is busy, so this pin is saved by its coordinates. Your delivery location is still correct."
+        );
+        return fallback;
+      }
       if (!res.ok) throw new Error(`Reverse geocode failed (${res.status})`);
       const data = await res.json();
       if (!data || data.error) return fallback;
-      return formatAddress(data) || fallback;
+      const address = formatAddress(data) || fallback;
+      lastResolvedRef.current = { point, address };
+      return address;
     } catch (err) {
+      if (err.name === "AbortError") throw err;
       console.error("Reverse geocode failed:", err);
       return fallback;
     }
@@ -536,7 +532,6 @@ export default function LocationMap({ onLocationSelect }) {
   const commit = useCallback(
     (lat, lng, address) => {
       setAddressText(address);
-      skipSearchRef.current = true;
       setQuery(address);
       setSuggestions([]);
       setActiveIndex(-1);
@@ -573,8 +568,13 @@ export default function LocationMap({ onLocationSelect }) {
 
       const seq = ++pickSeqRef.current;
       setLoading(true);
-      const address = await describePoint(next);
-      if (seq !== pickSeqRef.current) return; // a later pick superseded this one
+      let address;
+      try {
+        address = await describePoint(next);
+      } catch (err) {
+        return; // superseded by a newer pick; that one owns the state now
+      }
+      if (seq !== pickSeqRef.current) return;
       setLoading(false);
       commit(next[0], next[1], address);
     },
@@ -612,14 +612,15 @@ export default function LocationMap({ onLocationSelect }) {
             ? ""
             : "That is the right area but not an exact address - drag the pin onto your doorstep."
         );
+        lastResolvedRef.current = { point: [c.lat, c.lng], address: c.label };
         commit(c.lat, c.lng, c.label);
         return;
       }
 
       // Area-only: show them where it is, but do not pretend it is their address.
+      // The other results stay on screen - with no autocomplete, this list is the
+      // only way to reach a different match, so clearing it would strand them.
       clearPin();
-      setSuggestions([]);
-      setActiveIndex(-1);
       setView({ center: [c.lat, c.lng], zoom: zoomForSpan(c.span) });
       setNotice(
         `${why ? `Closest match: ` : `Only the area matched: `}${c.label}. ` +
@@ -633,7 +634,6 @@ export default function LocationMap({ onLocationSelect }) {
   // Explicit search: Enter, or the Search button. Geocodes the whole address and
   // moves the map itself, rather than waiting for a suggestion to be clicked.
   const submitSearch = useCallback(async () => {
-    cancelTypeahead();
     const text = query.trim();
     if (text.length < 3) {
       setNotice("Type at least 3 characters of your address.");
@@ -660,11 +660,16 @@ export default function LocationMap({ onLocationSelect }) {
       setSuggestions(found.length > 1 ? found : []);
       applyCandidate(found[0], false);
     } catch (err) {
+      if (err.name === "AbortError") return; // a newer search took over
       setLoading(false);
+      if (err.name === "RateLimited") {
+        setNotice(err.message);
+        return;
+      }
       console.error("Address search failed:", err);
       setNotice("Search is unavailable right now - tap the map to drop your pin.");
     }
-  }, [activeIndex, applyCandidate, cancelTypeahead, clearPin, resolveAddress, query]);
+  }, [activeIndex, applyCandidate, clearPin, resolveAddress, query]);
 
   /** Device GPS - the most accurate starting point, and one tap on a phone. */
   const handleUseMyLocation = () => {
@@ -724,10 +729,7 @@ export default function LocationMap({ onLocationSelect }) {
         <input
           type="text"
           value={query}
-          onChange={(e) => {
-            skipSearchRef.current = false;
-            setQuery(e.target.value);
-          }}
+          onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
           placeholder="Type your full address, then press Enter"
           autoComplete="off"

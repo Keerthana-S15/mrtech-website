@@ -84,51 +84,135 @@ const router = express.Router();
 const NOMINATIM = "https://nominatim.openstreetmap.org";
 
 /**
- * Nominatim's usage policy allows at most one request per second from a single
- * source and requires a real contact address in the User-Agent. Every customer
- * on the site shares this server's IP, so without pacing a handful of people
- * typing at once would get us blocked outright. Requests are therefore funnelled
- * through one queue with a minimum gap, and repeated lookups are served from a
- * short-lived cache instead of going out again.
+ * Nominatim allows at most one request per second from a source and requires a
+ * real contact in the User-Agent. Every customer on the site shares this
+ * server's IP, so all of it has to be enforced here, globally, rather than per
+ * browser. Three things keep us under the limit:
+ *
+ *   - one queue, so no two calls are ever in flight at once and consecutive
+ *     calls are at least MIN_GAP_MS apart;
+ *   - a cache, so a repeated lookup never leaves the process;
+ *   - in-flight de-duplication, so N callers asking for the same URL at the same
+ *     moment make one request between them rather than N.
+ *
+ * If Nominatim still answers 429 we back off and, for a short while afterwards,
+ * refuse to queue anything new - hammering a rate limiter is what turns a brief
+ * throttle into a ban.
  */
-const MIN_GAP_MS = 1100;
+const MIN_GAP_MS = 1100; // > 1/sec, with margin for clock jitter
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const CACHE_MAX = 500;
+const MAX_RETRIES = 2;
+const COOLDOWN_MS = 20 * 1000;
 
 const CONTACT =
   process.env.NOMINATIM_CONTACT || "contact@mythrealitytechnologies.com";
 const USER_AGENT = `mrtech-website/1.0 (${CONTACT})`;
 
 const cache = new Map();
+const inflight = new Map();
 let chain = Promise.resolve();
 let lastCall = 0;
+let blockedUntil = 0;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function callNominatim(url) {
+/** Thrown when we are rate limited; carries how long to wait. */
+class RateLimited extends Error {
+  constructor(retryAfterMs) {
+    super("Nominatim rate limit reached");
+    this.name = "RateLimited";
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+const cacheGet = (url) => {
   const hit = cache.get(url);
-  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
+  if (!hit) return undefined;
+  if (Date.now() - hit.at >= CACHE_TTL_MS) {
+    cache.delete(url);
+    return undefined;
+  }
+  return hit.data;
+};
 
-  // serialise: each call waits for the previous one, then for the rate gap
-  const run = chain.then(async () => {
-    const gap = Date.now() - lastCall;
-    if (gap < MIN_GAP_MS) await sleep(MIN_GAP_MS - gap);
-    lastCall = Date.now();
-    const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, "Accept-Language": "en" },
-    });
-    if (!response.ok) {
-      throw new Error(`Nominatim responded with status ${response.status}`);
-    }
-    return response.json();
-  });
-  // keep the chain alive even when one call fails
-  chain = run.catch(() => {});
-
-  const data = await run;
+const cacheSet = (url, data) => {
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
   cache.set(url, { at: Date.now(), data });
-  return data;
+};
+
+/** One paced trip to Nominatim, retrying only on 429. */
+async function fetchPaced(url, attempt = 0) {
+  const gap = Date.now() - lastCall;
+  if (gap < MIN_GAP_MS) await sleep(MIN_GAP_MS - gap);
+  lastCall = Date.now();
+
+  const response = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT, "Accept-Language": "en" },
+  });
+
+  if (response.status === 429) {
+    // Retry-After is in seconds when present; fall back to doubling
+    const header = Number(response.headers.get("retry-after"));
+    const waitMs = Number.isFinite(header) && header > 0
+      ? header * 1000
+      : 1000 * Math.pow(2, attempt);
+
+    if (attempt >= MAX_RETRIES) {
+      blockedUntil = Date.now() + Math.max(waitMs, COOLDOWN_MS);
+      throw new RateLimited(blockedUntil - Date.now());
+    }
+    console.warn(`⏳ Nominatim 429, backing off ${waitMs}ms (attempt ${attempt + 1})`);
+    await sleep(waitMs);
+    return fetchPaced(url, attempt + 1);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Nominatim responded with status ${response.status}`);
+  }
+  return response.json();
+}
+
+async function callNominatim(url) {
+  const cached = cacheGet(url);
+  if (cached !== undefined) return cached;
+
+  // someone is already asking for exactly this - wait on their answer
+  const already = inflight.get(url);
+  if (already) return already;
+
+  if (Date.now() < blockedUntil) {
+    throw new RateLimited(blockedUntil - Date.now());
+  }
+
+  const run = chain.then(() => fetchPaced(url));
+  // keep the queue alive even when one call fails
+  chain = run.catch(() => {});
+  inflight.set(url, run);
+
+  try {
+    const data = await run;
+    // empty answers are cached too: asking again changes nothing and a miss is
+    // exactly the kind of query a customer retypes
+    cacheSet(url, data);
+    return data;
+  } finally {
+    inflight.delete(url);
+  }
+}
+
+/** Turns any failure into the right status and a message a customer can act on. */
+function fail(res, error, what) {
+  if (error instanceof RateLimited) {
+    const seconds = Math.max(1, Math.ceil(error.retryAfterMs / 1000));
+    return res.status(429).json({
+      error: "rate_limited",
+      retryAfter: seconds,
+      message: `Address lookup is busy. Try again in about ${seconds} seconds, or tap your spot on the map.`,
+    });
+  }
+  console.error(`🔥 ${what}:`, error.message);
+  return res.status(502).json({ error: "Failed to search location" });
 }
 
 // addressdetails gives the structured fields the picker needs to judge how
@@ -140,22 +224,14 @@ const postcodeUrl = (pin) => `${NOMINATIM}/search?postalcode=${encodeURIComponen
 
 router.get("/geocode/search", async (req, res) => {
   const { q, postalcode } = req.query;
-  if (postalcode) {
-    try {
-      return res.json(await callNominatim(postcodeUrl(String(postalcode).trim())));
-    } catch (error) {
-      console.error("🔥 Geocode search error:", error.message);
-      return res.status(502).json({ error: "Failed to search location" });
-    }
-  }
-  if (!q || q.trim().length < 3) {
-    return res.json([]);
-  }
   try {
+    if (postalcode) {
+      return res.json(await callNominatim(postcodeUrl(String(postalcode).trim())));
+    }
+    if (!q || q.trim().length < 3) return res.json([]);
     res.json(await callNominatim(searchUrl(q.trim())));
   } catch (error) {
-    console.error("🔥 Geocode search error:", error.message);
-    res.status(502).json({ error: "Failed to search location" });
+    fail(res, error, "Geocode search error");
   }
 });
 
@@ -218,8 +294,7 @@ router.get("/geocode/resolve", async (req, res) => {
     }
     res.json({ trust: "none", usedQuery: "", tried, results: [] });
   } catch (error) {
-    console.error("🔥 Geocode resolve error:", error.message);
-    res.status(502).json({ error: "Failed to search location" });
+    fail(res, error, "Geocode resolve error");
   }
 });
 
@@ -230,13 +305,16 @@ router.get("/geocode/reverse", async (req, res) => {
   }
 
   try {
+    // Rounded to ~1m before it becomes a cache key: two taps a few centimetres
+    // apart are the same doorstep and must not cost two lookups.
+    const la = Number(lat).toFixed(5);
+    const lo = Number(lon).toFixed(5);
     const url =
-      `${NOMINATIM}/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}` +
+      `${NOMINATIM}/reverse?lat=${la}&lon=${lo}` +
       `&format=json&addressdetails=1&zoom=18`;
     res.json(await callNominatim(url));
   } catch (error) {
-    console.error("🔥 Reverse geocode error:", error.message);
-    res.status(502).json({ error: "Failed to get address" });
+    fail(res, error, "Reverse geocode error");
   }
 });
 
