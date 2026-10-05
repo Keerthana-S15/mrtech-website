@@ -2064,6 +2064,11 @@ const Checkout = () => {
     addressType: "Home"
   });
 
+  // Coordinates of the pin the customer set on the map, kept separately from the
+  // address text so that editing the address box (door no., floor, landmark)
+  // never disturbs them. Stays null when the map was never touched.
+  const [geoPoint, setGeoPoint] = useState(null);
+
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [cardDetails, setCardDetails] = useState({
     cardNumber: "",
@@ -2106,6 +2111,13 @@ const Checkout = () => {
       ...prev,
       address: location.address,
     }));
+    // The coordinates are the part couriers actually need; the handler used to
+    // drop them, so every order was delivered off the address text alone.
+    setGeoPoint(
+      typeof location.lat === "number" && typeof location.lng === "number"
+        ? { lat: location.lat, lng: location.lng, address: location.address }
+        : null
+    );
   };
 
   const subtotal = getTotalPrice();
@@ -2201,6 +2213,17 @@ const Checkout = () => {
           pincode: shippingInfo.pincode,
           phone: shippingInfo.phone,
           addressType: shippingInfo.addressType,
+          // Map pin, when the customer set one. createOrder stores
+          // shippingAddress verbatim, so these ride along with no API change.
+          ...(geoPoint
+            ? {
+                lat: geoPoint.lat,
+                lng: geoPoint.lng,
+                // what the map resolved, kept even if the address box was edited
+                mapAddress: geoPoint.address,
+                locationSource: "map",
+              }
+            : {}),
         },
         paymentMethod: paymentMethod,
         subtotal: subtotal,
