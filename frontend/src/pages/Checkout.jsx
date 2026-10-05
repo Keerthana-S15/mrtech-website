@@ -2068,6 +2068,9 @@ const Checkout = () => {
   // address text so that editing the address box (door no., floor, landmark)
   // never disturbs them. Stays null when the map was never touched.
   const [geoPoint, setGeoPoint] = useState(null);
+  // The last address the map wrote into the box, so a later search can tell its
+  // own leftovers from text the customer typed.
+  const lastMapAddressRef = React.useRef("");
 
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [cardDetails, setCardDetails] = useState({
@@ -2107,6 +2110,26 @@ const Checkout = () => {
   // Auto-fill address when user picks a location on the map.
   // User can still edit this field afterwards to add door no. / floor / landmark.
   const handleLocationSelect = (location) => {
+    // null means the search only resolved to an area, so there is no pin to
+    // trust. Drop the coordinates, and drop the address with them if it is still
+    // the one the map filled in last time — leaving it would show an unrelated
+    // address from an earlier search with nothing behind it. Anything the
+    // customer typed over it by hand is theirs and is left alone.
+    if (!location) {
+      setGeoPoint(null);
+      // Read the ref BEFORE clearing it: the updater below runs at render time,
+      // not now, so comparing against lastMapAddressRef.current inside it would
+      // compare against the empty string we are about to store and never match.
+      const lastFromMap = lastMapAddressRef.current;
+      lastMapAddressRef.current = "";
+      setShippingInfo((prev) =>
+        prev.address && prev.address === lastFromMap
+          ? { ...prev, address: "" }
+          : prev
+      );
+      return;
+    }
+    lastMapAddressRef.current = location.address;
     setShippingInfo((prev) => ({
       ...prev,
       address: location.address,
