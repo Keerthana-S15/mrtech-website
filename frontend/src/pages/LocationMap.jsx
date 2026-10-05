@@ -223,13 +223,58 @@ const SAME_PLACE_M = 20;
 // A result whose bounding box is wider than this is an area, not an address, so
 // its centre is not somewhere a courier can deliver to.
 const PRECISE_SPAN_M = 400;
+// Wider than this and it is a district or a state. Its centre is a starting
+// point for nobody, so it gets no pin at all - not even an approximate one.
+const MAX_PINNABLE_SPAN_M = 25000;
 
 // ~0.1 m of precision; enough for a doorstep and short enough to store cleanly.
 const round6 = (n) => Math.round(n * 1e6) / 1e6;
 
-// Words that say where something is rather than naming it, so they should not
-// count for or against whether a result matches what the customer typed.
-const FILLER = new Set(["near", "opposite", "behind", "beside", "india", "landmark"]);
+// Words that appear in every other Indian address - they describe a place
+// without naming one, so sharing them is no evidence that two addresses are the
+// same place. Only distinctive words count as a match.
+const GENERIC = new Set([
+  "near", "opposite", "behind", "beside", "india", "landmark", "post", "office",
+  "road", "street", "main", "cross", "lane", "avenue", "salai", "nagar", "colony",
+  "tamil", "nadu", "district", "state", "taluk", "village", "town", "city", "zone",
+  "north", "south", "east", "west", "ward", "block", "phase", "sector",
+]);
+
+/**
+ * The distinctive words of an address, cut to a six-letter stem.
+ *
+ * Indian place names transliterate several ways - Kallakurichi, Kallakkurichi
+ * and Kallakuruchi are one town - so comparing whole words rejects correct
+ * matches. Six letters is long enough to keep Thirukovilur and Thiruvallur
+ * apart while still joining those spellings.
+ */
+function placeKeys(text) {
+  return (String(text).toLowerCase().match(/[a-z]{4,}/g) || [])
+    .filter((w) => !GENERIC.has(w))
+    .map((w) => w.slice(0, 6));
+}
+
+/**
+ * The part of a result that names the actual locality - deliberately excluding
+ * county, state_district and state.
+ *
+ * Kallakurichi is a district as well as a town, so a road in Sankarapuram 17km
+ * away still carries "Kallakurichi" in its full name and would pass a test made
+ * against the whole string. Only the town/suburb/street level says where a
+ * result really is. Mirrors localityText() in backend/routes/geocodeRoutes.js.
+ */
+const LOCALITY_FIELDS = [
+  "name", "road", "neighbourhood", "suburb", "village", "town", "city_district", "city",
+];
+
+function localityText(result) {
+  const a = result.address || {};
+  const parts = [result.name, ...LOCALITY_FIELDS.map((f) => a[f])].filter(Boolean);
+  if (!parts.length && result.display_name) {
+    parts.push(String(result.display_name).split(",")[0]);
+  }
+  return parts.join(" ");
+}
 
 /** Metres between two [lat, lng] points. */
 function metresBetween(a, b) {
@@ -281,6 +326,7 @@ function toCandidate(result) {
     label: formatAddress(result),
     displayName: result.display_name || "",
     postcode: a.postcode || "",
+    locality: localityText(result),
     hasStreet: Boolean(a.road || a.house_number),
     span: valid ? spanMeters(bb) : null,
     bounds: valid ? [[bb[0], bb[2]], [bb[1], bb[3]]] : null,
@@ -317,23 +363,45 @@ function zoomForSpan(span) {
 function assessMatch(query, c) {
   const typed = query.toLowerCase();
 
-  if (c.trust && c.trust !== "exact") return { verdict: "area" };
+  // Too big to be anywhere in particular - a district or a state. Checked first,
+  // because the centre of one is not worth showing either.
+  if (c.span != null && c.span > MAX_PINNABLE_SPAN_M) {
+    return { verdict: "mismatch", why: "it covers too large an area to pin" };
+  }
 
-  // A PIN code is the one part of an Indian address that is unambiguous. If the
-  // customer gave one and the result sits under a different one, this is at best
-  // the right road in the wrong place - show the area, but never pin it.
+  // A result has to share a distinctive locality name with the address typed.
+  // Skipped for a PIN-code lookup, which is matched by its number rather than by
+  // name. Checked before the trust shortcut below, because a weakened query can
+  // otherwise return somewhere unrelated and be waved straight through as an
+  // area - which now means a pin.
+  if (c.trust !== "pin") {
+    const typedKeys = placeKeys(typed);
+    const resultKeys = new Set(placeKeys(c.locality));
+    if (typedKeys.length && !typedKeys.some((k) => resultKeys.has(k))) {
+      return { verdict: "mismatch", why: "it names a different place" };
+    }
+  }
+
+  // A PIN code is the one part of an Indian address that is unambiguous.
   const typedPin = (typed.match(/\b(\d{6})\b/) || [])[1];
-  if (typedPin && c.postcode && c.postcode !== typedPin) {
-    return { verdict: "area", why: `the closest match is in PIN code ${c.postcode}` };
+  if (typedPin && c.postcode) {
+    // The first three digits are the sorting district. A result under a
+    // different one is tens of kilometres away however well the names line up:
+    // "Thirukovilur Road, Kallakurichi 606202" finds a road of that name 33km
+    // away in Tirukkoyilur, 605756. Never pin that.
+    if (c.postcode.slice(0, 3) !== typedPin.slice(0, 3)) {
+      return {
+        verdict: "mismatch",
+        why: `the closest match is in PIN code ${c.postcode}, a different area`,
+      };
+    }
+    // Same district, neighbouring PIN - the right town, not the right street.
+    if (c.postcode !== typedPin) {
+      return { verdict: "area", why: `the closest match is in PIN code ${c.postcode}` };
+    }
   }
 
-  const haystack = `${c.displayName} ${c.label}`.toLowerCase();
-  const words = typed
-    .split(/[^a-z]+/)
-    .filter((w) => w.length >= 4 && !FILLER.has(w));
-  if (words.length >= 2 && !words.some((w) => haystack.includes(w))) {
-    return { verdict: "mismatch", why: "it does not match what you typed" };
-  }
+  if (c.trust && c.trust !== "exact") return { verdict: "area" };
 
   if (c.span != null && c.span > PRECISE_SPAN_M) return { verdict: "area" };
   if (!c.hasStreet) return { verdict: "area" };
@@ -365,7 +433,7 @@ function RecenterMap({ view }) {
 }
 
 /** Click-to-drop plus a draggable pin for fine adjustment. */
-function LocationMarker({ position, onPick }) {
+function LocationMarker({ position, approximate, onPick }) {
   const markerRef = useRef(null);
 
   useMapEvents({
@@ -399,8 +467,15 @@ function LocationMarker({ position, onPick }) {
       autoPanPadding={[32, 32]}
       eventHandlers={handlers}
       keyboard
-      title="Drag the pin to your exact doorstep"
-      alt="Selected delivery location"
+      // faded while it is only the centre of the matched area, so it does not
+      // read as a confirmed address at a glance
+      opacity={approximate ? 0.65 : 1}
+      title={
+        approximate
+          ? "Approximate location - drag this pin onto your exact doorstep"
+          : "Drag the pin to your exact doorstep"
+      }
+      alt={approximate ? "Approximate delivery location" : "Selected delivery location"}
     />
   );
 }
@@ -414,6 +489,9 @@ export default function LocationMap({ onLocationSelect }) {
   const [position, setPosition] = useState(null);
   const [view, setView] = useState(null);
   const [addressText, setAddressText] = useState("");
+  // True while the pin sits at the centre of a matched area rather than on a
+  // street or building the geocoder could actually resolve.
+  const [approximate, setApproximate] = useState(false);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [notice, setNotice] = useState("");
@@ -528,15 +606,31 @@ export default function LocationMap({ onLocationSelect }) {
     }
   }, []);
 
-  /** Publishes a confirmed point upwards and syncs the search box to it. */
+  /**
+   * Publishes a confirmed point upwards and syncs the search box to it.
+   *
+   * `isApproximate` marks a pin we placed at the centre of a matched area. The
+   * coordinates are still real and still saved - they are simply not yet the
+   * doorstep, and the customer is asked to drag them there.
+   */
   const commit = useCallback(
-    (lat, lng, address) => {
+    (lat, lng, address, isApproximate = false) => {
       setAddressText(address);
+      setApproximate(isApproximate);
       setQuery(address);
-      setSuggestions([]);
-      setActiveIndex(-1);
+      // an approximate pin keeps the alternatives on screen: another result may
+      // be the better starting point
+      if (!isApproximate) {
+        setSuggestions([]);
+        setActiveIndex(-1);
+      }
       if (onLocationSelect) {
-        onLocationSelect({ lat: round6(lat), lng: round6(lng), address });
+        onLocationSelect({
+          lat: round6(lat),
+          lng: round6(lng),
+          address,
+          accuracy: isApproximate ? "approximate" : "exact",
+        });
       }
     },
     [onLocationSelect]
@@ -551,6 +645,7 @@ export default function LocationMap({ onLocationSelect }) {
     pickSeqRef.current += 1;
     setPosition(null);
     setAddressText("");
+    setApproximate(false);
     if (onLocationSelect) onLocationSelect(null);
   }, [onLocationSelect]);
 
@@ -576,7 +671,9 @@ export default function LocationMap({ onLocationSelect }) {
       }
       if (seq !== pickSeqRef.current) return;
       setLoading(false);
-      commit(next[0], next[1], address);
+      // placed or dragged by the customer, so it is no longer approximate
+      commit(next[0], next[1], address, false);
+      setNotice("");
     },
     [commit, describePoint]
   );
@@ -617,15 +714,18 @@ export default function LocationMap({ onLocationSelect }) {
         return;
       }
 
-      // Area-only: show them where it is, but do not pretend it is their address.
-      // The other results stay on screen - with no autocomplete, this list is the
-      // only way to reach a different match, so clearing it would strand them.
-      clearPin();
+      // Area-level: the match is sound, it is just not a doorstep. Drop a pin at
+      // the returned coordinates so the customer has something real to drag,
+      // rather than leaving them to find the place unaided - but say plainly
+      // that it is approximate until they move it.
+      pickSeqRef.current += 1;
+      setPosition([c.lat, c.lng]);
       setView({ center: [c.lat, c.lng], zoom: zoomForSpan(c.span) });
+      lastResolvedRef.current = { point: [c.lat, c.lng], address: c.label };
+      commit(c.lat, c.lng, c.label, true);
       setNotice(
-        `${why ? `Closest match: ` : `Only the area matched: `}${c.label}. ` +
-          `We could not place your exact address, so no pin was dropped - ` +
-          `zoom in and tap your delivery point.`
+        `${why ? `Closest match: ` : `Matched the area: `}${c.label}. ` +
+          `This pin is approximate - drag it onto your exact delivery point.`
       );
     },
     [clearPin, commit, query]
@@ -658,7 +758,20 @@ export default function LocationMap({ onLocationSelect }) {
       }
       // keep the alternatives on screen so a wrong first guess can be corrected
       setSuggestions(found.length > 1 ? found : []);
-      applyCandidate(found[0], false);
+
+      // Nominatim orders by its own notion of prominence, which puts the
+      // district above the town inside it. Take the best result rather than the
+      // first: a precise one if there is one, otherwise the tightest area. The
+      // first result being too broad to pin is no reason to give up when a
+      // usable one is sitting behind it in the same response.
+      const ranked = found.map((c) => ({ c, verdict: assessMatch(query, c).verdict }));
+      const best =
+        ranked.find((r) => r.verdict === "precise") ||
+        ranked
+          .filter((r) => r.verdict === "area")
+          .sort((x, y) => (x.c.span ?? Infinity) - (y.c.span ?? Infinity))[0];
+
+      applyCandidate((best || ranked[0]).c, false);
     } catch (err) {
       if (err.name === "AbortError") return; // a newer search took over
       setLoading(false);
@@ -822,7 +935,7 @@ export default function LocationMap({ onLocationSelect }) {
             maxZoom={19}
           />
           <RecenterMap view={view} />
-          <LocationMarker position={position} onPick={handlePick} />
+          <LocationMarker position={position} approximate={approximate} onPick={handlePick} />
         </MapContainer>
       </div>
 
@@ -837,9 +950,11 @@ export default function LocationMap({ onLocationSelect }) {
             fontSize: "14px",
           }}
         >
-          <strong>Selected:</strong> {addressText}
+          <strong>{approximate ? "Approximate location:" : "Selected:"}</strong>{" "}
+          {addressText}
           <div style={{ fontSize: "12px", color: "#777", marginTop: "4px" }}>
             Pin: {round6(position[0])}, {round6(position[1])}
+            {approximate && " - drag the pin to your exact door"}
           </div>
         </div>
       )}

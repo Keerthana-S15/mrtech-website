@@ -275,6 +275,69 @@ function buildPlan(input) {
   return steps;
 }
 
+/**
+ * Words that appear in every other Indian address. Sharing them says nothing
+ * about two addresses being the same place, so they are not evidence of a match.
+ * Mirrored by placeKeys() in frontend/src/pages/LocationMap.jsx, which applies
+ * the same test to whichever result the customer ends up acting on.
+ */
+const GENERIC = new Set([
+  "near", "opposite", "behind", "beside", "india", "landmark", "post", "office",
+  "road", "street", "main", "cross", "lane", "avenue", "salai", "nagar", "colony",
+  "tamil", "nadu", "district", "state", "taluk", "village", "town", "city", "zone",
+  "north", "south", "east", "west", "ward", "block", "phase", "sector",
+]);
+
+/** Distinctive words of an address, cut to a six-letter stem. */
+function placeKeys(text) {
+  return (String(text).toLowerCase().match(/[a-z]{4,}/g) || [])
+    .filter((w) => !GENERIC.has(w))
+    .map((w) => w.slice(0, 6));
+}
+
+/**
+ * The part of a result that names the actual locality - deliberately excluding
+ * county, state_district and state.
+ *
+ * Kallakurichi is a district as well as a town, so a road in Sankarapuram
+ * 17km away still carries "Kallakurichi" in its display_name and would pass a
+ * whole-name test. Only the town/suburb/street level says where a result is.
+ */
+const LOCALITY_FIELDS = [
+  "name", "road", "neighbourhood", "suburb", "village", "town", "city_district", "city",
+];
+
+function localityText(r) {
+  const a = r.address || {};
+  const parts = [r.name, ...LOCALITY_FIELDS.map((f) => a[f])].filter(Boolean);
+  // some results carry the distinctive part only in display_name's first field
+  if (!parts.length && r.display_name) parts.push(String(r.display_name).split(",")[0]);
+  return parts.join(" ");
+}
+
+/**
+ * Keeps only results that share a distinctive name with what the customer typed.
+ *
+ * A rung of the ladder can match on filler alone - "Thirukovilur Road,
+ * Kallakurichi" finds a road in Sankarapuram 16km away because both contain
+ * "road" and "Tamil Nadu". Dropping those lets the ladder carry on to a weaker
+ * query that does name the right place, instead of answering with the wrong one.
+ */
+function plausible(results, typedKeys, typedPin) {
+  return results.filter((r) => {
+    // The first three digits of an Indian PIN are its sorting district. A result
+    // under a different one is tens of kilometres away, whatever it is called -
+    // "Thirukovilur Road, Kallakurichi 606202" otherwise matches a road of that
+    // name 33km away in Tirukkoyilur, 605756.
+    const pin = (r.address || {}).postcode || "";
+    if (typedPin && pin && pin.slice(0, 3) !== typedPin.slice(0, 3)) return false;
+
+    if (!typedKeys.length) return true;
+    const keys = new Set(placeKeys(localityText(r)));
+    return typedKeys.some((k) => keys.has(k));
+  });
+}
+
 router.get("/geocode/resolve", async (req, res) => {
   const { q } = req.query;
   if (!q || q.trim().length < 3) {
@@ -282,14 +345,21 @@ router.get("/geocode/resolve", async (req, res) => {
   }
 
   const tried = [];
+  const typedKeys = placeKeys(q);
+  const typedPin = (String(q).match(/\b(\d{6})\b/) || [])[1] || "";
   try {
     for (const step of buildPlan(String(q))) {
       const url = step.postalcode ? postcodeUrl(step.postalcode) : searchUrl(step.q);
       const label = step.postalcode ? `PIN ${step.postalcode}` : step.q;
       tried.push(label);
       const data = await callNominatim(url);
-      if (Array.isArray(data) && data.length) {
-        return res.json({ trust: step.trust, usedQuery: label, tried, results: data });
+      if (!Array.isArray(data) || !data.length) continue;
+
+      // A PIN-code lookup is matched by its number, not by its name, so the
+      // name test does not apply to it.
+      const usable = step.postalcode ? data : plausible(data, typedKeys, typedPin);
+      if (usable.length) {
+        return res.json({ trust: step.trust, usedQuery: label, tried, results: usable });
       }
     }
     res.json({ trust: "none", usedQuery: "", tried, results: [] });

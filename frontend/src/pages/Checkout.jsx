@@ -2138,7 +2138,14 @@ const Checkout = () => {
     // drop them, so every order was delivered off the address text alone.
     setGeoPoint(
       typeof location.lat === "number" && typeof location.lng === "number"
-        ? { lat: location.lat, lng: location.lng, address: location.address }
+        ? {
+            lat: location.lat,
+            lng: location.lng,
+            address: location.address,
+            // "approximate" means the pin is the centre of the matched area and
+            // the customer has not dragged it onto their door yet
+            accuracy: location.accuracy === "approximate" ? "approximate" : "exact",
+          }
         : null
     );
   };
@@ -2245,6 +2252,10 @@ const Checkout = () => {
                 // what the map resolved, kept even if the address box was edited
                 mapAddress: geoPoint.address,
                 locationSource: "map",
+                // exact = the customer placed or dragged the pin, or the
+                // geocoder resolved a street/building; approximate = the centre
+                // of the matched area, so expect to call before the last mile
+                locationAccuracy: geoPoint.accuracy,
               }
             : {}),
         },
