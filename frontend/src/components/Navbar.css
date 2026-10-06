@@ -248,8 +248,34 @@ body.mobile-menu-open {
    RESPONSIVE DESIGN - MOBILE VIEW
    =================================== */
 
-/* Tablet/Small Desktop View (max-width: 900px) */
-@media (max-width: 900px) {
+/* Narrow desktop: between the mobile breakpoint and a full-width window there
+   is not enough room for the whole link row at the default 35px gap, so the row
+   used to push the page sideways and leave Login off-screen. Tighten the
+   spacing instead. Nothing here applies at 1280px and above, so the normal
+   desktop navbar is unchanged. */
+@media (min-width: 1000px) and (max-width: 1279px) {
+  .nav-links {
+    gap: 18px;
+  }
+}
+
+@media (min-width: 1000px) and (max-width: 1100px) {
+  .nav-links {
+    gap: 10px;
+  }
+
+  .nav-links a,
+  .dropdown-title {
+    font-size: 14px;
+  }
+}
+
+/* Tablet/Small Desktop View.
+   Raised from 900px to 999px: with the full link row the navbar cannot fit
+   between 901px and 1023px even at the tightest spacing, and it used to push
+   Purchase and Login off the side of the page. That range now gets the mobile
+   menu, which has the room for every item. */
+@media (max-width: 999px) {
   .navbar {
     padding: 8px 25px;
   }

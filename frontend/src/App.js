@@ -232,6 +232,7 @@ import Story from "./pages/Story";
 import NandagoPage from "./pages/Nandagopage";
 import ServAttendance from "./pages/ServAttendance";
 import Team from "./pages/Team";
+import Doctors from "./pages/Doctors";
 import Gallery from "./pages/Gallery";
 import GalleryDetail from "./pages/GalleryDetail";
 import Purchase from "./pages/Purchase";
@@ -296,6 +297,7 @@ export default function App() {
                     <Route path="/gallery/:id" element={<GalleryDetail />} />
                     <Route path="/team" element={<Team />} />
                     <Route path="/team/:category" element={<Team />} />
+                    <Route path="/doctors" element={<Doctors />} />
                     <Route path="/purchase" element={<Purchase />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />

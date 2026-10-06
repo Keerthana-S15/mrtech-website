@@ -218,6 +218,7 @@
 
 
 
+ 
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -417,6 +418,7 @@ const Navbar = () => {
           )}
         </li>
 
+        <li><Link to="/doctors" onClick={closeMobileMenu}>Doctors</Link></li>
         <li><Link to="/solutions" onClick={closeMobileMenu}>Solutions</Link></li>
         <li><Link to="/partners" onClick={closeMobileMenu}>Partners</Link></li>
         <li><Link to="/gallery" onClick={closeMobileMenu}>Gallery</Link></li>
