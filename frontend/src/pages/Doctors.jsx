@@ -12,25 +12,89 @@ import "./Team.css";
 const DOCTOR_IMAGE_VERSION = "1";
 
 /**
- * Doctor profiles, newest first.
+ * Doctor profiles for the public Doctors page.
  *
- * Intentionally empty: real medical professionals must not be invented, and
- * nothing in the project carried this data. Add entries in exactly the shape
- * the team lists use and the grid below renders them with no further changes:
+ * Source: the "GP DOCTORS" sheet of the empanelment list. Only three fields were
+ * taken, on the data owner's explicit authorisation: doctor name, designation
+ * and email. Mobile numbers, addresses, districts and every identity document in
+ * the source archive were deliberately not read and must not be added here.
  *
- *   {
- *     name: "Dr. Full Name",
- *     role: "Cardiologist",                        // shown under the name
- *     image: "/images/doctors/filename.png",       // put files in public/images/doctors/
- *     bio: "One or two sentences, shown on the back of the card.",
- *     email: "name@example.com",                   // optional
- *     linkedin: "https://www.linkedin.com/in/...", // optional
- *   }
+ * `role` is "General Physician" for all of them: the sheet has no designation
+ * column, and GP DOCTORS is what it lists. Specialists live on other sheets and
+ * are not included.
  *
- * Until then the page shows a plain, honest empty state rather than
- * placeholders that could be mistaken for real practitioners.
+ * `image` is absent throughout. The source archive holds no portraits - its
+ * images are Aadhaar cards, PAN cards, bank details and certificate scans, none
+ * of which belong on a public page. Cards without an image fall back to the
+ * doctor's initials, drawn in the same circle a photo would occupy. To add a
+ * real portrait later, drop the file in public/images/doctors/ and add
+ * `image: "/images/doctors/<file>"` to that doctor's entry - nothing else
+ * changes.
+ *
+ * Two emails were withheld because their domains are gmail typosquats
+ * (gamail.com, gamil.com); a mailto to those would send a visitor's message to
+ * whoever owns the lookalike domain. Fix them in the source sheet and they can
+ * be added back.
  */
-const doctorsData = [];
+const doctorsData = [
+  { name: "Dr. Sharmila", role: "General Physician", email: "sharmilakuty19@gmail.com" },
+  { name: "Dr. Karthik", role: "General Physician", email: "nkarthikmoorthi@gmail.com" },
+  { name: "Dr. Blessy", role: "General Physician", email: "blessymagdalin4@gmail.com" },
+  { name: "Dr. Shruthi", role: "General Physician" },
+  { name: "Dr. Thenmozhi", role: "General Physician", email: "priyamanaval83@gmail.com" },
+  { name: "Dr. Karthik", role: "General Physician", email: "karthikpmcud@gmail.com" },
+  { name: "Dr. Thanka raj", role: "General Physician", email: "drthangarajp@gmail.com" },
+  { name: "Dr. Vinoth", role: "General Physician", email: "drvinoth1997@gmail.com" },
+  { name: "Dr. Bharath", role: "General Physician", email: "bharathmedical94@gmail.com" },
+  { name: "Dr. Shobanbabu", role: "General Physician" },
+  { name: "Dr. S.Ashiq rasol", role: "General Physician", email: "drashgh93@gmail.com" },
+  { name: "Dr. Dheena kumar", role: "General Physician" },
+  { name: "Dr. Manivannan", role: "General Physician", email: "manivanant2006@gmail.com" },
+  { name: "Dr. Sivanesan", role: "General Physician" },
+  { name: "Dr. Syed noor mohamed", role: "General Physician" },
+  { name: "Dr. Jayaraman", role: "General Physician", email: "drcjayaraman@gmail.com" },
+  { name: "Dr. Hari raj", role: "General Physician", email: "hariraj0222@gmail.com" },
+  { name: "Dr. Agalvizhi", role: "General Physician", email: "agalvizhi@gmail.com" },
+  { name: "Dr. Shirin synthiya", role: "General Physician", email: "shirinsynthiyaw@gmail.com" },
+  { name: "Dr. Mohanraj", role: "General Physician", email: "karnanmohan740@gmail.com" },
+  { name: "Dr. Ranjan", role: "General Physician", email: "kkranjan03@gmail.com" },
+  { name: "Dr. Udhaya Karthikeyan", role: "General Physician", email: "udhaya95.trk@gmail.com" },
+  { name: "Dr. Kamali", role: "General Physician", email: "kamalikumaresan27@gmail.com" },
+  { name: "Dr. Praveen kumar", role: "General Physician", email: "praveenveg92@gmail.com" },
+  { name: "Dr. Srilekha", role: "General Physician", email: "srilekhapalanesamy06@gmail.com" },
+  { name: "Dr. Sivakumar", role: "General Physician", email: "drsiva.1979@gmail.com" },
+  { name: "Dr. Avinash pandi", role: "General Physician", email: "avinash.pandi5@gmail.com" },
+  { name: "Dr. Harivarma", role: "General Physician", email: "hariv2529@gmail.com" },
+  { name: "Dr. Dhayaneedhi", role: "General Physician", email: "dhayakara13@gmail.com" },
+  { name: "Dr. Ariviyalan", role: "General Physician", email: "ariviyalandr22@gmail.com" },
+  { name: "Dr. Shenbaga priya", role: "General Physician", email: "spshenba@gmail.com" },
+  { name: "Dr. Lakshmi priya", role: "General Physician", email: "lakshmipriyak1202@gmail.com" },
+  { name: "Dr. Selvi", role: "General Physician", email: "dhaaraniaps27@gmail.com" },
+  { name: "Dr. Vaishnavi", role: "General Physician", email: "vaishnavimoorthy31@gmail.com" },
+  { name: "Dr. Rakesh", role: "General Physician", email: "meetmeraki369@gmail.com" },
+  { name: "Dr. Kandhavadivel", role: "General Physician", email: "kanvel86@gmail.com" },
+  { name: "Dr. Elavarasan", role: "General Physician", email: "elavarasanv181@gmail.com" },
+  { name: "Dr. Santhosh", role: "General Physician", email: "mmsanthosh27@gmail.com" },
+  { name: "Dr. Vigneshwaran", role: "General Physician" },
+  { name: "Dr. Aravindan", role: "General Physician", email: "aravindan6620@gmail.com" },
+  { name: "Dr. Deepika", role: "General Physician", email: "dpi233811@gmail.com" },
+  { name: "Dr. Muthumani", role: "General Physician" },
+  { name: "Dr. Thangaselvam", role: "General Physician", email: "thangaselvam193@gmail.com" },
+  { name: "Dr. Nirmalkumar", role: "General Physician", email: "drnirmalkumarshr@gmail.com" },
+  { name: "Dr. Sibiraj", role: "General Physician", email: "sibiraj000@gmail.com" },
+  { name: "Dr. Soundarajan", role: "General Physician", email: "soundarajdr@gmail.com" },
+  { name: "Dr. Sangeetha", role: "General Physician", email: "sangeethambbs90@gmail.com" },
+  { name: "Dr. Selvarasi", role: "General Physician", email: "selvarasisivs@gmail.com" },
+  { name: "Dr. Mohammed", role: "General Physician" },
+  { name: "Dr. Tamilselvan", role: "General Physician", email: "dr.tamilselvan1992@mail.com" },
+  { name: "Dr. Kishore", role: "General Physician" },
+  { name: "Dr. Gokulram", role: "General Physician", email: "gokulram.r25@gmail.com" },
+  { name: "Dr. Santhosh kumar", role: "General Physician", email: "santhoshanandh004@gmail.com" },
+  { name: "Dr. Singamsetty srinivas", role: "General Physician", email: "srinusingam5009@gmail.com" },
+  { name: "Dr. Sobana", role: "General Physician", email: "shobana53479@gmail.com" },
+  { name: "Dr. Senthamizhselvan", role: "General Physician", email: "tamilselvam.ssm.mm@gmail.com" },
+  { name: "Dr. Saranraj", role: "General Physician", email: "saranraj161294@gmail.com" },
+];
 
 const Doctors = () => {
   const gridRef = useRef(null);
@@ -107,9 +171,13 @@ const Doctors = () => {
             const initials = doctor.name
               .replace(/^Dr\.?\s+/i, "")
               .split(" ")
+              .filter(Boolean)
               .slice(0, 2)
               .map((w) => w[0])
-              .join("");
+              .join("")
+              // source names are not consistently capitalised, so "Thanka raj"
+              // would otherwise show as "Tr"
+              .toUpperCase();
             return (
               <div
                 className={`team-card team-card--${index % 4}${isFlipped ? " is-flipped" : ""}`}
@@ -133,13 +201,40 @@ const Doctors = () => {
                     <span className="team-card-glow" aria-hidden="true" />
                     <div className="team-avatar">
                       <span className="team-avatar-ring" aria-hidden="true" />
-                      <img
-                        src={`${doctor.image}?v=${DOCTOR_IMAGE_VERSION}`}
-                        alt={doctor.name}
-                        className="team-img"
-                        loading="lazy"
-                      />
-                      <span className="team-avatar-badge" aria-hidden="true">{initials}</span>
+                      {doctor.image ? (
+                        <>
+                          <img
+                            src={`${doctor.image}?v=${DOCTOR_IMAGE_VERSION}`}
+                            alt={doctor.name}
+                            className="team-img"
+                            loading="lazy"
+                          />
+                          <span className="team-avatar-badge" aria-hidden="true">{initials}</span>
+                        </>
+                      ) : (
+                        /* No portrait: the initials take the circle the photo
+                           would have filled. Reusing team-img keeps the size,
+                           ring, border, shadow and hover scale identical, so a
+                           card without a photo still sits in the grid the same
+                           way. The corner badge is dropped here because it would
+                           just repeat these initials. */
+                        <div
+                          className="team-img"
+                          style={{
+                            display: "grid",
+                            placeItems: "center",
+                            fontWeight: 700,
+                            fontSize: "2rem",
+                            letterSpacing: "0.02em",
+                            color: "#00313C",
+                            background:
+                              "linear-gradient(145deg, #e8fdff, #cfeff5)",
+                          }}
+                          aria-hidden="true"
+                        >
+                          {initials}
+                        </div>
+                      )}
                     </div>
                     <h3>{doctor.name}</h3>
                     <p className="team-role">{doctor.role}</p>
