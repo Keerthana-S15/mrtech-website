@@ -1,0 +1,45 @@
+/**
+ * Doctors page — designation badge only.
+ *
+ * The shared .team-role puts the card's accent colour on a 16%-alpha tint of
+ * that same accent over a white card. Measured against WCAG, three of the four
+ * card variants fail AA for text this size (12.5px bold, so the large-text
+ * exemption does not apply):
+ *
+ *   cyan   3.31:1    teal   3.36:1    sky  3.61:1    indigo  5.15:1
+ *
+ * The badge also now carries real qualifications - "M.B.B.S (MD)",
+ * "M.D.(Anaesthesiology)" - which are longer and denser than the single word it
+ * used to hold, so the weak contrast is more costly than it was.
+ *
+ * Darkening the text towards the brand ink and strengthening the tint brings
+ * every variant past AA while keeping each card's own hue:
+ *
+ *   cyan   5.57:1    teal   5.56:1    sky  5.68:1    indigo  6.61:1
+ *
+ * The tint also gains about 30% more separation from the white card, so the
+ * pill reads as a deliberate block rather than a faint wash.
+ *
+ * Only colour changes. Padding, border-radius, font-size, font-weight and
+ * display are left to .team-role, and the outline is an inset box-shadow rather
+ * than a border, so the badge occupies exactly the same box and no card or grid
+ * measurement moves.
+ *
+ * Every rule is scoped under .doctors-page, so the Team category pages - which
+ * share Team.css - are untouched.
+ */
+
+.doctors-page .team-card-front .team-role {
+  /* Fallbacks first, for engines without color-mix(): the brand ink on the
+     existing tint already clears AA, just without the per-card hue. */
+  color: #00313c;
+  background: var(--accent-soft);
+
+  color: color-mix(in srgb, var(--accent) 41%, #00313c);
+  background: color-mix(in srgb, var(--accent) 30%, #fff);
+  /* inset, so it adds definition without adding width or height */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* The flipped side already sets white on a translucent light fill over the dark
+   card back, which measures well above AA. It is left alone deliberately. */

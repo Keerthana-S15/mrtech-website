@@ -5,6 +5,8 @@ import { FaEnvelope, FaLinkedinIn, FaSyncAlt } from "react-icons/fa";
 // typography, spacing, card behaviour and hover effects identical by
 // construction instead of by copy-paste that later drifts.
 import "./Team.css";
+// Loaded after Team.css so the badge override wins. Doctors-scoped only.
+import "./Doctors.css";
 
 // Cache-busting version for doctor photos. Bump this whenever a photo is
 // replaced but keeps the same filename, so browsers and CDNs fetch the new file
@@ -146,7 +148,7 @@ const Doctors = () => {
   }, []);
 
   return (
-    <div className="team-page">
+    <div className="team-page doctors-page">
       <div className="team-bg team-bg--a" aria-hidden="true" />
       <div className="team-bg team-bg--b" aria-hidden="true" />
 
