@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaEnvelope, FaLinkedinIn, FaSyncAlt } from "react-icons/fa";
+import { FaCertificate, FaEnvelope, FaLinkedinIn, FaSyncAlt } from "react-icons/fa";
 // Deliberately reuses the Team stylesheet rather than adding another one: the
 // Doctors page is the same kind of people-grid, so sharing the styles keeps the
 // typography, spacing, card behaviour and hover effects identical by
@@ -183,6 +183,14 @@ const Doctors = () => {
               // source names are not consistently capitalised, so "Thanka raj"
               // would otherwise show as "Tr"
               .toUpperCase();
+
+            // Qualifications are written as dotted abbreviations - M.B.B.S,
+            // M.D., B.S.M.S - so a single capital followed by a period marks a
+            // credential. A job title like "General Physician" has none, and
+            // neither would "Gen. Physician", since that dot follows three
+            // letters rather than one.
+            const role = (doctor.role || "").trim();
+            const isQualification = /\b[A-Z]\./.test(role);
             return (
               <div
                 className={`team-card team-card--${index % 4}${isFlipped ? " is-flipped" : ""}`}
@@ -242,7 +250,18 @@ const Doctors = () => {
                       )}
                     </div>
                     <h3>{doctor.name}</h3>
-                    <p className="team-role">{doctor.role}</p>
+                    <p
+                      className={`team-role ${
+                        isQualification ? "team-role--degree" : "team-role--title"
+                      }`}
+                    >
+                      {isQualification && (
+                        <span className="team-role-chip" aria-hidden="true">
+                          <FaCertificate />
+                        </span>
+                      )}
+                      <span>{role}</span>
+                    </p>
                     <span className="team-flip-hint" aria-hidden="true">
                       <FaSyncAlt /> View details
                     </span>

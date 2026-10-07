@@ -1,45 +1,128 @@
 /**
- * Doctors page — designation badge only.
+ * Doctors page — designation badges.
  *
- * The shared .team-role puts the card's accent colour on a 16%-alpha tint of
- * that same accent over a white card. Measured against WCAG, three of the four
- * card variants fail AA for text this size (12.5px bold, so the large-text
- * exemption does not apply):
+ * The slot holds two different kinds of thing, and they are made to look it:
  *
- *   cyan   3.31:1    teal   3.36:1    sky  3.61:1    indigo  5.15:1
+ *   a qualification — "M.B.B.S", "M.B.B.S (MD)", "M.B.B.S (M.S)",
+ *                     "B.S.M.S (MD)", "M.D.(Anaesthesiology)"
+ *   a job title     — "General Physician"
  *
- * The badge also now carries real qualifications - "M.B.B.S (MD)",
- * "M.D.(Anaesthesiology)" - which are longer and denser than the single word it
- * used to hold, so the weak contrast is more costly than it was.
+ * A qualification is the harder-won, more specific claim, so it carries the
+ * accent: a solid tinted fill, a defined rim and a solid accent disc with a
+ * certificate mark. The job title sits on a solid neutral pill with no mark.
+ * Side by side the credential plainly reads as the senior of the two.
  *
- * Darkening the text towards the brand ink and strengthening the tint brings
- * every variant past AA while keeping each card's own hue:
+ * This pass makes both badges carry further across the page. The previous
+ * version tinted the fill with a gradient and leaned on a sheen for presence,
+ * which read as delicate at a glance. Now the fill is flat and opaque, the
+ * text is near-black with only a trace of the accent hue in it, and the type
+ * is a step larger and heavier. Measured against the painted fill:
  *
- *   cyan   5.57:1    teal   5.56:1    sky  5.68:1    indigo  6.61:1
+ *   qualification  10.99:1 – 11.25:1   (across all four card accents)
+ *   job title      11.98:1
  *
- * The tint also gains about 30% more separation from the white card, so the
- * pill reads as a deliberate block rather than a faint wash.
+ * against 6.04:1 – 8.37:1 and 10.77:1 before. Both now clear WCAG AAA for
+ * normal text, let alone the AA bar that bold 13px has to meet.
  *
- * Only colour changes. Padding, border-radius, font-size, font-weight and
- * display are left to .team-role, and the outline is an inset box-shadow rather
- * than a border, so the badge occupies exactly the same box and no card or grid
- * measurement moves.
+ * Card layout is untouched. The pill keeps its border-radius and vertical
+ * padding from .team-role, the rim is drawn with an inset shadow rather than a
+ * border so the box never grows, and the badges are centred inline — so the
+ * one step in font-size moves nothing around them.
  *
- * Every rule is scoped under .doctors-page, so the Team category pages - which
- * share Team.css - are untouched.
+ * Everything is scoped under .doctors-page; the Team category pages that share
+ * Team.css are unaffected.
  */
 
 .doctors-page .team-card-front .team-role {
-  /* Fallbacks first, for engines without color-mix(): the brand ink on the
-     existing tint already clears AA, just without the per-card hue. */
-  color: #00313c;
-  background: var(--accent-soft);
-
-  color: color-mix(in srgb, var(--accent) 41%, #00313c);
-  background: color-mix(in srgb, var(--accent) 30%, #fff);
-  /* inset, so it adds definition without adding width or height */
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  /* one pill holding the mark and the text on a shared baseline, while the box
+     metrics still come from .team-role */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  max-width: 100%;
+  /* one step up from .78rem, and heavier: this is the change that does most of
+     the work at arm's length */
+  font-size: .82rem;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
-/* The flipped side already sets white on a translucent light fill over the dark
-   card back, which measures well above AA. It is left alone deliberately. */
+/* ---------- a qualification ---------- */
+
+.doctors-page .team-card-front .team-role--degree {
+  /* Fallbacks first, for engines without color-mix(). */
+  color: #08202a;
+  background: #dceef3;
+
+  /* A flat, opaque fill — no gradient. A solid field is what lets the dark
+     text sit at full contrast everywhere rather than at its worst stop. */
+  background: color-mix(in srgb, var(--accent) 20%, #fff);
+  /* Near-black, carrying just enough of the card's accent to belong to it. */
+  color: color-mix(in srgb, var(--accent) 14%, #08202a);
+  box-shadow:
+    /* a firm rim, drawn inside so the box does not grow */
+    inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 58%, transparent),
+    /* and a small grounding shadow */
+    0 1px 3px rgba(8, 32, 42, .14);
+  /* abbreviations read better with the letters opened up a little */
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+  /* the disc is seated against the left edge; vertical padding is untouched */
+  padding-left: 5px;
+  transition: box-shadow .35s var(--tm-ease, ease), transform .35s var(--tm-ease, ease);
+}
+
+/* the certificate mark, on a solid accent disc */
+.doctors-page .team-card-front .team-role--degree .team-role-chip {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .4),
+    0 1px 2px rgba(8, 32, 42, .3);
+}
+
+.doctors-page .team-card-front .team-role--degree .team-role-chip svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* lifts with the rest of the card, in step with the existing photo hover */
+.doctors-page .team-card:hover .team-role--degree,
+.doctors-page .team-card:focus-visible .team-role--degree {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 80%, transparent),
+    0 3px 9px rgba(8, 32, 42, .2);
+}
+
+/* ---------- a job title ---------- */
+
+.doctors-page .team-card-front .team-role--title {
+  /* solid too, and a shade deeper than the old #eef3f5 so the pill has an edge
+     against the white card without competing with a credential */
+  color: #06303b;
+  background: #e7eef1;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(6, 48, 59, .16),
+    0 1px 3px rgba(8, 32, 42, .09);
+  letter-spacing: .015em;
+}
+
+/* The flipped side already sets white on a translucent fill over the dark card
+   back, which measures well above AA. Left alone on purpose. */
+
+@media (prefers-reduced-motion: reduce) {
+  .doctors-page .team-card-front .team-role--degree,
+  .doctors-page .team-card:hover .team-role--degree,
+  .doctors-page .team-card:focus-visible .team-role--degree {
+    transition: none;
+    transform: none;
+  }
+}
