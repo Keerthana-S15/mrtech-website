@@ -58,7 +58,12 @@ const doctorsData = [
   { name: "Dr. mohammedanas R", role: "M.B.B.S", email:"mohammedanas003@gmail.com" },
   { name: "Dr. Jayaraman", role: "General Physician", email: "drcjayaraman@gmail.com" },
   { name: "Dr. Hari raj", role: "General Physician", email: "hariraj0222@gmail.com" },
-  { name: "Dr. Agalvizhi E", role: "M.B.B.S", email: "agalvizhi@gmail.com" },
+  {
+    name: "Dr. Agalvizhi E",
+    role: "M.B.B.S",
+    email: "agalvizhi@gmail.com",
+    bio: "General Physician providing patient-focused medical care.",
+  },
   { name: "Dr. Shirin synthiya", role: "M.B.B.S", email: "shirinsynthiyaw@gmail.com" },
   { name: "Dr. Mohanraj", role: "M.B.B.S", email: "karnanmohan740@gmail.com" },
   { name: "Dr. Ranjan ", role: "M.B.B.S", email: "kkranjan03@gmail.com" },
@@ -92,8 +97,8 @@ const doctorsData = [
   { name: "Dr. Tamilselvan S", role: "M.B.B.S", email: "dr.tamilselvan1992@mail.com" },
   { name: "Dr. Kishore", role: "M.B.B.S",email:"drkishoreraja@yahoo.com"},
   { name: "Dr. Gowtham M.R", role: "M.B.B.S" , email:"mrirs420@gmail.com"},
-  // the only doctor the sheet carries a bio for; everyone else falls back to
-  // "No bio available." on the back of the card
+  // one of the few doctors the sheet carries a bio for; everyone else falls
+  // back to "No bio available." on the back of the card
   {
     name: "Dr. Gokulram",
     role: "M.B.B.S",
