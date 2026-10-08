@@ -498,6 +498,16 @@ export const login = async (req, res) => {
       }
     }
 
+    // A record with no password hash — created outside the register flow, or
+    // straight in the Firestore console — used to reach bcrypt.compare with
+    // undefined and throw, which surfaced as a 500 rather than a failed login.
+    if (typeof user.password !== "string" || !user.password) {
+      console.error(
+        `🔥 Login blocked: account ${user.email || emailOrPhone} has no password hash stored`
+      );
+      return res.status(400).json({ error: "Invalid password" });
+    }
+
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword)
       return res.status(400).json({ error: "Invalid password" });
@@ -534,8 +544,35 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("🔥 Login Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    // Every failure used to collapse into one opaque 500, so a Firestore quota
+    // failure and a genuine server fault were indistinguishable in production.
+    // The code and name are logged so Render's log says which, and a quota or
+    // outage answers 503 — the request is retryable and nothing is wrong with
+    // the credentials the person just typed.
+    const code = error?.code;
+    const message = String(error?.message || "");
+    const quota = code === 8 || /RESOURCE_EXHAUSTED|Quota exceeded/i.test(message);
+    const unavailable = code === 14 || /UNAVAILABLE|DEADLINE_EXCEEDED/i.test(message);
+
+    console.error(
+      `🔥 Login Error [code=${code ?? "none"} name=${error?.name ?? "none"}]:`,
+      message
+    );
+
+    if (quota) {
+      return res.status(503).json({
+        error:
+          "Sign-in is temporarily unavailable: the database has hit its usage limit. Please try again shortly.",
+        reason: "firestore_quota_exceeded",
+      });
+    }
+    if (unavailable) {
+      return res.status(503).json({
+        error: "Sign-in is temporarily unavailable: the database is not responding. Please try again.",
+        reason: "firestore_unavailable",
+      });
+    }
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
