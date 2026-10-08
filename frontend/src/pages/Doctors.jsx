@@ -109,7 +109,12 @@ const doctorsData = [
   { name: "Dr. Singamsetty srinivas S", role: " M.B.B.S", email: "srinusingam5009@gmail.com" },
   { name: "Dr. A.S.Sobana", role: "M.B.B.S", email: "shobana53479@gmail.com" },
   { name: "Dr. Senthamizhselvan", role: "M.B.B.S (Doctor of Medicine)", email: "tamilselvam.ssm.mm@gmail.com" },
-  { name: "Dr. Saranraj Jayabalan", role: "M.B.B.S(M.S.General Surgery)", email: "saranraj161294@gmail.com" },
+  {
+    name: "Dr. Saranraj Jayabalan",
+    role: "M.B.B.S(M.S.General Surgery)",
+    email: "saranraj161294@gmail.com",
+    bio: "General Surgeon providing specialized surgical care to patients.",
+  },
 ];
 
 const Doctors = () => {
