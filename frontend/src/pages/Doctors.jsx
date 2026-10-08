@@ -82,7 +82,7 @@ const doctorsData = [
   { name: "Dr. Santhosh Kumar B", role: "M.B.B.S (M.D. Physician )", email: "mmsanthosh27@gmail.com" },
   { name: "Dr. Vigneshwaran R.S", role: "M.B.B.S",email:  "vickysundharam@gmail.com"},
   { name: "Dr. Aravindan", role: "General Physician", email: "aravindan6620@gmail.com" },
-  { name: "Dr. Deepika N", role: "M.B.B.S (Doctor of Medicine )", email: "dpi233811@gmail.com" },
+  { name: "Dr. Deepika N", role: "M.B.B.S(Doctor of Medicine)", email: "dpi233811@gmail.com" },
   { name: "Dr. Muthumani", role: "General Physician" },
   { name: "Dr. Thangaselvam", role: "General Physician", email: "thangaselvam193@gmail.com" },
   { name: "Dr. Nirmalkumar", role: "M.D.(Anaesthesiology)", email: "drnirmalkumarshr@gmail.com" },
