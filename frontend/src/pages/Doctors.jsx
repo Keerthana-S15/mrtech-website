@@ -40,14 +40,13 @@ const DOCTOR_IMAGE_VERSION = "1";
  */
 const doctorsData = [
   { name: "Dr. Sharmila", role: "General Physician", email: "sharmilakuty19@gmail.com" },
-  { name: "Dr. Karthik", role: "M.B.B.S (MD)", email: "nkarthikmoorthi@gmail.com" },
   { name: "Dr. Blessy", role: "General Physician", email: "blessymagdalin4@gmail.com" },
   { name: "Dr. Shruthi", role: "General Physician" },
   { name: "Dr. Suganya K", role: "M.B.B.S",email: "dr.suganya92@yahoo.com" },
   { name: "Dr. PrinceDevaRuban N", role: "M.B.B.S (M.S)", email: "emhospi@gmail.com"},
   { name: "Dr. Arun Prasath G", role: "M.B.B.S" },
   { name: "Dr. Thenmozhi L", role: "M.B.B.S", email: "priyamanaval83@gmail.com" },
-  { name: "Dr. Karthik", role: "General Physician", email: "karthikpmcud@gmail.com" },
+  { name: "Dr. Karthik", role: "M.B.B.S (M.D)", email: "karthikpmcud@gmail.com" },
   { name: "Dr. Thanka raj", role: "General Physician", email: "drthangarajp@gmail.com" },
   { name: "Dr. VinothKumar K", role: "M.B.B.S", email: "drvinoth1997@gmail.com" },
   { name: "Dr. Bharath", role: "General Physician", email: "bharathmedical94@gmail.com" },
