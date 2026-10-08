@@ -92,7 +92,14 @@ const doctorsData = [
   { name: "Dr. Tamilselvan S", role: "M.B.B.S", email: "dr.tamilselvan1992@mail.com" },
   { name: "Dr. Kishore", role: "M.B.B.S",email:"drkishoreraja@yahoo.com"},
   { name: "Dr. Gowtham M.R", role: "M.B.B.S" , email:"mrirs420@gmail.com"},
-  { name: "Dr. Gokulram", role: "M.B.B.S", email: "gokulram.r25@gmail.com" },
+  // the only doctor the sheet carries a bio for; everyone else falls back to
+  // "No bio available." on the back of the card
+  {
+    name: "Dr. Gokulram",
+    role: "M.B.B.S",
+    email: "gokulram.r25@gmail.com",
+    bio: "General Physician providing patient care at KS Hospital, Vadalur.",
+  },
   { name: "Dr. Santhosh kumar M", role: "M.B.B.S", email: "santhoshanandh004@gmail.com" },
   { name: "Dr. Singamsetty srinivas S", role: " M.B.B.S", email: "srinusingam5009@gmail.com" },
   { name: "Dr. A.S.Sobana", role: "M.B.B.S", email: "shobana53479@gmail.com" },
