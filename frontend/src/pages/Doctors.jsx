@@ -65,6 +65,7 @@ const doctorsData = [
     role: "M.B.B.S",
     email: "priyamanaval83@gmail.com",
     bio: "General Physician with 5 years of experience providing patient care at Aram Health Care (Yazhini Clinic).",
+    image: "/images/doctors/thenmozhi.png",
   },
   {
     name: "Dr. Karthik",
