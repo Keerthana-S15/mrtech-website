@@ -85,7 +85,12 @@ const doctorsData = [
     bio: "MBBS-qualified General Physician with 4 years of experience, currently serving as Chief Medical Officer at Emergency Care Center.",
   },
   { name: "Dr. Bharath", role: "General Physician", email: "bharathmedical94@gmail.com" },
-  { name: "Dr. Shobanbabu M.S", role: "M.B.B.S",email:"shobanbabu902@gmail.com" },
+  {
+    name: "Dr. Shobanbabu M.S",
+    role: "M.B.B.S",
+    email: "shobanbabu902@gmail.com",
+    bio: "General Physician providing patient care at Sree Gurun Clinic, Tiruvallur.",
+  },
   { name: "Dr. S.Ashiq rasol", role: "General Physician", email: "drashgh93@gmail.com" },
   { name: "Dr. Dheena kumar R", role: "M.B.B.S" },
   { name: "Dr. Manivannan", role: "General Physician", email: "manivanant2006@gmail.com" },
