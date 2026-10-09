@@ -156,7 +156,17 @@ const doctorsData = [
     // only the location is used.
     bio: "MBBS-qualified General Physician providing patient care at his clinic in Mathur.",
   },
-  { name: "Dr. Udhaya Karthikeyan", role: "M.B.B.S (M.D)", email: "udhaya95.trk@gmail.com" },
+  {
+    name: "Dr. Udhaya Karthikeyan",
+    role: "M.B.B.S (M.D)",
+    email: "udhaya95.trk@gmail.com",
+    // Tamilnadu Medical Council certificate: "Medical Doctor - Equivalent to
+    // Indian MBBS", Tbilisi State Medical University, Georgia (May 2018),
+    // registered 17 Jun 2021. G Care form: Medical Officer at Jayanthi
+    // Clinic, 3 years' experience as at Feb 2025. Her registration number,
+    // date of birth, phone and home address stay off the page.
+    bio: "Medical Doctor, equivalent to Indian MBBS, with 3 years of experience practising at Jayanthi Clinic.",
+  },
   { name: "Dr. Kamali K", role: "M.B.B.S", email: "kamalikumaresan27@gmail.com" },
   { name: "Dr. Praveen kumar", role: "General Physician", email: "praveenveg92@gmail.com" },
   { name: "Dr. Srilekha", role: "General Physician", email: "srilekhapalanesamy06@gmail.com" },
