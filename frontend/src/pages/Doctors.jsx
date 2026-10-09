@@ -226,7 +226,12 @@ const doctorsData = [
     bio: "MBBS, MD-qualified Medical Officer with 13 years of experience at Lakshmi Clinic.",
   },
   { name: "Dr. Elavarasan", role: "General Physician", email: "elavarasanv181@gmail.com" },
-  { name: "Dr. Santhosh Kumar B", role: "M.B.B.S (M.D. Physician )", email: "mmsanthosh27@gmail.com" },
+  {
+    name: "Dr. Santhosh Kumar B",
+    role: "M.B.B.S (M.D. Physician )",
+    email: "mmsanthosh27@gmail.com",
+    bio: "M.D. Physician with 8 years of medical experience, practising at RBS Clinic, Kallamathampatti.",
+  },
   { name: "Dr. Vigneshwaran R.S", role: "M.B.B.S",email:  "vickysundharam@gmail.com"},
   { name: "Dr. Aravindan", role: "General Physician", email: "aravindan6620@gmail.com" },
   { name: "Dr. Deepika N", role: "M.B.B.S(Doctor of Medicine)", email: "dpi233811@gmail.com" },
