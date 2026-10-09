@@ -121,7 +121,13 @@ const doctorsData = [
     name: "Dr. Agalvizhi E",
     role: "M.B.B.S",
     email: "agalvizhi@gmail.com",
-    bio: "General Physician providing patient-focused medical care.",
+    // from her G Care empanelment form and Tamilnadu Medical Council card:
+    // Doctor of Medicine (Davao Medical School Foundation, Dec 2020), which
+    // the council records as equivalent to Indian MBBS; registered 10 Jan
+    // 2023; practising at K.V. Healthcare, Mittur. Her registration number,
+    // date of birth, home address and phone are on those papers and are
+    // deliberately left off a public page.
+    bio: "General Physician at K.V. Healthcare, Mittur, with a Doctor of Medicine qualification equivalent to Indian MBBS.",
   },
   { name: "Dr. Shirin synthiya", role: "M.B.B.S", email: "shirinsynthiyaw@gmail.com" },
   { name: "Dr. Mohanraj", role: "M.B.B.S", email: "karnanmohan740@gmail.com" },
