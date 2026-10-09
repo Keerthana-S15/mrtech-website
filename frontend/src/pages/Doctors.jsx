@@ -25,12 +25,12 @@ const DOCTOR_IMAGE_VERSION = "1";
  * column, and GP DOCTORS is what it lists. Specialists live on other sheets and
  * are not included.
  *
- * `image` is absent throughout. The source archive holds no portraits - its
- * images are Aadhaar cards, PAN cards, bank details and certificate scans, none
- * of which belong on a public page. Cards without an image fall back to the
- * doctor's initials, drawn in the same circle a photo would occupy. To add a
- * real portrait later, drop the file in public/images/doctors/ and add
- * `image: "/images/doctors/<file>"` to that doctor's entry - nothing else
+ * `image` is set on Dr. Sivanesan only; every other card falls back to the
+ * doctor's initials, drawn in the same circle a photo would occupy. The source
+ * archive supplies no other portraits - its images are Aadhaar cards, PAN
+ * cards, bank details and certificate scans, none of which belong on a public
+ * page. To add a real portrait, drop the file in public/images/doctors/ and
+ * add `image: "/images/doctors/<file>"` to that doctor's entry - nothing else
  * changes.
  *
  * Two emails were withheld because their domains are gmail typosquats
@@ -102,7 +102,13 @@ const doctorsData = [
     bio: "MBBS-qualified General Physician registered since 2014, with a Fellowship in Diabetology.",
   },
   { name: "Dr. Manivannan", role: "General Physician", email: "manivanant2006@gmail.com" },
-  { name: "Dr. Sivanesan", role: "General Physician" },
+  {
+    name: "Dr. Sivanesan",
+    role: "M.B.B.S",
+    // first real portrait on the page; every other card still falls back to
+    // initials, which the avatar handles without any layout change
+    image: "/images/doctors/sivanesan.png",
+  },
   {
     name: "Dr. mohammedanas R",
     role: "M.B.B.S",
