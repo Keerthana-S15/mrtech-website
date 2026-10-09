@@ -112,7 +112,12 @@ const doctorsData = [
     email: "srinusingam5009@gmail.com",
     bio: "General Physician providing medical care based on his MBBS qualification and registered medical practitioner status.",
   },
-  { name: "Dr. A.S.Sobana", role: "M.B.B.S", email: "shobana53479@gmail.com" },
+  {
+    name: "Dr. A.S.Sobana",
+    role: "M.B.B.S",
+    email: "shobana53479@gmail.com",
+    bio: "Medical Officer providing patient care at Asanur Medical Clinic.",
+  },
   { name: "Dr. Senthamizhselvan", role: "M.B.B.S (Doctor of Medicine)", email: "tamilselvam.ssm.mm@gmail.com" },
   {
     name: "Dr. Saranraj Jayabalan",
