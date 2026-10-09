@@ -106,7 +106,12 @@ const doctorsData = [
     bio: "General Physician providing patient care at KS Hospital, Vadalur.",
   },
   { name: "Dr. Santhosh kumar M", role: "M.B.B.S", email: "santhoshanandh004@gmail.com" },
-  { name: "Dr. Singamsetty srinivas S", role: " M.B.B.S", email: "srinusingam5009@gmail.com" },
+  {
+    name: "Dr. Singamsetty srinivas S",
+    role: " M.B.B.S",
+    email: "srinusingam5009@gmail.com",
+    bio: "General Physician providing medical care based on his MBBS qualification and registered medical practitioner status.",
+  },
   { name: "Dr. A.S.Sobana", role: "M.B.B.S", email: "shobana53479@gmail.com" },
   { name: "Dr. Senthamizhselvan", role: "M.B.B.S (Doctor of Medicine)", email: "tamilselvam.ssm.mm@gmail.com" },
   {
