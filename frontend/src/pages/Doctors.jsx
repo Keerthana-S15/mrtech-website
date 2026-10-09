@@ -258,13 +258,33 @@ const doctorsData = [
     email: "drnirmalkumarshr@gmail.com",
     bio: "M.D. (Anaesthesiology) graduate with 2 years of medical experience, registered with TNMC and practising at Shri Yoganarashima Clinic, Sholinghur.",
   },
-  { name: "Dr. Sibi Raj M", role: "M.B.B.S", email: "sibiraj000@gmail.com" },
+  {
+    name: "Dr. Sibi Raj M",
+    role: "M.B.B.S",
+    email: "sibiraj000@gmail.com",
+    bio: "MBBS graduate from Subbaiah Institute of Medical Sciences, Shimoga, affiliated with Rajiv Gandhi University of Health Sciences (2024). Registered with TNMC, Registration No. 185715.",
+  },
   { name: "Dr. Soundarajan", role: "General Physician", email: "soundarajdr@gmail.com" },
   { name: "Dr. Sangeetha", role: "General Physician", email: "sangeethambbs90@gmail.com" },
   { name: "Dr. Selvarasi S", role: "M.B.B.S", email: "selvarasisivs@gmail.com" },
   { name: "Dr. Tamilselvan S", role: "M.B.B.S", email: "dr.tamilselvan1992@mail.com" },
-  { name: "Dr. Kishore", role: "M.B.B.S",email:"drkishoreraja@yahoo.com"},
-  { name: "Dr. Gowtham M.R", role: "M.B.B.S" , email:"mrirs420@gmail.com"},
+  {
+    name: "Dr. Kishore",
+    role: "M.B.B.S",
+    email: "drkishoreraja@yahoo.com",
+    // The terms-and-conditions form carries no professional details at all —
+    // only his name and the signing date. These come from his G Care
+    // application form (Dr. Kishore Rajendiran, same email as this entry):
+    // MBBS, Weifang Medical University 2019, Tamil Nadu Medical Council
+    // registration, 6 years' experience, Dr. R.S. Multi Speciality Clinic.
+    bio: "MBBS graduate from Weifang Medical University (2019) with 6 years of experience. Registered with TNMC and practising at Dr. R.S. Multi Speciality Clinic.",
+  },
+  {
+    name: "Dr. Gowtham M.R",
+    role: "M.B.B.S",
+    email: "mrirs420@gmail.com",
+    bio: "MBBS graduate with 8 years of total medical experience, including 2 years as a General Physician. Registered with TNMC and associated with MR Hospital & Diabetic Foot Care Centre, Mettupalayam.",
+  },
   // one of the few doctors the sheet carries a bio for; everyone else falls
   // back to "No bio available." on the back of the card
   {
