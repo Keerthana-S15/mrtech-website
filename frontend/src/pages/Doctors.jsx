@@ -92,7 +92,15 @@ const doctorsData = [
     bio: "General Physician providing patient care at Sree Gurun Clinic, Tiruvallur.",
   },
   { name: "Dr. S.Ashiq rasol", role: "General Physician", email: "drashgh93@gmail.com" },
-  { name: "Dr. Dheena kumar R", role: "M.B.B.S" },
+  {
+    name: "Dr. Dheena kumar R",
+    role: "M.B.B.S",
+    // from his Tamilnadu Medical Council registration (24 Dec 2014) and his
+    // IMA/CGP-TN Fellowship in Diabetology (2017). His registration number,
+    // home address and family details are on those certificates too and are
+    // deliberately left off a public page.
+    bio: "MBBS-qualified General Physician registered since 2014, with a Fellowship in Diabetology.",
+  },
   { name: "Dr. Manivannan", role: "General Physician", email: "manivanant2006@gmail.com" },
   { name: "Dr. Sivanesan", role: "General Physician" },
   { name: "Dr. mohammedanas R", role: "M.B.B.S", email:"mohammedanas003@gmail.com" },
