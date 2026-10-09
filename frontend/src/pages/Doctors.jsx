@@ -135,6 +135,7 @@ const doctorsData = [
     // date of birth, home address and phone are on those papers and are
     // deliberately left off a public page.
     bio: "General Physician at K.V. Healthcare, Mittur, with a Doctor of Medicine qualification equivalent to Indian MBBS.",
+    image: "/images/doctors/agalvizhi.png",
   },
   {
     name: "Dr. Shirin synthiya",
