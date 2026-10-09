@@ -129,9 +129,33 @@ const doctorsData = [
     // deliberately left off a public page.
     bio: "General Physician at K.V. Healthcare, Mittur, with a Doctor of Medicine qualification equivalent to Indian MBBS.",
   },
-  { name: "Dr. Shirin synthiya", role: "M.B.B.S", email: "shirinsynthiyaw@gmail.com" },
-  { name: "Dr. Mohanraj", role: "M.B.B.S", email: "karnanmohan740@gmail.com" },
-  { name: "Dr. Ranjan ", role: "M.B.B.S", email: "kkranjan03@gmail.com" },
+  {
+    name: "Dr. Shirin synthiya",
+    role: "M.B.B.S",
+    email: "shirinsynthiyaw@gmail.com",
+    // Tamil Nadu Medical Council certificate: Shirin Synthiya, Wilson Churchil
+    // Prabu — M.B.B.S., Meenakshi University 2018, registered 06 Apr 2018.
+    bio: "MBBS-qualified General Physician, registered with the Tamil Nadu Medical Council since 2018.",
+  },
+  {
+    name: "Dr. Mohanraj",
+    role: "M.B.B.S",
+    email: "karnanmohan740@gmail.com",
+    // G Care empanelment form: MBBS 2020, registered with the Tamilnadu
+    // Medical Council 15 Feb 2023, General Physician at Karnan Clinic, and
+    // available for teleconsultation every day of the week.
+    bio: "MBBS-qualified General Physician at Karnan Clinic, offering teleconsultation services.",
+  },
+  {
+    name: "Dr. Ranjan ",
+    role: "M.B.B.S",
+    email: "kkranjan03@gmail.com",
+    // G Care empanelment form: Ranjan Karunagaran — MBBS 2022, registered
+    // with the Tamilnadu Medical Council 20 Feb 2023, General Physician at
+    // his clinic in Mathur. The clinic's name on the form is not legible, so
+    // only the location is used.
+    bio: "MBBS-qualified General Physician providing patient care at his clinic in Mathur.",
+  },
   { name: "Dr. Udhaya Karthikeyan", role: "M.B.B.S (M.D)", email: "udhaya95.trk@gmail.com" },
   { name: "Dr. Kamali K", role: "M.B.B.S", email: "kamalikumaresan27@gmail.com" },
   { name: "Dr. Praveen kumar", role: "General Physician", email: "praveenveg92@gmail.com" },
