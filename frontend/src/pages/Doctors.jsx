@@ -143,6 +143,7 @@ const doctorsData = [
     // Tamil Nadu Medical Council certificate: Shirin Synthiya, Wilson Churchil
     // Prabu — M.B.B.S., Meenakshi University 2018, registered 06 Apr 2018.
     bio: "MBBS-qualified General Physician, registered with the Tamil Nadu Medical Council since 2018.",
+    image: "/images/doctors/shirin.png",
   },
   {
     name: "Dr. Mohanraj",
