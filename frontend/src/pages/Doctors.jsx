@@ -162,6 +162,7 @@ const doctorsData = [
     // his clinic in Mathur. The clinic's name on the form is not legible, so
     // only the location is used.
     bio: "MBBS-qualified General Physician providing patient care at his clinic in Mathur.",
+    image: "/images/doctors/ranjan.png",
   },
   {
     name: "Dr. Udhaya Karthikeyan",
