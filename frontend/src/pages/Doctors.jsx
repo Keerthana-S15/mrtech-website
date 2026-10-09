@@ -25,13 +25,13 @@ const DOCTOR_IMAGE_VERSION = "1";
  * column, and GP DOCTORS is what it lists. Specialists live on other sheets and
  * are not included.
  *
- * `image` is set on Dr. Sivanesan only; every other card falls back to the
- * doctor's initials, drawn in the same circle a photo would occupy. The source
- * archive supplies no other portraits - its images are Aadhaar cards, PAN
- * cards, bank details and certificate scans, none of which belong on a public
- * page. To add a real portrait, drop the file in public/images/doctors/ and
- * add `image: "/images/doctors/<file>"` to that doctor's entry - nothing else
- * changes.
+ * `image` is set on the few doctors who have supplied a portrait; every other
+ * card falls back to the doctor's initials, drawn in the same circle a photo
+ * would occupy. The source archive supplies no portraits of its own - its
+ * images are Aadhaar cards, PAN cards, bank details and certificate scans,
+ * none of which belong on a public page. To add one, drop the file in
+ * public/images/doctors/ and add `image: "/images/doctors/<file>"` to that
+ * doctor's entry - nothing else changes.
  *
  * Two emails were withheld because their domains are gmail typosquats
  * (gamail.com, gamil.com); a mailto to those would send a visitor's message to
@@ -318,6 +318,7 @@ const doctorsData = [
     role: "M.B.B.S(M.S.General Surgery)",
     email: "saranraj161294@gmail.com",
     bio: "General Surgeon providing specialized surgical care to patients.",
+    image: "/images/doctors/saranraj.png",
   },
 ];
 
