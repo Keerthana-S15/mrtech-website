@@ -103,7 +103,18 @@ const doctorsData = [
   },
   { name: "Dr. Manivannan", role: "General Physician", email: "manivanant2006@gmail.com" },
   { name: "Dr. Sivanesan", role: "General Physician" },
-  { name: "Dr. mohammedanas R", role: "M.B.B.S", email:"mohammedanas003@gmail.com" },
+  {
+    name: "Dr. mohammedanas R",
+    role: "M.B.B.S",
+    email: "mohammedanas003@gmail.com",
+    // from his G Care empanelment form and Tamilnadu Medical Council
+    // registration (M.B.B.S., SRM, Aug 2020; registered 01 Oct 2020).
+    // That file also contains his Aadhaar and PAN cards, registration
+    // number, date of birth and home address — none of which belongs
+    // anywhere near this page. The clinic name on the form is handwritten
+    // and not legible enough to publish, so it is left out.
+    bio: "MBBS-qualified General Physician with 3 years of experience, serving as a Critical Care Consultant.",
+  },
   { name: "Dr. Jayaraman", role: "General Physician", email: "drcjayaraman@gmail.com" },
   { name: "Dr. Hari raj", role: "General Physician", email: "hariraj0222@gmail.com" },
   {
