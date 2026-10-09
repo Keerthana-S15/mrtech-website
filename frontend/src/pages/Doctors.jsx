@@ -124,6 +124,7 @@ const doctorsData = [
     // anywhere near this page. The clinic name on the form is handwritten
     // and not legible enough to publish, so it is left out.
     bio: "MBBS-qualified General Physician with 3 years of experience, serving as a Critical Care Consultant.",
+    image: "/images/doctors/mohammedanas.png",
   },
   { name: "Dr. Jayaraman", role: "General Physician", email: "drcjayaraman@gmail.com" },
   { name: "Dr. Hari raj", role: "General Physician", email: "hariraj0222@gmail.com" },
