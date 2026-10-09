@@ -269,6 +269,7 @@ const doctorsData = [
     role: "M.B.B.S",
     email: "sibiraj000@gmail.com",
     bio: "MBBS graduate from Subbaiah Institute of Medical Sciences, Shimoga, affiliated with Rajiv Gandhi University of Health Sciences (2024). Registered with TNMC, Registration No. 185715.",
+    image: "/images/doctors/sibiraj.png",
   },
   { name: "Dr. Soundarajan", role: "General Physician", email: "soundarajdr@gmail.com" },
   { name: "Dr. Sangeetha", role: "General Physician", email: "sangeethambbs90@gmail.com" },
