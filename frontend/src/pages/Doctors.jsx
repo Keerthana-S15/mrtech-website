@@ -198,6 +198,10 @@ const doctorsData = [
     // which is why the badge says M.B.B.S and the bio says M.D. Physician
     bio: "M.D. Physician-qualified doctor registered with the Tamil Nadu Medical Council.",
     email: "dhayakara13@gmail.com",
+    // smallest portrait supplied so far at 102x122, so it is scaled up into
+    // the 120px avatar rather than down; replace with a larger original when
+    // one is available
+    image: "/images/doctors/dhayanithi.png",
   },
   {
     name: "Dr. Ariviyalan M",
