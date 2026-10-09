@@ -221,6 +221,7 @@ const doctorsData = [
     // Medical College, Dr. M.G.R. Medical University (Oct 2021), registered
     // 31 Jan 2022. His form also lists FIDM and FIP fellowships.
     bio: "MBBS from Thiruvarur Govt. Medical College (2021), registered with the Tamil Nadu Medical Council since 2022.",
+    image: "/images/doctors/rakesh.png",
   },
   {
     name: "Dr. Kandhavadivel",
