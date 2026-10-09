@@ -101,6 +101,9 @@ const doctorsData = [
     // home address and family details are on those certificates too and are
     // deliberately left off a public page.
     bio: "MBBS-qualified General Physician registered since 2014, with a Fellowship in Diabetology.",
+    // smallest portrait on the page at 97x125, so it is scaled up into the
+    // 120px avatar; replace if a larger original turns up
+    image: "/images/doctors/dheenakumar.png",
   },
   { name: "Dr. Manivannan", role: "General Physician", email: "manivanant2006@gmail.com" },
   {
