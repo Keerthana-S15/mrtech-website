@@ -309,6 +309,7 @@ const doctorsData = [
     role: "M.B.B.S",
     email: "gokulram.r25@gmail.com",
     bio: "General Physician providing patient care at KS Hospital, Vadalur.",
+    image: "/images/doctors/gokulram.png",
   },
   { name: "Dr. Santhosh kumar M", role: "M.B.B.S", email: "santhoshanandh004@gmail.com" },
   {
