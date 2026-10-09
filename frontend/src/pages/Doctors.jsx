@@ -259,6 +259,7 @@ const doctorsData = [
     role: "M.B.B.S(Doctor of Medicine)",
     email: "dpi233811@gmail.com",
     bio: "Doctor of Medicine graduate from Davao Medical School Foundation, Philippines, registered with TNMC in 2022.",
+    image: "/images/doctors/deepika.png",
   },
   { name: "Dr. Muthumani", role: "General Physician" },
   {
