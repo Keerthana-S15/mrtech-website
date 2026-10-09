@@ -206,8 +206,25 @@ const doctorsData = [
   { name: "Dr. Lakshmi priya", role: "General Physician", email: "lakshmipriyak1202@gmail.com" },
   { name: "Dr. Selvi", role: "General Physician", email: "dhaaraniaps27@gmail.com" },
   { name: "Dr. Vaishnavi", role: "General Physician", email: "vaishnavimoorthy31@gmail.com" },
-  { name: "Dr. Rakesh V", role: "M.B.B.S ", email: "meetmeraki369@gmail.com" },
-  { name: "Dr. Kandhavadivel", role: "General Physician", email: "kanvel86@gmail.com" },
+  {
+    name: "Dr. Rakesh V",
+    role: "M.B.B.S ",
+    email: "meetmeraki369@gmail.com",
+    // Tamilnadu Medical Council certificate: M.B.B.S., Thiruvarur Govt.
+    // Medical College, Dr. M.G.R. Medical University (Oct 2021), registered
+    // 31 Jan 2022. His form also lists FIDM and FIP fellowships.
+    bio: "MBBS from Thiruvarur Govt. Medical College (2021), registered with the Tamil Nadu Medical Council since 2022.",
+  },
+  {
+    name: "Dr. Kandhavadivel",
+    role: "General Physician",
+    email: "kanvel86@gmail.com",
+    // G Care form: MBBS, MD (PESIMSR, Andhra Pradesh, 2013), registered with
+    // the Tamilnadu Medical Council 24 Aug 2018, 13 years' experience,
+    // Medical Officer at Lakshmi Clinic. His Aadhaar and PAN are in the same
+    // file and are deliberately left off a public page.
+    bio: "MBBS, MD-qualified Medical Officer with 13 years of experience at Lakshmi Clinic.",
+  },
   { name: "Dr. Elavarasan", role: "General Physician", email: "elavarasanv181@gmail.com" },
   { name: "Dr. Santhosh Kumar B", role: "M.B.B.S (M.D. Physician )", email: "mmsanthosh27@gmail.com" },
   { name: "Dr. Vigneshwaran R.S", role: "M.B.B.S",email:  "vickysundharam@gmail.com"},
