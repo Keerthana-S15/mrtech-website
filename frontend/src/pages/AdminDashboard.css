@@ -2508,3 +2508,12 @@ button.stat-card { cursor: pointer; }
 }
 
 .refuse-confirm:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+
+/* the character count / required hint under the custom reason field */
+.refuse-reason-count {
+  margin: -4px 0 10px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--ad-muted);
+  text-align: right;
+}

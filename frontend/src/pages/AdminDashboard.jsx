@@ -2629,7 +2629,11 @@ export default function AdminDashboard() {
   // as the collection state above, plus the reason, which the server requires.
   const [orderToRefuse, setOrderToRefuse] = useState(null);
   const [refuseOtp, setRefuseOtp] = useState("");
-  const [refuseReason, setRefuseReason] = useState("");
+  // The reason is either one of the presets the server offers, or "Other" with
+  // free text. Kept as two pieces of state so switching back to a preset does
+  // not silently submit whatever was typed before.
+  const [refuseReasonChoice, setRefuseReasonChoice] = useState("");
+  const [refuseCustomReason, setRefuseCustomReason] = useState("");
   const [refuseReasons, setRefuseReasons] = useState([]);
   const [refuseSending, setRefuseSending] = useState(false);
   const [refuseVerifying, setRefuseVerifying] = useState(false);
@@ -3064,10 +3068,17 @@ export default function AdminDashboard() {
     }
   };
 
+  // "Other" is not a reason, it is a prompt for one — so what gets saved is
+  // the typed text, never the literal word.
+  const REFUSE_OTHER = "Other";
+  const effectiveRefuseReason =
+    refuseReasonChoice === REFUSE_OTHER ? refuseCustomReason.trim() : refuseReasonChoice;
+
   const openRefusal = async (order) => {
     setOrderToRefuse(order);
     setRefuseOtp("");
-    setRefuseReason("");
+    setRefuseReasonChoice("");
+    setRefuseCustomReason("");
     setRefuseError("");
     setRefuseNotice("");
     setRefuseSentTo("");
@@ -3080,7 +3091,8 @@ export default function AdminDashboard() {
     if (refuseSending || refuseVerifying) return;
     setOrderToRefuse(null);
     setRefuseOtp("");
-    setRefuseReason("");
+    setRefuseReasonChoice("");
+    setRefuseCustomReason("");
     setRefuseError("");
     setRefuseNotice("");
   };
@@ -3096,8 +3108,12 @@ export default function AdminDashboard() {
       setRefuseError("Enter the 6-digit code from the customer.");
       return;
     }
-    if (!refuseReason.trim()) {
-      setRefuseError("Choose or type a reason for the cancellation.");
+    if (!effectiveRefuseReason) {
+      setRefuseError(
+        refuseReasonChoice === REFUSE_OTHER
+          ? "Type the reason for the cancellation."
+          : "Choose a reason for the cancellation."
+      );
       return;
     }
 
@@ -3109,7 +3125,7 @@ export default function AdminDashboard() {
       const res = await authFetch(`/api/orders/${orderToRefuse.id}/refusal-otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp: refuseOtp, reason: refuseReason.trim() }),
+        body: JSON.stringify({ otp: refuseOtp, reason: effectiveRefuseReason }),
       });
       const data = await res.json();
 
@@ -3131,7 +3147,8 @@ export default function AdminDashboard() {
 
       setOrderToRefuse(null);
       setRefuseOtp("");
-      setRefuseReason("");
+      setRefuseReasonChoice("");
+    setRefuseCustomReason("");
       alert(
         data.refundDue
           ? "✅ Order cancelled. It was paid online, so a refund is due — the admin has been emailed."
@@ -4137,24 +4154,43 @@ export default function AdminDashboard() {
                       <select
                         id="refuse-reason"
                         className="refuse-reason-select"
-                        value={refuseReasons.includes(refuseReason) ? refuseReason : ""}
+                        value={refuseReasonChoice}
                         disabled={refuseVerifying}
-                        onChange={(e) => { setRefuseReason(e.target.value); setRefuseError(""); }}
+                        onChange={(e) => { setRefuseReasonChoice(e.target.value); setRefuseError(""); }}
                       >
                         <option value="">Select a reason…</option>
                         {refuseReasons.map((r) => (
                           <option key={r} value={r}>{r}</option>
                         ))}
+                        <option value={REFUSE_OTHER}>Other…</option>
                       </select>
-                      <input
-                        type="text"
-                        className="refuse-reason-other"
-                        placeholder="…or type a different reason"
-                        maxLength={200}
-                        value={refuseReason}
-                        disabled={refuseVerifying}
-                        onChange={(e) => { setRefuseReason(e.target.value); setRefuseError(""); }}
-                      />
+
+                      {/* Only asked for when "Other" is chosen; required then,
+                          and capped at the 200 characters the server accepts. */}
+                      {refuseReasonChoice === REFUSE_OTHER && (
+                        <>
+                          <input
+                            type="text"
+                            className="refuse-reason-other"
+                            placeholder="Type the reason for cancelling"
+                            maxLength={200}
+                            required
+                            autoFocus
+                            aria-label="Custom cancellation reason"
+                            value={refuseCustomReason}
+                            disabled={refuseVerifying}
+                            onChange={(e) => {
+                              setRefuseCustomReason(e.target.value.slice(0, 200));
+                              setRefuseError("");
+                            }}
+                          />
+                          <div className="refuse-reason-count">
+                            {refuseCustomReason.trim().length === 0
+                              ? "A reason is required"
+                              : `${refuseCustomReason.length}/200`}
+                          </div>
+                        </>
+                      )}
 
                       <input
                         id="refuse-otp"
@@ -4200,7 +4236,7 @@ export default function AdminDashboard() {
                           className="collect-confirm refuse-confirm"
                           disabled={
                             refuseVerifying || refuseSending ||
-                            refuseOtp.length !== 6 || !refuseReason.trim()
+                            refuseOtp.length !== 6 || !effectiveRefuseReason
                           }
                         >
                           {refuseVerifying ? "Cancelling…" : "Confirm Cancellation"}
