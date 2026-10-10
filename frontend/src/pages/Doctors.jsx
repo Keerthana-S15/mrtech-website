@@ -11,7 +11,10 @@ import "./Doctors.css";
 // Cache-busting version for doctor photos. Bump this whenever a photo is
 // replaced but keeps the same filename, so browsers and CDNs fetch the new file
 // instead of serving a previously cached copy. Mirrors TEAM_IMAGE_VERSION.
-const DOCTOR_IMAGE_VERSION = "1";
+// Bumped when a portrait is replaced under an existing filename, so browsers
+// and Cloudflare fetch the new file instead of serving the cached old one.
+// v2: Dr. Rakesh V's photo replaced with a higher-resolution original.
+const DOCTOR_IMAGE_VERSION = "2";
 
 /**
  * Doctor profiles for the public Doctors page.
