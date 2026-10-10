@@ -231,6 +231,7 @@ const doctorsData = [
     role: "B.S.M.S (MD)",
     email: "ariviyalandr22@gmail.com",
     bio: "BSMS-qualified Siddha physician with an M.D. (Siddha) additional qualification, registered with the Tamil Nadu Siddha Medical Council.",
+    image: "/images/doctors/ariviyalan.png",
   },
   {
     name: "Dr. Shenbaga priya ",
