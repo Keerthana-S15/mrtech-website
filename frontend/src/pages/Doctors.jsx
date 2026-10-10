@@ -185,6 +185,7 @@ const doctorsData = [
     // Clinic, 3 years' experience as at Feb 2025. Her registration number,
     // date of birth, phone and home address stay off the page.
     bio: "Medical Doctor, equivalent to Indian MBBS, with 3 years of experience practising at Jayanthi Clinic.",
+    image: "/images/doctors/udhaya.png",
   },
   { name: "Dr. Kamali K", role: "M.B.B.S", email: "kamalikumaresan27@gmail.com" },
   { name: "Dr. Praveen kumar", role: "General Physician", email: "praveenveg92@gmail.com" },
