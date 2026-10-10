@@ -7,40 +7,9 @@ import {
   FaChartLine, FaStar, FaGift, FaClock, FaExclamationCircle,
   FaCheckCircle, FaTimesCircle, FaSpinner, FaBan
 } from "react-icons/fa";
-
-/**
- * Cancellation rules, mirrored from the server (see cancellability() in
- * orderController.js). This decides whether the Cancel button is offered; the
- * server decides whether a cancellation actually happens, and re-checks all of
- * this. Keeping the window here only affects what the customer is shown.
- */
-const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
-const UNCANCELLABLE_STATUSES = ["shipped", "delivered", "cancelled"];
-
-function canCancelOrder(order, now = Date.now()) {
-  const status = String(order?.orderStatus || "").toLowerCase();
-  if (UNCANCELLABLE_STATUSES.includes(status)) return false;
-
-  const placedAt = order?.createdAt ? new Date(order.createdAt).getTime() : NaN;
-  if (!Number.isFinite(placedAt)) return false;
-
-  return now - placedAt <= CANCEL_WINDOW_MS;
-}
-
-/** "3 hours left" / "12 minutes left", for the hint beside the button. */
-function cancelTimeLeft(order, now = Date.now()) {
-  const placedAt = new Date(order?.createdAt).getTime();
-  if (!Number.isFinite(placedAt)) return null;
-
-  const ms = CANCEL_WINDOW_MS - (now - placedAt);
-  if (ms <= 0) return null;
-
-  const hours = Math.floor(ms / 3600000);
-  if (hours >= 1) return `${hours} hour${hours === 1 ? "" : "s"} left to cancel`;
-
-  const minutes = Math.max(Math.floor(ms / 60000), 1);
-  return `${minutes} minute${minutes === 1 ? "" : "s"} left to cancel`;
-}
+// Shared with the tracking page so both surfaces offer the button on exactly
+// the same terms. The server remains the authority.
+import { canCancelOrder, cancelTimeLeft } from "../utils/cancelRules";
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();

@@ -1798,17 +1798,34 @@ export const trackOrder = async (req, res) => {
       if (snapshot.empty) return res.status(404).json({ success: false, error: "Order not found" });
 
       const subOrders = [];
-      snapshot.forEach((doc) => subOrders.push({ id: doc.id, ...doc.data() }));
+      snapshot.forEach((doc) => subOrders.push(trackingView(doc.id, doc.data())));
       return res.json({ success: true, multiVendor: true, subOrders });
     }
 
     const order = snapshot.docs[0].data();
-    res.json({ success: true, order: { id: snapshot.docs[0].id, ...order } });
+    res.json({ success: true, order: trackingView(snapshot.docs[0].id, order) });
   } catch (error) {
     console.error("🔥 Get Order Details Error:", error);
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
+
+/**
+ * What tracking is allowed to reveal.
+ *
+ * This endpoint is reachable with nothing but an order id, so whatever it
+ * returns is effectively public to anyone holding that id. The account email
+ * is what the cancel endpoint checks to prove ownership, so returning it here
+ * would hand the proof to the same person the check exists to stop — they
+ * could read it out of the response and cancel a stranger's order.
+ *
+ * Everything the tracking page actually renders is kept. Only the email is
+ * withheld, and the customer types it themselves to cancel.
+ */
+function trackingView(id, order) {
+  const { email, ...rest } = order;
+  return { id, ...rest };
+}
 
 export const trackShipment = async (req, res) => {
   try {

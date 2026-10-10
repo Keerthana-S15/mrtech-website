@@ -302,3 +302,158 @@
     margin-bottom: 30px;
   }
 }
+/* ==========================================================================
+   Cancel Order on the tracking page.
+
+   Tracking is reachable with an order id alone, so cancelling here asks the
+   customer to type the email the order was placed with. The tracking response
+   does not include that email, so typing it is real proof of ownership rather
+   than a formality.
+   ========================================================================== */
+
+.cancel-track-box {
+  margin: 18px 0 4px;
+  padding: 16px;
+  border: 1px solid #fde2e2;
+  border-radius: 12px;
+  background: #fffafa;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cancel-track-btn {
+  padding: 11px 20px;
+  border: 2px solid #fecaca;
+  border-radius: 10px;
+  background: #fff;
+  color: #b91c1c;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+
+.cancel-track-btn:hover { background: #fef2f2; border-color: #fca5a5; }
+.cancel-track-btn:focus-visible { outline: 2px solid #b91c1c; outline-offset: 2px; }
+
+.cancel-track-hint {
+  font-size: .82rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* ---- the confirmation panel, shown in place ---- */
+.cancel-track-confirm { width: 100%; text-align: left; }
+
+.cancel-track-confirm h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #7f1d1d;
+}
+
+.cancel-track-confirm > p {
+  margin: 0 0 14px;
+  font-size: .9rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.cancel-track-field { display: flex; flex-direction: column; gap: 6px; }
+
+.cancel-track-field > span {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.cancel-track-field input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: .93rem;
+  color: #0f172a;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.cancel-track-field input:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, .12);
+}
+
+.cancel-track-field input:disabled { opacity: .6; cursor: not-allowed; }
+
+.cancel-track-note,
+.cancel-track-error,
+.cancel-track-done {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
+.cancel-track-note { background: #eff6ff; border: 1px solid #dbeafe; color: #1d4ed8; }
+.cancel-track-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+
+.cancel-track-done {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.cancel-track-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+.cancel-track-keep,
+.cancel-track-confirm-btn {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, box-shadow .2s, opacity .2s;
+}
+
+.cancel-track-keep { background: #fff; color: #0f172a; border: 2px solid #e5e7eb; }
+.cancel-track-keep:hover:not(:disabled) { background: #f8fafc; }
+
+.cancel-track-confirm-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, .28);
+}
+
+.cancel-track-confirm-btn:hover:not(:disabled) { box-shadow: 0 8px 20px rgba(220, 38, 38, .36); }
+
+.cancel-track-keep:disabled,
+.cancel-track-confirm-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+@media (max-width: 560px) {
+  .cancel-track-box { flex-direction: column; align-items: stretch; }
+  .cancel-track-btn { width: 100%; }
+  .cancel-track-hint { text-align: center; }
+  .cancel-track-actions { flex-direction: column-reverse; }
+}
+
+/* The order rows above use "<p><strong>Label:</strong> value", so
+   .order-details p strong is given a 130px min-width to line the values up.
+   The cancel copy uses <strong> inline inside a sentence, where that min-width
+   opens visible gaps mid-sentence. Reset it for this block only; the label
+   rows are untouched. */
+.cancel-track-confirm p strong,
+.cancel-track-done strong {
+  display: inline;
+  min-width: 0;
+}
