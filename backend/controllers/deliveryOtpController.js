@@ -378,6 +378,21 @@ export const REFUSAL_REASONS = [
  * Unlike checkCollectable this does not require COD: a prepaid order can be
  * refused at the door too, and that case needs a refund rather than nothing.
  */
+/**
+ * The cancellation reason, validated identically wherever it arrives.
+ *
+ * Checked when the code is *sent*, not only when it is verified: without this
+ * the endpoint would email a customer "confirm you are refusing this order"
+ * before anyone had said why, and could be used to send those repeatedly with
+ * no reason ever recorded.
+ */
+function checkReason(raw) {
+  const reason = String(raw ?? "").trim();
+  if (!reason) return { error: "A cancellation reason is required." };
+  if (reason.length > 200) return { error: "That reason is too long (200 characters max)." };
+  return { reason };
+}
+
 function checkRefusable(order) {
   const status = String(order?.orderStatus || "").toLowerCase();
 
@@ -405,6 +420,10 @@ export const sendRefusalOtp = async (req, res) => {
 
     const blocked = checkRefusable(order);
     if (blocked) return res.status(400).json({ success: false, error: blocked });
+
+    // The reason comes first: nothing is emailed until there is one.
+    const { reason, error: reasonError } = checkReason(req.body?.reason);
+    if (reasonError) return res.status(400).json({ success: false, error: reasonError });
 
     const now = Date.now();
     const existing = otpStore.get(key);
@@ -463,10 +482,13 @@ export const sendRefusalOtp = async (req, res) => {
       lastSentAt: now,
       sends: windowOpen ? existing.sends + 1 : 1,
       windowStart: windowOpen ? existing.windowStart : now,
+      // kept so verification can fall back to the reason this code was issued
+      // for, rather than depending on the client sending it again
+      reason,
     });
 
     // The code itself is deliberately never logged.
-    console.log(`✅ Refusal code emailed for ${orderId} to ${maskEmail(order.email)}`);
+    console.log(`✅ Refusal code emailed for ${orderId} to ${maskEmail(order.email)} (${reason})`);
 
     return res.json({
       success: true,
@@ -491,18 +513,9 @@ export const verifyRefusalOtp = async (req, res) => {
   const { orderId } = req.params;
   const key = refusalKey(orderId);
   const otp = String(req.body?.otp ?? "").trim();
-  const reason = String(req.body?.reason ?? "").trim();
 
   if (!/^\d{6}$/.test(otp)) {
     return res.status(400).json({ success: false, error: "The code is 6 digits." });
-  }
-  // A cancellation with no stated reason is not much use to anyone reading the
-  // order later, so it is required rather than optional.
-  if (!reason) {
-    return res.status(400).json({ success: false, error: "A cancellation reason is required." });
-  }
-  if (reason.length > 200) {
-    return res.status(400).json({ success: false, error: "That reason is too long (200 characters max)." });
   }
 
   try {
@@ -544,6 +557,16 @@ export const verifyRefusalOtp = async (req, res) => {
         attemptsLeft: left,
       });
     }
+
+    // The reason was validated when the code was sent and stored with it, so
+    // it is taken from there. A reason supplied again here is still honoured —
+    // and still validated — so the agent can correct it before confirming.
+    const { reason, error: reasonError } = checkReason(
+      req.body?.reason != null && String(req.body.reason).trim() !== ""
+        ? req.body.reason
+        : entry.reason
+    );
+    if (reasonError) return res.status(400).json({ success: false, error: reasonError });
 
     // Correct code: the customer has confirmed the refusal at the door.
     // Burn it first so a double tap cannot re-run the update.

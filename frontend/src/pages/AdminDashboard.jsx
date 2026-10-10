@@ -2628,6 +2628,8 @@ export default function AdminDashboard() {
   // The other outcome at the door: the customer refuses the order. Same shape
   // as the collection state above, plus the reason, which the server requires.
   const [orderToRefuse, setOrderToRefuse] = useState(null);
+  // "reason" until a valid one is given and the code is sent, then "otp"
+  const [refuseStage, setRefuseStage] = useState("reason");
   const [refuseOtp, setRefuseOtp] = useState("");
   // The reason is either one of the presets the server offers, or "Other" with
   // free text. Kept as two pieces of state so switching back to a preset does
@@ -3043,6 +3045,7 @@ export default function AdminDashboard() {
       const res = await authFetch(`/api/orders/${order.id}/refusal-otp/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: effectiveRefuseReason }),
       });
       const data = await res.json();
 
@@ -3071,11 +3074,27 @@ export default function AdminDashboard() {
   // "Other" is not a reason, it is a prompt for one — so what gets saved is
   // the typed text, never the literal word.
   const REFUSE_OTHER = "Other";
+
+  // The dropdown is now shown before anything is sent, so the presets have to
+  // be known up front rather than arriving in the send response. The server
+  // accepts any non-empty reason up to 200 characters, so this list is a
+  // convenience for the agent, not a constraint it has to match.
+  const REFUSE_PRESETS = [
+    "Customer refused the order",
+    "Customer not available",
+    "Wrong or incomplete address",
+    "Customer unable to pay",
+    "Item damaged on arrival",
+  ];
+  const refusePresetList = refuseReasons.length ? refuseReasons : REFUSE_PRESETS;
   const effectiveRefuseReason =
     refuseReasonChoice === REFUSE_OTHER ? refuseCustomReason.trim() : refuseReasonChoice;
 
-  const openRefusal = async (order) => {
+  // The dialog opens on the reason, and only moves to the code once a valid
+  // one has been given: nothing is emailed to the customer before that.
+  const openRefusal = (order) => {
     setOrderToRefuse(order);
+    setRefuseStage("reason");
     setRefuseOtp("");
     setRefuseReasonChoice("");
     setRefuseCustomReason("");
@@ -3084,12 +3103,35 @@ export default function AdminDashboard() {
     setRefuseSentTo("");
     setRefuseResendIn(0);
     setRefuseExpiresIn(0);
-    await sendRefusalOtp(order);
+    // The reason list is only known once the server has been asked, so seed it
+    // from the presets the last send returned; it is refreshed on send.
+  };
+
+  /**
+   * Step one: validate the reason, then ask the server to email the code.
+   * The dialog only moves on if the send actually succeeded.
+   */
+  const handleSendRefusalOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!orderToRefuse) return;
+
+    if (!effectiveRefuseReason) {
+      setRefuseError(
+        refuseReasonChoice === REFUSE_OTHER
+          ? "Type the reason for the cancellation."
+          : "Choose a reason for the cancellation."
+      );
+      return;
+    }
+
+    const ok = await sendRefusalOtp(orderToRefuse);
+    if (ok) setRefuseStage("otp");
   };
 
   const closeRefusal = () => {
     if (refuseSending || refuseVerifying) return;
     setOrderToRefuse(null);
+    setRefuseStage("reason");
     setRefuseOtp("");
     setRefuseReasonChoice("");
     setRefuseCustomReason("");
@@ -4137,8 +4179,11 @@ export default function AdminDashboard() {
                     </p>
 
                     <p className="collect-sub">
-                      {refuseSending && !refuseSentTo ? (
-                        <>Emailing a 6-digit code to the customer&hellip;</>
+                      {refuseStage === "reason" ? (
+                        <>
+                          Choose why the order is being refused. Nothing is sent to the
+                          customer until you do.
+                        </>
                       ) : (
                         <>
                           A 6-digit code was emailed to <strong>{refuseSentTo}</strong>. Ask the
@@ -4147,7 +4192,7 @@ export default function AdminDashboard() {
                       )}
                     </p>
 
-                    <form onSubmit={handleConfirmRefusal}>
+                    <form onSubmit={refuseStage === "reason" ? handleSendRefusalOtp : handleConfirmRefusal}>
                       <label className="collect-sub" htmlFor="refuse-reason">
                         <strong>Reason for cancellation</strong>
                       </label>
@@ -4155,11 +4200,13 @@ export default function AdminDashboard() {
                         id="refuse-reason"
                         className="refuse-reason-select"
                         value={refuseReasonChoice}
-                        disabled={refuseVerifying}
+                        /* locked once the code is out: it is the reason the
+                           customer was emailed about */
+                        disabled={refuseStage === "otp" || refuseSending || refuseVerifying}
                         onChange={(e) => { setRefuseReasonChoice(e.target.value); setRefuseError(""); }}
                       >
                         <option value="">Select a reason…</option>
-                        {refuseReasons.map((r) => (
+                        {refusePresetList.map((r) => (
                           <option key={r} value={r}>{r}</option>
                         ))}
                         <option value={REFUSE_OTHER}>Other…</option>
@@ -4178,42 +4225,50 @@ export default function AdminDashboard() {
                             autoFocus
                             aria-label="Custom cancellation reason"
                             value={refuseCustomReason}
-                            disabled={refuseVerifying}
+                            disabled={refuseStage === "otp" || refuseSending || refuseVerifying}
                             onChange={(e) => {
                               setRefuseCustomReason(e.target.value.slice(0, 200));
                               setRefuseError("");
                             }}
                           />
-                          <div className="refuse-reason-count">
-                            {refuseCustomReason.trim().length === 0
-                              ? "A reason is required"
-                              : `${refuseCustomReason.length}/200`}
-                          </div>
+                          {refuseStage === "reason" && (
+                            <div className="refuse-reason-count">
+                              {refuseCustomReason.trim().length === 0
+                                ? "A reason is required"
+                                : `${refuseCustomReason.length}/200`}
+                            </div>
+                          )}
                         </>
                       )}
 
-                      <input
-                        id="refuse-otp"
-                        className="collect-input"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        maxLength={6}
-                        placeholder="------"
-                        value={refuseOtp}
-                        disabled={refuseVerifying}
-                        onChange={(e) => {
-                          setRefuseOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                          setRefuseError("");
-                        }}
-                      />
+                      {/* The code only exists once a reason has been given. */}
+                      {refuseStage === "otp" && (
+                        <>
+                          <input
+                            id="refuse-otp"
+                            className="collect-input"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            placeholder="------"
+                            autoFocus
+                            value={refuseOtp}
+                            disabled={refuseVerifying}
+                            onChange={(e) => {
+                              setRefuseOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                              setRefuseError("");
+                            }}
+                          />
 
-                      <div className="collect-timer">
-                        {refuseExpiresIn > 0 ? (
-                          <span>Code expires in {formatCountdown(refuseExpiresIn)}</span>
-                        ) : (
-                          refuseSentTo && <span className="collect-expired">Code expired — send a new one</span>
-                        )}
-                      </div>
+                          <div className="collect-timer">
+                            {refuseExpiresIn > 0 ? (
+                              <span>Code expires in {formatCountdown(refuseExpiresIn)}</span>
+                            ) : (
+                              refuseSentTo && <span className="collect-expired">Code expired — send a new one</span>
+                            )}
+                          </div>
+                        </>
+                      )}
 
                       {refuseError && (
                         <p className="collect-msg collect-msg-error" role="alert">{refuseError}</p>
@@ -4231,33 +4286,46 @@ export default function AdminDashboard() {
                         >
                           Cancel
                         </button>
-                        <button
-                          type="submit"
-                          className="collect-confirm refuse-confirm"
-                          disabled={
-                            refuseVerifying || refuseSending ||
-                            refuseOtp.length !== 6 || !effectiveRefuseReason
-                          }
-                        >
-                          {refuseVerifying ? "Cancelling…" : "Confirm Cancellation"}
-                        </button>
+                        {refuseStage === "reason" ? (
+                          <button
+                            type="submit"
+                            className="collect-confirm refuse-confirm"
+                            disabled={refuseSending || !effectiveRefuseReason}
+                          >
+                            {refuseSending ? "Sending code…" : "Send OTP to Customer"}
+                          </button>
+                        ) : (
+                          <button
+                            type="submit"
+                            className="collect-confirm refuse-confirm"
+                            disabled={
+                              refuseVerifying || refuseSending ||
+                              refuseOtp.length !== 6 || !effectiveRefuseReason
+                            }
+                          >
+                            {refuseVerifying ? "Cancelling…" : "Confirm Cancellation"}
+                          </button>
+                        )}
                       </div>
                     </form>
 
-                    <div className="collect-resend">
-                      Customer didn&rsquo;t get the email?{" "}
-                      <button
-                        type="button"
-                        onClick={() => sendRefusalOtp(orderToRefuse, { resend: true })}
-                        disabled={refuseResendIn > 0 || refuseSending || refuseVerifying}
-                      >
-                        {refuseSending
-                          ? "Sending…"
-                          : refuseResendIn > 0
-                          ? `Resend in ${refuseResendIn}s`
-                          : "Resend code"}
-                      </button>
-                    </div>
+                    {/* Resending only makes sense once a code has been sent. */}
+                    {refuseStage === "otp" && (
+                      <div className="collect-resend">
+                        Customer didn&rsquo;t get the email?{" "}
+                        <button
+                          type="button"
+                          onClick={() => sendRefusalOtp(orderToRefuse, { resend: true })}
+                          disabled={refuseResendIn > 0 || refuseSending || refuseVerifying}
+                        >
+                          {refuseSending
+                            ? "Sending…"
+                            : refuseResendIn > 0
+                            ? `Resend in ${refuseResendIn}s`
+                            : "Resend code"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
