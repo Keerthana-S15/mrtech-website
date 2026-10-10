@@ -172,6 +172,7 @@ const doctorsData = [
     // Medical Council 15 Feb 2023, General Physician at Karnan Clinic, and
     // available for teleconsultation every day of the week.
     bio: "MBBS-qualified General Physician at Karnan Clinic, offering teleconsultation services.",
+    image: "/images/doctors/mohanraj.png",
   },
   {
     name: "Dr. Ranjan ",
