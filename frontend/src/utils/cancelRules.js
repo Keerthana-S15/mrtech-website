@@ -37,3 +37,42 @@ export function cancelTimeLeft(order, now = Date.now()) {
   const minutes = Math.max(Math.floor(ms / 60000), 1);
   return `${minutes} minute${minutes === 1 ? "" : "s"} left to cancel`;
 }
+
+/**
+ * Why an order can or cannot be cancelled right now, for a surface that shows
+ * a live countdown and needs to tell the two refusals apart:
+ *
+ *   "cancellable" — inside the window, with msLeft / hh:mm:ss to show
+ *   "expired"     — the 24 hours have run out, so say so
+ *   "status"      — shipped, delivered or already cancelled; the window is
+ *                   irrelevant and saying "expired" would be wrong
+ *   "unknown"     — no usable createdAt, so no claim is made either way
+ *
+ * Derived from the order's own createdAt on every call, so passing a ticking
+ * `now` is all a live countdown needs.
+ */
+export function cancelState(order, now = Date.now()) {
+  const status = String(order?.orderStatus || "").toLowerCase();
+  if (UNCANCELLABLE_STATUSES.includes(status)) return { kind: "status", status };
+
+  const placedAt = order?.createdAt ? new Date(order.createdAt).getTime() : NaN;
+  if (!Number.isFinite(placedAt)) return { kind: "unknown" };
+
+  const msLeft = CANCEL_WINDOW_MS - (now - placedAt);
+  if (msLeft <= 0) return { kind: "expired" };
+
+  const total = Math.floor(msLeft / 1000);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+
+  return {
+    kind: "cancellable",
+    msLeft,
+    hours,
+    minutes,
+    seconds,
+    clock: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`,
+  };
+}

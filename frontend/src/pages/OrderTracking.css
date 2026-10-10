@@ -457,3 +457,36 @@
   display: inline;
   min-width: 0;
 }
+
+/* ---- live countdown + the expired notice ---- */
+
+/* Tabular figures so the seconds ticking does not shift the text beside it. */
+.cancel-track-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #b45309;
+  letter-spacing: .02em;
+}
+
+/* Shown once the 24 hours are up, in place of the button. Deliberately not
+   shown for shipped or delivered orders: there the window is irrelevant and
+   "expired" would be the wrong reason. */
+.cancel-track-expired {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 18px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-size: .9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.cancel-track-expired small {
+  font-size: .78rem;
+  font-weight: 500;
+  color: #94a3b8;
+}

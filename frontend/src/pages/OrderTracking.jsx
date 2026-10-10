@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import "./OrderTracking.css";
 // Same rule the dashboard uses, so both surfaces agree on what is cancellable.
-import { canCancelOrder, cancelTimeLeft } from "../utils/cancelRules";
+import { cancelState } from "../utils/cancelRules";
 
 const OrderTracking = () => {
   const location = useLocation();
@@ -23,6 +23,20 @@ const OrderTracking = () => {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState("");
   const [cancelDone, setCancelDone] = useState("");
+
+  // Drives the countdown. Re-rendering once a second is only worth doing while
+  // an order is on screen and its window is still open, so the interval starts
+  // with the order and stops the moment the window closes — the "expired"
+  // message needs no further ticks.
+  const [now, setNow] = useState(() => Date.now());
+  const windowOpen =
+    orderData && cancelState(orderData, now).kind === "cancellable";
+
+  useEffect(() => {
+    if (!windowOpen) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [windowOpen]);
 
   const API_BASE_URL = "/api";
 
@@ -185,7 +199,14 @@ const OrderTracking = () => {
                 can still be stopped; the server re-checks both. Tracking needs
                 nothing but an order id, so the customer proves the order is
                 theirs by typing the email it was placed with. */}
-            {canCancelOrder(orderData) && !cancelDone && (
+            {!cancelDone && cancelState(orderData, now).kind === "expired" && (
+              <p className="cancel-track-expired">
+                ⏳ Cancellation window expired
+                <small>Orders can only be cancelled within 24 hours of being placed.</small>
+              </p>
+            )}
+
+            {windowOpen && !cancelDone && (
               <div className="cancel-track-box">
                 {!cancelOpen ? (
                   <>
@@ -196,8 +217,12 @@ const OrderTracking = () => {
                     >
                       🚫 Cancel Order
                     </button>
+                    {/* counts down from the order's own createdAt, once a second */}
                     <span className="cancel-track-hint">
-                      ⏳ {cancelTimeLeft(orderData)}
+                      ⏳ <strong className="cancel-track-clock">
+                        {cancelState(orderData, now).clock}
+                      </strong>{" "}
+                      left to cancel
                     </span>
                   </>
                 ) : (
