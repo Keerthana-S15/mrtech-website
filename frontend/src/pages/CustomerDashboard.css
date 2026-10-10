@@ -930,3 +930,193 @@
     font-size: 28px;
   }
 }
+/* ==========================================================================
+   Cancel Order — the button on an order card, the 24-hour hint, and the
+   confirmation dialog. Metrics follow .track-btn-new so the footer buttons
+   stay the same height whether or not Cancel is showing.
+   ========================================================================== */
+
+.cancel-btn-new {
+  flex: 1;
+  background: #fff;
+  color: #b91c1c;
+  border: 2px solid #fecaca;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
+}
+
+.cancel-btn-new:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(185, 28, 28, .18);
+}
+
+.cancel-btn-new:focus-visible {
+  outline: 2px solid #b91c1c;
+  outline-offset: 2px;
+}
+
+/* the quiet countdown under the footer, so the limit is visible before the
+   customer commits to anything */
+.cancel-window-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 20px 12px;
+  background: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.cancel-window-hint svg { font-size: 11px; }
+
+/* ---- confirmation dialog ---- */
+.cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, .55);
+  backdrop-filter: blur(2px);
+  animation: cancel-fade .18s ease-out;
+}
+
+.cancel-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 26px 22px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .28);
+  animation: cancel-rise .22s ease-out;
+}
+
+.cancel-modal-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 1.5rem;
+}
+
+.cancel-modal h3 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #00333d;
+}
+
+.cancel-modal-text {
+  margin: 0 0 12px;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.cancel-modal-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  font-size: .82rem;
+  line-height: 1.5;
+  color: #1d4ed8;
+}
+
+.cancel-modal-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-size: .84rem;
+  line-height: 1.5;
+  color: #b91c1c;
+  text-align: left;
+}
+
+.cancel-modal-error svg { flex: none; margin-top: 2px; }
+
+.cancel-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cancel-modal-keep,
+.cancel-modal-confirm {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .2s, box-shadow .2s, opacity .2s;
+}
+
+.cancel-modal-keep {
+  background: #fff;
+  color: #00333d;
+  border: 2px solid #e5e7eb;
+}
+
+.cancel-modal-keep:hover:not(:disabled) { background: #f9fafb; }
+
+.cancel-modal-confirm {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, .3);
+}
+
+.cancel-modal-confirm:hover:not(:disabled) {
+  box-shadow: 0 8px 20px rgba(220, 38, 38, .38);
+}
+
+.cancel-modal-keep:disabled,
+.cancel-modal-confirm:disabled { opacity: .6; cursor: not-allowed; }
+
+@keyframes cancel-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cancel-rise {
+  from { opacity: 0; transform: translateY(12px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 560px) {
+  .cancel-modal { padding: 24px 18px 18px; }
+  .cancel-modal-actions { flex-direction: column-reverse; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cancel-modal-overlay,
+  .cancel-modal { animation: none; }
+  .cancel-btn-new:hover { transform: none; }
+}

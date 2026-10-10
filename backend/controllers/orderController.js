@@ -2024,3 +2024,128 @@ export const updateOrderStatus = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
+/**
+ * How long a customer has to cancel their own order, and which statuses have
+ * gone too far to cancel.
+ *
+ * Exported because the dashboard needs the same rule to decide whether to show
+ * the Cancel button. The button is a convenience; this module is the authority,
+ * and cancelOrder re-checks every condition on the server, so a stale page or a
+ * hand-made request cannot cancel something the UI would have hidden.
+ */
+export const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const UNCANCELLABLE_STATUSES = ["shipped", "delivered", "cancelled"];
+
+/** Returns { ok } or { ok: false, reason, error } for an order document. */
+export function cancellability(order, now = Date.now()) {
+  const status = String(order?.orderStatus || "").toLowerCase();
+
+  if (status === "cancelled") {
+    return { ok: false, reason: "already_cancelled", error: "This order has already been cancelled." };
+  }
+  if (UNCANCELLABLE_STATUSES.includes(status)) {
+    return {
+      ok: false,
+      reason: `already_${status}`,
+      error: `This order has already been ${status} and can no longer be cancelled.`,
+    };
+  }
+
+  const placedAt = order?.createdAt ? new Date(order.createdAt).getTime() : NaN;
+  if (!Number.isFinite(placedAt)) {
+    // No usable timestamp: refuse rather than guess, so an order with bad data
+    // cannot be cancelled indefinitely.
+    return { ok: false, reason: "no_order_date", error: "This order has no recorded date, so it cannot be cancelled online." };
+  }
+
+  const elapsed = now - placedAt;
+  if (elapsed > CANCEL_WINDOW_MS) {
+    return {
+      ok: false,
+      reason: "window_expired",
+      error: "Orders can only be cancelled within 24 hours of being placed.",
+    };
+  }
+
+  return { ok: true, msRemaining: CANCEL_WINDOW_MS - elapsed };
+}
+
+/**
+ * Customer-initiated cancellation.
+ *
+ * Deliberately does not touch paymentStatus: refunds are handled outside this
+ * flow, and silently flipping a paid order to unpaid would misreport what was
+ * actually taken. The order records that it was cancelled and when; the money
+ * side is left exactly as it was.
+ */
+export const cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const email = String(req.body?.email || "").trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: "Your account email is required to cancel an order." });
+    }
+
+    const snapshot = await db.collection("orders").where("orderId", "==", orderId).get();
+    if (snapshot.empty) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+
+    const docId = snapshot.docs[0].id;
+    const order = snapshot.docs[0].data();
+
+    // A customer may only cancel their own order. These routes carry no admin
+    // token, so the order's own email is what establishes ownership.
+    if (String(order.email || "").trim().toLowerCase() !== email) {
+      return res.status(403).json({ success: false, error: "This order belongs to a different account." });
+    }
+
+    const verdict = cancellability(order);
+    if (!verdict.ok) {
+      // 409: the request was well formed, the order's state refuses it.
+      return res.status(409).json({ success: false, error: verdict.error, reason: verdict.reason });
+    }
+
+    const cancelledAt = new Date().toISOString();
+    await db.collection("orders").doc(docId).update({
+      orderStatus: "cancelled",
+      cancelledAt,
+      cancelledBy: "customer",
+      updatedAt: cancelledAt,
+    });
+    invalidate("orders:");   // the admin list shows this status
+
+    try {
+      await transporter.sendMail({
+        from: process.env.ADMIN_EMAIL,
+        to: order.email,
+        subject: `Order Cancelled - ${orderId}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;padding:20px;border-radius:8px;">
+            <h2 style="color:#b91c1c;">Order Cancelled</h2>
+            <p>Dear <b>${order.customerName}</b>,</p>
+            <p>${STATUS_MESSAGES.cancelled}</p>
+            <p><b>Order ID:</b> ${orderId}</p>
+            <p><b>Cancelled on:</b> ${new Date(cancelledAt).toLocaleString("en-IN")}</p>
+            <p><b>Order total:</b> ₹${Number(order.totalAmount || 0).toLocaleString("en-IN")}</p>
+            <p><b>Payment method:</b> ${order.paymentMethod || "N/A"}</p>
+            <hr/>
+            <p style="color:gray;font-size:12px;">
+              If this order was already paid for, our team will be in touch about the refund.
+              For any queries, contact us at ${process.env.ADMIN_EMAIL}
+            </p>
+          </div>
+        `,
+      });
+      console.log(`✅ Cancellation email sent to ${order.email} for ${orderId}`);
+    } catch (emailError) {
+      console.error("🔥 Cancellation email failed (order still cancelled):", emailError);
+    }
+
+    res.json({ success: true, message: "Order cancelled successfully", orderStatus: "cancelled", cancelledAt });
+  } catch (error) {
+    console.error("🔥 Cancel Order Error:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};

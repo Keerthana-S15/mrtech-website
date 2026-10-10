@@ -68,6 +68,7 @@ import {
   getRecentOrders,
   updateOrderStatus,
   deleteOrder,
+  cancelOrder,
 } from "../controllers/orderController.js";
 
 const router = express.Router();
@@ -79,6 +80,12 @@ router.get("/orders/track/:orderId", trackOrder);
 router.get("/orders/shiprocket-track/:orderId", trackShipment);
 router.get("/orders/customer/:email/stats", getCustomerStats);
 router.get("/orders/customer/:email/recent", getRecentOrders);
+
+// A customer cancelling their own order. Distinct from the admin status route
+// below: that one needs a token and can set any status, this one only ever
+// sets "cancelled" and only within the rules in cancellability(). The extra
+// path segment keeps it clear of PUT /orders/:orderId, which is admin-only.
+router.put("/orders/:orderId/cancel", cancelOrder);
 
 // ✅ NEW: Admin-only, company-scoped
 router.get("/orders", requireAdmin, getAdminOrders);

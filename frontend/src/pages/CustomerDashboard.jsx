@@ -5,8 +5,42 @@ import {
   FaBox, FaTruck, FaWallet, FaShoppingBag, FaMapMarkerAlt, 
   FaHeadset, FaHeart, FaHistory, FaUser, FaBell, FaSearch,
   FaChartLine, FaStar, FaGift, FaClock, FaExclamationCircle,
-  FaCheckCircle, FaTimesCircle, FaSpinner
+  FaCheckCircle, FaTimesCircle, FaSpinner, FaBan
 } from "react-icons/fa";
+
+/**
+ * Cancellation rules, mirrored from the server (see cancellability() in
+ * orderController.js). This decides whether the Cancel button is offered; the
+ * server decides whether a cancellation actually happens, and re-checks all of
+ * this. Keeping the window here only affects what the customer is shown.
+ */
+const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
+const UNCANCELLABLE_STATUSES = ["shipped", "delivered", "cancelled"];
+
+function canCancelOrder(order, now = Date.now()) {
+  const status = String(order?.orderStatus || "").toLowerCase();
+  if (UNCANCELLABLE_STATUSES.includes(status)) return false;
+
+  const placedAt = order?.createdAt ? new Date(order.createdAt).getTime() : NaN;
+  if (!Number.isFinite(placedAt)) return false;
+
+  return now - placedAt <= CANCEL_WINDOW_MS;
+}
+
+/** "3 hours left" / "12 minutes left", for the hint beside the button. */
+function cancelTimeLeft(order, now = Date.now()) {
+  const placedAt = new Date(order?.createdAt).getTime();
+  if (!Number.isFinite(placedAt)) return null;
+
+  const ms = CANCEL_WINDOW_MS - (now - placedAt);
+  if (ms <= 0) return null;
+
+  const hours = Math.floor(ms / 3600000);
+  if (hours >= 1) return `${hours} hour${hours === 1 ? "" : "s"} left to cancel`;
+
+  const minutes = Math.max(Math.floor(ms / 60000), 1);
+  return `${minutes} minute${minutes === 1 ? "" : "s"} left to cancel`;
+}
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
@@ -27,6 +61,11 @@ export default function CustomerDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+
+  // Cancellation: the order awaiting confirmation, and the request in flight.
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
 
   const API_BASE_URL = "/api";
 
@@ -199,6 +238,65 @@ export default function CustomerDashboard() {
 
   const handleViewDetails = (order) => {
     navigate("/order-details", { state: { order: order } });
+  };
+
+  /* ------------------------------------------------------------- cancelling */
+
+  const openCancelConfirm = (order) => {
+    setCancelError(null);
+    setCancelTarget(order);
+  };
+
+  const closeCancelConfirm = () => {
+    if (cancelling) return;   // don't drop a request that is already in flight
+    setCancelTarget(null);
+    setCancelError(null);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!cancelTarget || cancelling) return;
+
+    setCancelling(true);
+    setCancelError(null);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/orders/${cancelTarget.orderId}/cancel`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: userData.email }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        // The server refuses anything the button should have hidden — an order
+        // that shipped or passed 24 hours while this page sat open. Show why
+        // and refresh, so the card stops offering what is no longer possible.
+        setCancelError(data.error || "Could not cancel this order. Please try again.");
+        if (response.status === 409) fetchOrders();
+        return;
+      }
+
+      // Update in place rather than refetching: the card re-renders as
+      // cancelled immediately and the Cancel button disappears on its own.
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.orderId === cancelTarget.orderId
+            ? { ...o, orderStatus: "cancelled", cancelledAt: data.cancelledAt }
+            : o
+        )
+      );
+      setCancelTarget(null);
+      setSuccessMessage(`Order #${cancelTarget.orderId} has been cancelled.`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+      fetchStats();   // the totals on the cards count orders by status
+    } catch {
+      setCancelError("Network error. Check your connection and try again.");
+    } finally {
+      setCancelling(false);
+    }
   };
 
   if (!userData) {
@@ -598,19 +696,108 @@ export default function CustomerDashboard() {
                     >
                       <FaMapMarkerAlt /> Track Order
                     </button>
-                    <button 
+                    {/* Offered only inside the 24-hour window and only while
+                        the order can still be stopped. Once it is shipped,
+                        delivered, cancelled or out of time the button is not
+                        rendered at all, and the server refuses it regardless. */}
+                    {canCancelOrder(order) && (
+                      <button
+                        className="cancel-btn-new"
+                        onClick={() => openCancelConfirm(order)}
+                        title={cancelTimeLeft(order) || "Cancel this order"}
+                      >
+                        <FaBan /> Cancel Order
+                      </button>
+                    )}
+                    <button
                       className="details-btn-new"
                       onClick={() => handleViewDetails(order)}
                     >
                       View Details →
                     </button>
                   </div>
+
+                  {canCancelOrder(order) && (
+                    <p className="cancel-window-hint">
+                      <FaClock /> {cancelTimeLeft(order)}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {/* Confirmation before anything is cancelled. Nothing is sent until the
+          customer confirms here, and the dialog stays open on a refusal so the
+          reason is readable. */}
+      {cancelTarget && (
+        <div
+          className="cancel-modal-overlay"
+          onClick={closeCancelConfirm}
+          role="presentation"
+        >
+          <div
+            className="cancel-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cancel-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cancel-modal-icon" aria-hidden="true">
+              <FaExclamationCircle />
+            </div>
+
+            <h3 id="cancel-modal-title">Cancel this order?</h3>
+
+            <p className="cancel-modal-text">
+              Order <strong>#{cancelTarget.orderId}</strong> for{" "}
+              <strong>₹{(cancelTarget.totalAmount || 0).toLocaleString("en-IN")}</strong>{" "}
+              will be cancelled. This cannot be undone.
+            </p>
+
+            {String(cancelTarget.paymentMethod || "").toUpperCase() !== "COD" && (
+              <p className="cancel-modal-note">
+                This order was paid online. Our team will contact you about the refund.
+              </p>
+            )}
+
+            {cancelError && (
+              <p className="cancel-modal-error" role="alert">
+                <FaExclamationCircle /> {cancelError}
+              </p>
+            )}
+
+            <div className="cancel-modal-actions">
+              <button
+                type="button"
+                className="cancel-modal-keep"
+                onClick={closeCancelConfirm}
+                disabled={cancelling}
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                className="cancel-modal-confirm"
+                onClick={confirmCancelOrder}
+                disabled={cancelling}
+              >
+                {cancelling ? (
+                  <>
+                    <FaSpinner className="spinning" /> Cancelling…
+                  </>
+                ) : (
+                  <>
+                    <FaBan /> Yes, Cancel Order
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
