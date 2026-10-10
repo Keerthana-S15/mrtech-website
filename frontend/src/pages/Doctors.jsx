@@ -84,6 +84,7 @@ const doctorsData = [
     role: "M.B.B.S",
     email: "drvinoth1997@gmail.com",
     bio: "MBBS-qualified General Physician with 4 years of experience, currently serving as Chief Medical Officer at Emergency Care Center.",
+    image: "/images/doctors/vinothkumar.png",
   },
   {
     name: "Dr. Bharath",
