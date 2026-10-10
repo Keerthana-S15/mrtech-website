@@ -97,7 +97,12 @@ const doctorsData = [
     email: "shobanbabu902@gmail.com",
     bio: "General Physician providing patient care at Sree Gurun Clinic, Tiruvallur.",
   },
-  { name: "Dr. S.Ashiq rasol", role: "General Physician", email: "drashgh93@gmail.com" },
+  {
+    name: "Dr. S.Ashiq rasol",
+    role: "General Physician",
+    email: "drashgh93@gmail.com",
+    image: "/images/doctors/ashiq.png",
+  },
   {
     name: "Dr. Dheena kumar R",
     role: "M.B.B.S",
