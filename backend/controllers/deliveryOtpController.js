@@ -348,3 +348,347 @@ export const verifyDeliveryOtp = async (req, res) => {
     return res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
+
+/* ==========================================================================
+   Customer refused delivery.
+
+   The mirror image of the collection flow above: the agent is at the door, the
+   customer will not take the order, and it has to be cancelled with the same
+   proof that the customer was actually there. Reuses the store, the hashing,
+   the rate limits and the admin scoping, so the two flows cannot drift.
+
+   Keys into otpStore are prefixed, so a refusal code and a collection code for
+   the same order never overwrite each other.
+   ========================================================================== */
+
+const refusalKey = (orderId) => `refuse:${orderId}`;
+
+/** Preset reasons the dashboard offers; anything else is free text. */
+export const REFUSAL_REASONS = [
+  "Customer refused the order",
+  "Customer not available",
+  "Wrong or incomplete address",
+  "Customer unable to pay",
+  "Item damaged on arrival",
+];
+
+/**
+ * Shared guards for both refusal endpoints.
+ *
+ * Unlike checkCollectable this does not require COD: a prepaid order can be
+ * refused at the door too, and that case needs a refund rather than nothing.
+ */
+function checkRefusable(order) {
+  const status = String(order?.orderStatus || "").toLowerCase();
+
+  if (status === "delivered") {
+    return "This order is already marked delivered and cannot be refused.";
+  }
+  if (status === "cancelled") {
+    return "This order has already been cancelled.";
+  }
+  if (!order?.email) {
+    return "This order has no email address, so the code cannot be sent.";
+  }
+  return null;
+}
+
+export const sendRefusalOtp = async (req, res) => {
+  sweep();
+
+  const { orderId } = req.params;
+  const key = refusalKey(orderId);
+
+  try {
+    const { error, order } = await loadOrderForAdmin(orderId, req.admin);
+    if (error) return res.status(error.status).json({ success: false, error: error.message });
+
+    const blocked = checkRefusable(order);
+    if (blocked) return res.status(400).json({ success: false, error: blocked });
+
+    const now = Date.now();
+    const existing = otpStore.get(key);
+
+    if (existing) {
+      const since = now - existing.lastSentAt;
+      if (since < RESEND_COOLDOWN_MS) {
+        return res.status(429).json({
+          success: false,
+          error: "Please wait a few seconds before sending another code.",
+          retryAfterSeconds: Math.ceil((RESEND_COOLDOWN_MS - since) / 1000),
+        });
+      }
+      if (now - existing.windowStart <= SEND_WINDOW_MS && existing.sends >= MAX_SENDS_PER_WINDOW) {
+        return res.status(429).json({
+          success: false,
+          error: "Too many codes sent for this order. Please try again later.",
+        });
+      }
+    }
+
+    const otp = sixDigits();
+
+    await transporter.sendMail({
+      from: `"Myth Reality Technologies" <${process.env.ADMIN_EMAIL}>`,
+      to: order.email,
+      subject: `Confirm cancellation of order ${orderId}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #eee;border-radius:8px;padding:32px;background:#fafafa;">
+          <h2 style="color:#b91c1c;text-align:center;">Confirm you are refusing this delivery</h2>
+          <p style="color:#555;text-align:center;">
+            Dear <b>${order.customerName || "Customer"}</b>, our delivery agent has reported that
+            order <b>${orderId}</b> is being refused.
+          </p>
+          <p style="color:#555;text-align:center;">
+            Share this code with the agent <b>only if you really do not want this order</b>.
+            It will be cancelled as soon as the code is entered:
+          </p>
+          <div style="font-size:36px;font-weight:bold;text-align:center;color:#b91c1c;letter-spacing:8px;margin:24px 0;">
+            ${otp}
+          </div>
+          <p style="color:#888;text-align:center;font-size:13px;">
+            Valid for 10 minutes. If you did not refuse this delivery, do not share this code.
+          </p>
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>
+          <p style="color:#aaa;text-align:center;font-size:12px;">&mdash; Myth Reality Technologies</p>
+        </div>
+      `,
+    });
+
+    const windowOpen = existing && now - existing.windowStart <= SEND_WINDOW_MS;
+    otpStore.set(key, {
+      hash: sha256(otp),
+      expiresAt: now + OTP_TTL_MS,
+      attempts: 0,
+      lastSentAt: now,
+      sends: windowOpen ? existing.sends + 1 : 1,
+      windowStart: windowOpen ? existing.windowStart : now,
+    });
+
+    // The code itself is deliberately never logged.
+    console.log(`✅ Refusal code emailed for ${orderId} to ${maskEmail(order.email)}`);
+
+    return res.json({
+      success: true,
+      message: "Cancellation code sent to the customer's email",
+      sentTo: maskEmail(order.email),
+      expiresInMinutes: OTP_TTL_MS / 60000,
+      resendAfterSeconds: RESEND_COOLDOWN_MS / 1000,
+      reasons: REFUSAL_REASONS,
+    });
+  } catch (err) {
+    console.error(`🔥 Refusal code send failed for ${orderId}:`, err);
+    return res.status(502).json({
+      success: false,
+      error: "Could not send the code by email. Please try again in a moment.",
+    });
+  }
+};
+
+export const verifyRefusalOtp = async (req, res) => {
+  sweep();
+
+  const { orderId } = req.params;
+  const key = refusalKey(orderId);
+  const otp = String(req.body?.otp ?? "").trim();
+  const reason = String(req.body?.reason ?? "").trim();
+
+  if (!/^\d{6}$/.test(otp)) {
+    return res.status(400).json({ success: false, error: "The code is 6 digits." });
+  }
+  // A cancellation with no stated reason is not much use to anyone reading the
+  // order later, so it is required rather than optional.
+  if (!reason) {
+    return res.status(400).json({ success: false, error: "A cancellation reason is required." });
+  }
+  if (reason.length > 200) {
+    return res.status(400).json({ success: false, error: "That reason is too long (200 characters max)." });
+  }
+
+  try {
+    const { error, docId, order } = await loadOrderForAdmin(orderId, req.admin);
+    if (error) return res.status(error.status).json({ success: false, error: error.message });
+
+    const blocked = checkRefusable(order);
+    if (blocked) return res.status(400).json({ success: false, error: blocked });
+
+    const entry = otpStore.get(key);
+    if (!entry || entry.expiresAt <= Date.now()) {
+      if (entry) otpStore.delete(key);
+      return res.status(400).json({
+        success: false,
+        error: "That code has expired. Send a new one.",
+        expired: true,
+      });
+    }
+
+    entry.attempts += 1;
+    if (entry.attempts > MAX_VERIFY_ATTEMPTS) {
+      otpStore.delete(key);
+      return res.status(429).json({
+        success: false,
+        error: "Too many incorrect attempts. Send a new code.",
+        expired: true,
+      });
+    }
+
+    const expected = Buffer.from(entry.hash, "hex");
+    const supplied = Buffer.from(sha256(otp), "hex");
+    if (!crypto.timingSafeEqual(expected, supplied)) {
+      const left = Math.max(MAX_VERIFY_ATTEMPTS - entry.attempts, 0);
+      return res.status(400).json({
+        success: false,
+        error: left
+          ? `Incorrect code. ${left} attempt${left === 1 ? "" : "s"} left.`
+          : "Incorrect code.",
+        attemptsLeft: left,
+      });
+    }
+
+    // Correct code: the customer has confirmed the refusal at the door.
+    // Burn it first so a double tap cannot re-run the update.
+    otpStore.delete(key);
+
+    const cancelledAt = new Date().toISOString();
+    const prepaid = !isCod(order) && String(order.paymentStatus || "").toLowerCase() === "paid";
+
+    // Payment is recorded as it actually stands, never rewritten:
+    //   COD      nothing was handed over, so the pending charge simply ends
+    //            and paymentCollected is made explicit for the record.
+    //   prepaid  money was taken, so paymentStatus stays "paid" and the order
+    //            is flagged for refund rather than quietly marked unpaid.
+    const update = {
+      orderStatus: "cancelled",
+      cancelledAt,
+      cancelledBy: "delivery",
+      cancellationReason: reason,
+      refusedAtDelivery: true,
+      refusalVerifiedBy: req.admin?.email || req.admin?.adminId || "unknown",
+      updatedAt: cancelledAt,
+    };
+    if (isCod(order)) {
+      update.paymentCollected = false;
+    } else if (prepaid) {
+      update.refundDue = true;
+      update.refundStatus = "pending";
+    }
+
+    await db.collection("orders").doc(docId).update(update);
+    invalidate("orders:");   // the admin list must show this at once
+
+    console.log(
+      `✅ ${orderId} cancelled at the door (verified by ${req.admin?.email || "unknown"}): ${reason}`
+    );
+
+    // Confirmation to the customer. Best effort — the cancellation is already
+    // recorded, so a mail failure must not fail the request.
+    try {
+      await transporter.sendMail({
+        from: `"Myth Reality Technologies" <${process.env.ADMIN_EMAIL}>`,
+        to: order.email,
+        subject: `Order Cancelled at Delivery - ${orderId}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;padding:20px;border-radius:8px;">
+            <h2 style="color:#b91c1c;">Order Cancelled</h2>
+            <p>Dear <b>${order.customerName || "Customer"}</b>,</p>
+            <p>Your order was cancelled at the time of delivery, confirmed by the code you provided to our agent.</p>
+            <hr/>
+            <p><b>Order ID:</b> ${orderId}</p>
+            <p><b>Cancelled on:</b> ${new Date(cancelledAt).toLocaleString("en-IN")}</p>
+            <p><b>Reason:</b> ${reason}</p>
+            <p><b>Order total:</b> &#8377;${order.totalAmount}</p>
+            <p><b>Payment method:</b> ${order.paymentMethod || "N/A"}</p>
+            ${
+              prepaid
+                ? '<p style="color:#1d4ed8;"><b>Refund:</b> this order was paid online. Our team will be in touch about the refund.</p>'
+                : "<p><b>Amount due:</b> nothing &mdash; no cash was collected.</p>"
+            }
+            <hr/>
+            <p style="color:gray;font-size:12px;">
+              For any queries, contact us at ${process.env.ADMIN_EMAIL}
+            </p>
+          </div>
+        `,
+      });
+      console.log(`✅ Refusal confirmation emailed to ${maskEmail(order.email)} for ${orderId}`);
+    } catch (mailErr) {
+      console.error(`🔥 Refusal confirmation email failed for ${orderId} (cancellation still recorded):`, mailErr);
+    }
+
+    // And the company admin, so a refused delivery — and any refund it owes —
+    // lands in an inbox rather than only in the dashboard.
+    try {
+      let adminEmail = process.env.ADMIN_EMAIL;
+      let companyName = "MRtech";
+      if (order.companyId) {
+        const adminSnap = await db
+          .collection("admin")
+          .where("companyId", "==", order.companyId)
+          .limit(1)
+          .get();
+        if (!adminSnap.empty) {
+          adminEmail = adminSnap.docs[0].data().email || adminEmail;
+          companyName = adminSnap.docs[0].data().companyName || companyName;
+        }
+      }
+
+      const row = (label, value) => `
+        <tr>
+          <td style="padding:8px;border:1px solid #ddd;background:#fafafa;"><b>${label}</b></td>
+          <td style="padding:8px;border:1px solid #ddd;">${value}</td>
+        </tr>`;
+
+      await transporter.sendMail({
+        from: `"Myth Reality Technologies" <${process.env.ADMIN_EMAIL}>`,
+        to: adminEmail,
+        subject: `Delivery Refused & Order Cancelled - ${orderId}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #ddd;padding:20px;border-radius:8px;">
+            <h2 style="color:#b91c1c;">&#128230; Delivery Refused &mdash; Order Cancelled</h2>
+            <p>
+              <b>${orderId}</b> was refused at the door and cancelled, confirmed by the customer's
+              one-time code.
+            </p>
+            <table style="width:100%;border-collapse:collapse;margin-top:14px;">
+              ${row("Order ID", orderId)}
+              ${row("Company", companyName)}
+              ${row("Customer", `${order.customerName || "-"}<br/>${order.email || "-"}<br/>${order.phone || "-"}`)}
+              ${row("Reason", reason)}
+              ${row("Order Value", `&#8377;${order.totalAmount}`)}
+              ${row("Payment Method", order.paymentMethod || "-")}
+              ${row(
+                "Payment",
+                prepaid
+                  ? '<span style="color:#b45309;font-weight:bold;">Paid online &mdash; refund due</span>'
+                  : "No cash collected"
+              )}
+              ${row("Order Status", '<span style="color:#b91c1c;font-weight:bold;">Cancelled</span>')}
+              ${row("Cancelled On", new Date(cancelledAt).toLocaleString("en-IN"))}
+              ${row("Verified By", req.admin?.email || req.admin?.adminId || "unknown")}
+            </table>
+            <hr style="margin-top:18px;"/>
+            <p style="color:gray;font-size:12px;">
+              ${prepaid ? "This order was paid online and needs a refund." : "No action is needed."}
+            </p>
+          </div>
+        `,
+      });
+      console.log(`✅ Admin notified of refusal for ${orderId} (${maskEmail(adminEmail)})`);
+    } catch (mailErr) {
+      console.error(`🔥 Admin refusal email failed for ${orderId} (cancellation still recorded):`, mailErr);
+    }
+
+    return res.json({
+      success: true,
+      message: "Order cancelled at delivery",
+      orderId,
+      orderStatus: "cancelled",
+      cancellationReason: reason,
+      refundDue: Boolean(prepaid),
+      cancelledAt,
+    });
+  } catch (err) {
+    console.error(`🔥 Refusal verification failed for ${orderId}:`, err);
+    return res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};

@@ -2451,3 +2451,60 @@ button.stat-card { cursor: pointer; }
   .set-progress-fill,
   .set-strength-bar span { transition: none; }
 }
+
+/* ==========================================================================
+   Customer refused delivery — the action button and the dialog.
+   Reuses .collect-modal for layout; only the colouring and the two reason
+   fields are specific to refusing.
+   ========================================================================== */
+
+.order-action--refuse {
+  background: #fff;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.order-action--refuse:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.refuse-modal .modal-header h2 { color: #b91c1c; }
+
+.refuse-reason-select,
+.refuse-reason-other {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--ad-line);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: .92rem;
+  color: var(--ad-ink);
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.refuse-reason-select:focus,
+.refuse-reason-other:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, .12);
+}
+
+.refuse-reason-select:disabled,
+.refuse-reason-other:disabled { opacity: .6; cursor: not-allowed; }
+
+/* the confirm button carries the weight of a cancellation */
+.refuse-confirm {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, .28);
+}
+
+.refuse-confirm:hover:not(:disabled) {
+  box-shadow: 0 8px 20px rgba(220, 38, 38, .36);
+}
+
+.refuse-confirm:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }

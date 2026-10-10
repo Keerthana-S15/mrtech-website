@@ -57,7 +57,12 @@
 
 import express from "express";
 import { requireAdmin } from "../middleware/authMiddleware.js";
-import { sendDeliveryOtp, verifyDeliveryOtp } from "../controllers/deliveryOtpController.js";
+import {
+  sendDeliveryOtp,
+  verifyDeliveryOtp,
+  sendRefusalOtp,
+  verifyRefusalOtp,
+} from "../controllers/deliveryOtpController.js";
 import {
   createOrder,
   getAdminOrders,
@@ -95,6 +100,13 @@ router.put("/orders/:orderId", requireAdmin, updateOrderStatus);
 // then verify it to mark the order delivered with the payment collected.
 router.post("/orders/:orderId/delivery-otp/send", requireAdmin, sendDeliveryOtp);
 router.post("/orders/:orderId/delivery-otp/verify", requireAdmin, verifyDeliveryOtp);
+
+// The other outcome at the door: the customer refuses the order. Same proof —
+// a code emailed to the customer and verified here — but it cancels rather
+// than completing, and records why. Admin-only, company-scoped, like the pair
+// above; a customer cannot reach these.
+router.post("/orders/:orderId/refusal-otp/send", requireAdmin, sendRefusalOtp);
+router.post("/orders/:orderId/refusal-otp/verify", requireAdmin, verifyRefusalOtp);
 router.delete("/orders/:orderId", requireAdmin, deleteOrder);
 
 export default router;

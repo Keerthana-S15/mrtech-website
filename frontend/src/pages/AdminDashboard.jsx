@@ -2624,6 +2624,20 @@ export default function AdminDashboard() {
   const [collectSentTo, setCollectSentTo] = useState("");
   const [collectResendIn, setCollectResendIn] = useState(0);
   const [collectExpiresIn, setCollectExpiresIn] = useState(0);
+
+  // The other outcome at the door: the customer refuses the order. Same shape
+  // as the collection state above, plus the reason, which the server requires.
+  const [orderToRefuse, setOrderToRefuse] = useState(null);
+  const [refuseOtp, setRefuseOtp] = useState("");
+  const [refuseReason, setRefuseReason] = useState("");
+  const [refuseReasons, setRefuseReasons] = useState([]);
+  const [refuseSending, setRefuseSending] = useState(false);
+  const [refuseVerifying, setRefuseVerifying] = useState(false);
+  const [refuseError, setRefuseError] = useState("");
+  const [refuseNotice, setRefuseNotice] = useState("");
+  const [refuseSentTo, setRefuseSentTo] = useState("");
+  const [refuseResendIn, setRefuseResendIn] = useState(0);
+  const [refuseExpiresIn, setRefuseExpiresIn] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -2998,6 +3012,136 @@ export default function AdminDashboard() {
       setCollectError("Network error. Check your connection and try again.");
     } finally {
       setCollectVerifying(false);
+    }
+  };
+
+  /* ------------------------------------------- customer refused delivery */
+
+  useEffect(() => {
+    if (refuseResendIn <= 0) return undefined;
+    const t = setTimeout(() => setRefuseResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [refuseResendIn]);
+
+  useEffect(() => {
+    if (refuseExpiresIn <= 0) return undefined;
+    const t = setTimeout(() => setRefuseExpiresIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [refuseExpiresIn]);
+
+  /** Emails a fresh refusal code to the customer on `order`. */
+  const sendRefusalOtp = async (order, { resend = false } = {}) => {
+    setRefuseSending(true);
+    setRefuseError("");
+    setRefuseNotice("");
+
+    try {
+      const res = await authFetch(`/api/orders/${order.id}/refusal-otp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setRefuseError(data.error || "Could not send the code. Please try again.");
+        if (data.retryAfterSeconds) setRefuseResendIn(data.retryAfterSeconds);
+        return false;
+      }
+
+      setRefuseSentTo(data.sentTo || "");
+      setRefuseReasons(data.reasons || []);
+      setRefuseResendIn(data.resendAfterSeconds || 30);
+      setRefuseExpiresIn(Math.round((data.expiresInMinutes || 10) * 60));
+      setRefuseOtp("");
+      if (resend) setRefuseNotice("A new code has been emailed.");
+      return true;
+    } catch (err) {
+      console.error("Refusal code send failed:", err);
+      setRefuseError("Network error. Check your connection and try again.");
+      return false;
+    } finally {
+      setRefuseSending(false);
+    }
+  };
+
+  const openRefusal = async (order) => {
+    setOrderToRefuse(order);
+    setRefuseOtp("");
+    setRefuseReason("");
+    setRefuseError("");
+    setRefuseNotice("");
+    setRefuseSentTo("");
+    setRefuseResendIn(0);
+    setRefuseExpiresIn(0);
+    await sendRefusalOtp(order);
+  };
+
+  const closeRefusal = () => {
+    if (refuseSending || refuseVerifying) return;
+    setOrderToRefuse(null);
+    setRefuseOtp("");
+    setRefuseReason("");
+    setRefuseError("");
+    setRefuseNotice("");
+  };
+
+  // A correct code is the customer confirming at the door that they do not
+  // want the order, so the backend cancels it, records the reason, and leaves
+  // the payment exactly as it stands — flagging a refund if one is owed.
+  const handleConfirmRefusal = async (e) => {
+    if (e) e.preventDefault();
+    if (!orderToRefuse) return;
+
+    if (!/^\d{6}$/.test(refuseOtp)) {
+      setRefuseError("Enter the 6-digit code from the customer.");
+      return;
+    }
+    if (!refuseReason.trim()) {
+      setRefuseError("Choose or type a reason for the cancellation.");
+      return;
+    }
+
+    setRefuseVerifying(true);
+    setRefuseError("");
+    setRefuseNotice("");
+
+    try {
+      const res = await authFetch(`/api/orders/${orderToRefuse.id}/refusal-otp/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otp: refuseOtp, reason: refuseReason.trim() }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setRefuseError(data.error || "Incorrect code. Please try again.");
+        if (data.expired) {
+          setRefuseExpiresIn(0);
+          setRefuseOtp("");
+        }
+        return;
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderToRefuse.id ? { ...o, status: "cancelled" } : o))
+      );
+      if (selectedOrder && selectedOrder.id === orderToRefuse.id) {
+        setSelectedOrder({ ...selectedOrder, status: "cancelled" });
+      }
+
+      setOrderToRefuse(null);
+      setRefuseOtp("");
+      setRefuseReason("");
+      alert(
+        data.refundDue
+          ? "✅ Order cancelled. It was paid online, so a refund is due — the admin has been emailed."
+          : "✅ Order cancelled. No cash was collected. Confirmation emailed to the customer."
+      );
+    } catch (err) {
+      console.error("Refusal verification failed:", err);
+      setRefuseError("Network error. Check your connection and try again.");
+    } finally {
+      setRefuseVerifying(false);
     }
   };
 
@@ -3806,6 +3950,19 @@ export default function AdminDashboard() {
                                     ✅ Complete Delivery
                                   </button>
                                 )}
+                              {/* The other outcome at the door. Offered for COD
+                                  and prepaid alike — a paid order can be refused
+                                  too, and that one needs a refund. Hidden once
+                                  the order is delivered or cancelled. */}
+                              {o.status !== "delivered" && o.status !== "cancelled" && (
+                                <button
+                                  className="order-action order-action--refuse"
+                                  onClick={() => openRefusal(o)}
+                                  title={`Customer refused delivery of ${o.id}`}
+                                >
+                                  🚫 Refused
+                                </button>
+                              )}
                               <button
                                 className="order-action order-action--view"
                                 onClick={() => setSelectedOrder(o)}
@@ -3930,6 +4087,138 @@ export default function AdminDashboard() {
                           ? "Sending…"
                           : collectResendIn > 0
                           ? `Resend in ${collectResendIn}s`
+                          : "Resend code"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Customer refused delivery. Same shape as the collection dialog
+                above, with a required reason: the order is cancelled only once
+                the server has verified the customer's code. */}
+            {orderToRefuse && (
+              <div className="modal-overlay" onClick={closeRefusal}>
+                <div
+                  className="modal-content collect-modal refuse-modal"
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="refuse-title"
+                >
+                  <div className="modal-header">
+                    <h2 id="refuse-title">🚫 Customer Refused Delivery</h2>
+                    <button className="close-modal" onClick={closeRefusal}>✕</button>
+                  </div>
+
+                  <div className="modal-body">
+                    <p className="collect-order">
+                      <strong>{orderToRefuse.id}</strong> &middot; {orderToRefuse.customer}
+                      <br />
+                      Will be <strong>cancelled</strong> once the code is verified
+                    </p>
+
+                    <p className="collect-sub">
+                      {refuseSending && !refuseSentTo ? (
+                        <>Emailing a 6-digit code to the customer&hellip;</>
+                      ) : (
+                        <>
+                          A 6-digit code was emailed to <strong>{refuseSentTo}</strong>. Ask the
+                          customer to read it out to confirm they are refusing this order.
+                        </>
+                      )}
+                    </p>
+
+                    <form onSubmit={handleConfirmRefusal}>
+                      <label className="collect-sub" htmlFor="refuse-reason">
+                        <strong>Reason for cancellation</strong>
+                      </label>
+                      <select
+                        id="refuse-reason"
+                        className="refuse-reason-select"
+                        value={refuseReasons.includes(refuseReason) ? refuseReason : ""}
+                        disabled={refuseVerifying}
+                        onChange={(e) => { setRefuseReason(e.target.value); setRefuseError(""); }}
+                      >
+                        <option value="">Select a reason…</option>
+                        {refuseReasons.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        className="refuse-reason-other"
+                        placeholder="…or type a different reason"
+                        maxLength={200}
+                        value={refuseReason}
+                        disabled={refuseVerifying}
+                        onChange={(e) => { setRefuseReason(e.target.value); setRefuseError(""); }}
+                      />
+
+                      <input
+                        id="refuse-otp"
+                        className="collect-input"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        placeholder="------"
+                        value={refuseOtp}
+                        disabled={refuseVerifying}
+                        onChange={(e) => {
+                          setRefuseOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                          setRefuseError("");
+                        }}
+                      />
+
+                      <div className="collect-timer">
+                        {refuseExpiresIn > 0 ? (
+                          <span>Code expires in {formatCountdown(refuseExpiresIn)}</span>
+                        ) : (
+                          refuseSentTo && <span className="collect-expired">Code expired — send a new one</span>
+                        )}
+                      </div>
+
+                      {refuseError && (
+                        <p className="collect-msg collect-msg-error" role="alert">{refuseError}</p>
+                      )}
+                      {refuseNotice && !refuseError && (
+                        <p className="collect-msg collect-msg-ok" role="status">{refuseNotice}</p>
+                      )}
+
+                      <div className="collect-actions">
+                        <button
+                          type="button"
+                          className="collect-cancel"
+                          onClick={closeRefusal}
+                          disabled={refuseSending || refuseVerifying}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="collect-confirm refuse-confirm"
+                          disabled={
+                            refuseVerifying || refuseSending ||
+                            refuseOtp.length !== 6 || !refuseReason.trim()
+                          }
+                        >
+                          {refuseVerifying ? "Cancelling…" : "Confirm Cancellation"}
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="collect-resend">
+                      Customer didn&rsquo;t get the email?{" "}
+                      <button
+                        type="button"
+                        onClick={() => sendRefusalOtp(orderToRefuse, { resend: true })}
+                        disabled={refuseResendIn > 0 || refuseSending || refuseVerifying}
+                      >
+                        {refuseSending
+                          ? "Sending…"
+                          : refuseResendIn > 0
+                          ? `Resend in ${refuseResendIn}s`
                           : "Resend code"}
                       </button>
                     </div>
