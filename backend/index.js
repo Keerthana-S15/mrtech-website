@@ -96,8 +96,17 @@ app.post("/api/setup-admin", async (req, res) => {
 });
 
 // All routes → Frontend (Express 5 compatible)
+//
+// res.sendFile does not run the setHeaders callback on express.static above,
+// so the "index.html must never be cached" rule declared there never reached
+// any SPA route — only a request for "/" got it. Every deep link, including
+// /customer/dashboard, was served "public, max-age=0" instead of "no-cache",
+// which lets a browser reuse the old shell and with it the old bundle
+// reference, so a deploy can appear not to have happened. Setting the header
+// here puts the catch-all back in line with what the static block intends.
 app.get("*", (req, res) => {
   const indexPath = path.resolve(__dirname, "..", "frontend", "build", "index.html");
+  res.set("Cache-Control", "no-cache");
   res.sendFile(indexPath);
 });
 
