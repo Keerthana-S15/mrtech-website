@@ -207,6 +207,7 @@ const doctorsData = [
     role: "M.B.B.S (MD)",
     email: "avinash.pandi5@gmail.com",
     bio: "MBBS, MD (General Medicine) specialist with 5 years of experience, practising at Saravanan Hospital.",
+    image: "/images/doctors/avinash.png",
   },
   { name: "Dr. Harivarma C.P", role: "M.B.B.S", email: "hariv2529@gmail.com" },
   {
