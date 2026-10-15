@@ -75,6 +75,7 @@ const doctorsData = [
     role: "M.B.B.S (M.D)",
     email: "karthikpmcud@gmail.com",
     bio: "M.D. (General Medicine) specialist providing patient-focused medical care.",
+    image: "/images/doctors/karthik.png",
   },
   {
     name: "Dr. Thanka raj P",
