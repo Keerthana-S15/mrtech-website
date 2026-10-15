@@ -346,7 +346,14 @@ const doctorsData = [
     email: "shobana53479@gmail.com",
     bio: "Medical Officer providing patient care at Asanur Medical Clinic.",
   },
-  { name: "Dr. Senthamizhselvan", role: "M.B.B.S (Doctor of Medicine)", email: "tamilselvam.ssm.mm@gmail.com" },
+  {
+    name: "Dr. Senthamizhselvan",
+    role: "M.B.B.S (Doctor of Medicine)",
+    email: "tamilselvam.ssm.mm@gmail.com",
+    // the only landscape source on the page (335x235), so the avatar crops it
+    // at the sides rather than top and bottom
+    image: "/images/doctors/senthamizhselvan.png",
+  },
   {
     name: "Dr. Saranraj Jayabalan",
     role: "M.B.B.S(M.S.General Surgery)",
