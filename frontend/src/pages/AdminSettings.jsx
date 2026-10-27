@@ -23,7 +23,6 @@ import {
 export const PREFS_KEY = "mrtech.admin.prefs";
 
 export const DEFAULT_PREFS = {
-  autoRefresh: true,
   pendingDot: true,
   revenueRange: 14,
 };
@@ -32,7 +31,6 @@ export function loadPrefs() {
   try {
     const raw = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
     return {
-      autoRefresh: typeof raw.autoRefresh === "boolean" ? raw.autoRefresh : DEFAULT_PREFS.autoRefresh,
       pendingDot: typeof raw.pendingDot === "boolean" ? raw.pendingDot : DEFAULT_PREFS.pendingDot,
       revenueRange: [7, 14, 30].includes(raw.revenueRange) ? raw.revenueRange : DEFAULT_PREFS.revenueRange,
     };
@@ -678,13 +676,6 @@ export default function AdminSettings({
           </span>
         </header>
         <div className="set-body">
-          <Toggle
-            id="set-auto-refresh"
-            checked={draft.autoRefresh}
-            onChange={(v) => { setDraft({ ...draft, autoRefresh: v }); setPrefNote(""); }}
-            label="Auto-refresh the dashboard"
-            hint="Re-polls orders and products every 30 seconds"
-          />
           <Toggle
             id="set-pending-dot"
             checked={draft.pendingDot}

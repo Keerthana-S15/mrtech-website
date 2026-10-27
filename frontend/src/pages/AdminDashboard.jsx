@@ -2603,6 +2603,12 @@ function OrderItemThumb({ item }) {
 }
 
 
+// One definition of "low stock" and "pending" for the whole page, so the KPI
+// cards, the dashboard panels and the filtered tabs can never disagree.
+const LOW_STOCK_THRESHOLD = 5;
+const isLowStock = (p) => Number(p.stock) < LOW_STOCK_THRESHOLD;
+const isPending = (o) => (o.status || "").toLowerCase() === "pending";
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState("dashboard");
@@ -2647,7 +2653,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [selectedStat, setSelectedStat] = useState(null);
+  // Set from the KPI cards: they hand the matching tab a filter rather than
+  // opening a second, separate table underneath the dashboard.
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
 
   const [productSearchQuery, setProductSearchQuery] = useState("");
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
@@ -2682,14 +2691,13 @@ export default function AdminDashboard() {
   });
   const [companySearchQuery, setCompanySearchQuery] = useState("");
 
-  // live refresh: re-poll the same endpoints on an interval so the numbers
-  // track the backend without a manual reload
+  // refreshing is manual: Refresh re-pulls the same endpoints on demand and
+  // lastSync records when that last happened
   const [lastSync, setLastSync] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   // Settings are per-browser preferences; seed the dashboard from them so a
   // saved choice survives a reload.
   const [adminPrefs, setAdminPrefs] = useState(loadPrefs);
-  const [autoRefresh, setAutoRefresh] = useState(adminPrefs.autoRefresh);
   const [revenueRange, setRevenueRange] = useState(adminPrefs.revenueRange); // days shown in the trend
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile nav drawer
 
@@ -2714,53 +2722,23 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-pull orders/products. Used by the Refresh button and the poll timer;
-  // it never touches the CRUD flows.
+  // Re-pull orders/products on demand, behind the Refresh button. It goes back
+  // to the same endpoints the first load used, so the numbers, the charts and
+  // every stat card come back with the current data; it never touches the CRUD
+  // flows.
   const refreshData = useCallback(
-    async (silent = false) => {
-      if (!silent) setRefreshing(true);
+    async () => {
+      setRefreshing(true);
       try {
         await Promise.all([fetchOrders(), fetchProducts()]);
         setLastSync(new Date());
       } finally {
-        if (!silent) setRefreshing(false);
+        setRefreshing(false);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
-
-  // Poll every 30s while the tab is visible and auto-refresh is on.
-  //
-  // The visibility handler used to re-fetch on every single focus, so
-  // alt-tabbing repeatedly could fire far more reads than the timer ever did.
-  // It now only catches up when the data is actually older than one interval.
-  const POLL_MS = 30000;
-  const lastFetchRef = useRef(0);
-
-  useEffect(() => {
-    if (!autoRefresh) return undefined;
-
-    const run = () => {
-      lastFetchRef.current = Date.now();
-      refreshData(true);
-    };
-    const tick = () => {
-      if (document.visibilityState === "visible") run();
-    };
-    const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
-      if (Date.now() - lastFetchRef.current < POLL_MS) return; // still fresh
-      run();
-    };
-
-    const id = setInterval(tick, POLL_MS);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [autoRefresh, refreshData]);
 
   // ✅ CHANGED: now hits the company-scoped admin endpoint (not the public
   // storefront one), and sends the auth token.
@@ -3330,8 +3308,25 @@ export default function AdminDashboard() {
 
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-  const pendingOrders = orders.filter((o) => o.status === "pending").length;
-  const lowStockItems = products.filter((p) => p.stock < 5).length;
+  const pendingOrders = orders.filter(isPending).length;
+  const lowStockItems = products.filter(isLowStock).length;
+
+  // The KPI cards are shortcuts into the real tables: each one clears the
+  // search box, applies its own filter and switches tab, so what you land on
+  // is exactly the rows the number counted.
+  const showOrders = (status) => {
+    setOrderStatusFilter(status);
+    setOrderSearchQuery("");
+    setCurrentTab("orders");
+    setSidebarOpen(false);
+  };
+
+  const showLowStock = () => {
+    setLowStockOnly(true);
+    setProductSearchQuery("");
+    setCurrentTab("products");
+    setSidebarOpen(false);
+  };
 
   // ---- dashboard analytics, derived from the live orders/products ----
   const analytics = useMemo(() => {
@@ -3425,7 +3420,7 @@ export default function AdminDashboard() {
         )
         .slice(0, 6),
       lowStockList: products
-        .filter((p) => Number(p.stock) < 5)
+        .filter(isLowStock)
         .sort((a, b) => a.stock - b.stock)
         .slice(0, 6),
     };
@@ -3479,15 +3474,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const getFilteredData = () => {
-    if (selectedStat === "pending")
-      return orders.filter((o) => o.status === "pending");
-    if (selectedStat === "lowstock") return products.filter((p) => p.stock < 5);
-    if (selectedStat === "orders") return orders;
-    return [];
-  };
-
   const filteredProducts = products.filter((p) => {
+    if (lowStockOnly && !isLowStock(p)) return false;
     const query = productSearchQuery.trim().toLowerCase();
     if (!query) return true;
     return (
@@ -3506,6 +3494,8 @@ export default function AdminDashboard() {
   });
 
   const filteredOrders = orders.filter((o) => {
+    if (orderStatusFilter !== "all" && (o.status || "").toLowerCase() !== orderStatusFilter)
+      return false;
     const query = orderSearchQuery.trim().toLowerCase();
     if (!query) return true;
     return (
@@ -3615,11 +3605,11 @@ export default function AdminDashboard() {
 
         {currentTab === "dashboard" && (
           <div className="admin-content">
-            {/* live status strip */}
+            {/* sync strip - the data moves when Refresh is pressed */}
             <div className="dash-toolbar">
-              <span className={`live-dot${autoRefresh ? " is-live" : ""}`} aria-hidden="true" />
+              <span className="live-dot is-live" aria-hidden="true" />
               <span className="dash-live-text">
-                {autoRefresh ? "Live" : "Paused"}
+                {lastSync ? "Up to date" : "Loading…"}
                 {lastSync && (
                   <small>
                     updated{" "}
@@ -3634,16 +3624,8 @@ export default function AdminDashboard() {
               <div className="dash-toolbar-actions">
                 <button
                   type="button"
-                  className={`dash-chip${autoRefresh ? " is-active" : ""}`}
-                  onClick={() => setAutoRefresh((v) => !v)}
-                  title="Toggle 30s auto-refresh"
-                >
-                  Auto-refresh
-                </button>
-                <button
-                  type="button"
                   className={`dash-refresh${refreshing ? " is-busy" : ""}`}
-                  onClick={() => refreshData(false)}
+                  onClick={() => refreshData()}
                   disabled={refreshing}
                 >
                   <FaSyncAlt /> {refreshing ? "Refreshing…" : "Refresh"}
@@ -3656,7 +3638,8 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 className="stat-card card-blue"
-                onClick={() => setSelectedStat(selectedStat === "orders" ? null : "orders")}
+                onClick={() => showOrders("all")}
+                title="View all orders"
               >
                 <div className="stat-top">
                   <span className="stat-icon"><FaShoppingCart /></span>
@@ -3691,7 +3674,8 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 className="stat-card card-yellow"
-                onClick={() => setSelectedStat(selectedStat === "pending" ? null : "pending")}
+                onClick={() => showOrders("pending")}
+                title="View pending orders"
               >
                 <div className="stat-top">
                   <span className="stat-icon"><FaClock /></span>
@@ -3708,7 +3692,8 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 className="stat-card card-red"
-                onClick={() => setSelectedStat(selectedStat === "lowstock" ? null : "lowstock")}
+                onClick={showLowStock}
+                title="View low-stock products"
               >
                 <div className="stat-top">
                   <span className="stat-icon"><FaExclamationTriangle /></span>
@@ -3853,71 +3838,6 @@ export default function AdminDashboard() {
                 )}
               </section>
             </div>
-
-            {selectedStat && (
-              <div className="admin-card">
-                <h2>
-                  {selectedStat === "orders"
-                    ? "All Orders"
-                    : selectedStat === "pending"
-                    ? "Pending Orders"
-                    : "Low Stock Products"}
-                </h2>
-                {selectedStat === "lowstock" ? (
-                  <div className="table-scroll">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>SKU</th>
-                          <th>Name</th>
-                          <th>Stock</th>
-                          <th>Price</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {getFilteredData().map((p) => (
-                          <tr key={p.id}>
-                            <td>{p.sku}</td>
-                            <td>{p.name}</td>
-                            <td>{p.stock}</td>
-                            <td>₹{p.price}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="table-scroll">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Order ID</th>
-                          <th>Customer</th>
-                          <th>Total</th>
-                          <th>Status</th>
-                          <th>Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {getFilteredData().map((o) => (
-                          <tr key={o.id}>
-                            <td>{o.id}</td>
-                            <td>{o.customer}</td>
-                            <td>₹{o.total}</td>
-                            <td>
-                              <span className={`status-badge ${statusColors[o.status]}`}>
-                                {o.status}
-                              </span>
-                            </td>
-                            <td>{o.date}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
 
@@ -3934,7 +3854,20 @@ export default function AdminDashboard() {
                   flexWrap: "wrap",
                 }}
               >
-                <h2 style={{ margin: 0 }}>All Orders</h2>
+                <h2 style={{ margin: 0 }}>
+                  {orderStatusFilter === "all" ? "All Orders" : "Pending Orders"}
+                </h2>
+
+                {orderStatusFilter !== "all" && (
+                  <button
+                    type="button"
+                    className="dash-chip is-active"
+                    onClick={() => setOrderStatusFilter("all")}
+                    title="Show every order again"
+                  >
+                    Pending only ✕
+                  </button>
+                )}
 
                 <div style={{ flex: "1 1 260px", maxWidth: 320 }}>
                   <input
@@ -3994,7 +3927,9 @@ export default function AdminDashboard() {
                     {filteredOrders.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#888" }}>
-                          No orders match your search
+                          {orderStatusFilter === "all"
+                            ? "No orders match your search"
+                            : "No pending orders right now"}
                         </td>
                       </tr>
                     ) : (
@@ -4458,7 +4393,18 @@ export default function AdminDashboard() {
                   flexWrap: "wrap",
                 }}
               >
-                <h2>Products Management</h2>
+                <h2>{lowStockOnly ? "Low Stock Products" : "Products Management"}</h2>
+
+                {lowStockOnly && (
+                  <button
+                    type="button"
+                    className="dash-chip is-active"
+                    onClick={() => setLowStockOnly(false)}
+                    title="Show every product again"
+                  >
+                    Under {LOW_STOCK_THRESHOLD} in stock ✕
+                  </button>
+                )}
 
                 <div style={{ flex: "1 1 260px", maxWidth: 320 }}>
                   <input
@@ -4520,7 +4466,9 @@ export default function AdminDashboard() {
                     {filteredProducts.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#888" }}>
-                          No products match your search
+                          {lowStockOnly
+                            ? "No products are low on stock"
+                            : "No products match your search"}
                         </td>
                       </tr>
                     ) : (
@@ -4983,7 +4931,6 @@ export default function AdminDashboard() {
               onPrefsChange={(next) => {
                 setAdminPrefs(next);
                 // apply straight away rather than waiting for a reload
-                setAutoRefresh(next.autoRefresh);
                 setRevenueRange(next.revenueRange);
               }}
             />
