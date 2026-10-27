@@ -35,6 +35,26 @@
   border: 3px solid #ff6600;
 }
 
+/* The logo is a back button, so strip the button chrome and let the image
+   keep every bit of its own styling. */
+.admin-logo-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-logo-btn:focus-visible {
+  outline: 2px solid #ff6600;
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
 .admin-brand h2 {
   font-size: 20px;
   margin-bottom: 5px;

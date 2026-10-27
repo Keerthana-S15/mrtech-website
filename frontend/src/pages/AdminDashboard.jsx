@@ -3318,6 +3318,16 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
+  // The logo doubles as a back button. React Router stamps an idx on the
+  // history entry, so idx 0 means this is the first page of the session and
+  // there is nothing to go back to - fall through to the site home instead.
+  const handleLogoBack = () => {
+    const idx = window.history.state?.idx;
+    const canGoBack = typeof idx === "number" ? idx > 0 : window.history.length > 1;
+    if (canGoBack) navigate(-1);
+    else navigate("/");
+  };
+
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
@@ -3546,9 +3556,17 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <div className="admin-brand">
           <div className="admin-logo">
-            <img src="/MR LOGO.jpeg" alt="Logo" />
+            <button
+              type="button"
+              className="admin-logo-btn"
+              onClick={handleLogoBack}
+              aria-label="Go back to the previous page"
+              title="Go back"
+            >
+              <img src="/MR LOGO.jpeg" alt="Logo" />
+            </button>
           </div>
-          <h2>Admin Panel</h2>
+          <h2>Admin</h2>
           <p>{currentUser.companyName || "G Care Management"}</p>
         </div>
 
