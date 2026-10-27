@@ -127,7 +127,10 @@ export default function Footer() {
             <li>
               <div className="ft-contact-static">
                 <span className="ft-contact-icon ft-contact-icon--violet"><FaMapMarkerAlt /></span>
-                <span>Tamil Nadu, India</span>
+                <span>
+                  No: 3 R.L Tower 25 (OPPOSITE TO G H), Gandhipuram, Thiruvallur -
+                  602001
+                </span>
               </div>
             </li>
           </ul>
