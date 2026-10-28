@@ -173,6 +173,26 @@ const Note = ({ kind, children }) =>
     </p>
   ) : null;
 
+/**
+ * A titled sub-card inside a panel. Each panel is a stack of these rather than
+ * one flat run of rows, so related controls read as a unit and the eye has a
+ * left edge to follow.
+ */
+const Group = ({ title, hint, aside, children, className = "" }) => (
+  <section className={`set-group${className ? " " + className : ""}`}>
+    {(title || aside) && (
+      <header className="set-group-head">
+        <div>
+          {title && <h3>{title}</h3>}
+          {hint && <p>{hint}</p>}
+        </div>
+        {aside}
+      </header>
+    )}
+    <div className="set-group-body">{children}</div>
+  </section>
+);
+
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
 export default function AdminSettings({
@@ -457,11 +477,17 @@ export default function AdminSettings({
           <span className="set-tag">Read-only</span>
         </header>
         <div className="set-body">
-          <Row label="Name" value={currentUser.fullName} />
-          <Row label="Email" value={email} copy />
-          <Row label="Role" value={role} />
-          <Row label="Company" value={currentUser.companyId || claims?.companyId} />
-          <Row label="Account ID" value={claims?.adminId} hint="From the signed session token" copy />
+          <Group title="Account" hint="Taken from the signed session token">
+            <Row label="Name" value={currentUser.fullName} />
+            <Row label="Email" value={email} copy />
+            <Row label="Account ID" value={claims?.adminId} copy />
+          </Group>
+
+          <Group title="Access" hint="What this account is allowed to see">
+            <Row label="Role" value={role} />
+            <Row label="Company" value={currentUser.companyId || claims?.companyId} />
+            <Row label="Scope" value={scope} />
+          </Group>
         </div>
         <div className="set-actions">
           <button type="button" className="set-btn set-btn-primary" onClick={() => setSection("password")}>
@@ -508,7 +534,7 @@ export default function AdminSettings({
           )}
 
           {step === 2 && (
-            <>
+            <Group title="Verification code" className="set-group--form">
               <p className="set-explain">
                 Enter the code sent to <strong>{sentTo || email}</strong>.
               </p>
@@ -538,11 +564,11 @@ export default function AdminSettings({
                 )}
                 {attemptsLeft !== null && <span>{attemptsLeft} attempt{attemptsLeft === 1 ? "" : "s"} left</span>}
               </div>
-            </>
+            </Group>
           )}
 
           {step === 3 && (
-            <>
+            <Group title="Choose a new password" className="set-group--form">
               <label className="set-field">
                 <span>New password</span>
                 <div className="set-input-wrap">
@@ -609,7 +635,7 @@ export default function AdminSettings({
                 )}
                 {tokenLeft > 0 && <span><FaClock aria-hidden="true" /> Finish within <strong>{mmss(tokenLeft)}</strong></span>}
               </div>
-            </>
+            </Group>
           )}
 
           {step === 4 && (
@@ -676,31 +702,35 @@ export default function AdminSettings({
           </span>
         </header>
         <div className="set-body">
-          <Toggle
-            id="set-pending-dot"
-            checked={draft.pendingDot}
-            onChange={(v) => { setDraft({ ...draft, pendingDot: v }); setPrefNote(""); }}
-            label="Show the pending-orders dot"
-            hint="The marker on the bell in the header"
-          />
+          <Group title="Notifications" hint="What the dashboard header draws your attention to">
+            <Toggle
+              id="set-pending-dot"
+              checked={draft.pendingDot}
+              onChange={(v) => { setDraft({ ...draft, pendingDot: v }); setPrefNote(""); }}
+              label="Show the pending-orders dot"
+              hint="The marker on the bell in the header"
+            />
+          </Group>
 
-          <div className="set-field set-field--inline">
-            <span>Revenue trend range</span>
-            <div className="set-segmented" role="radiogroup" aria-label="Revenue trend range">
-              {[7, 14, 30].map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.revenueRange === d}
-                  className={draft.revenueRange === d ? "is-active" : ""}
-                  onClick={() => { setDraft({ ...draft, revenueRange: d }); setPrefNote(""); }}
-                >
-                  {d}d
-                </button>
-              ))}
+          <Group title="Display" hint="How much history the revenue trend covers">
+            <div className="set-field set-field--inline">
+              <span>Revenue trend range</span>
+              <div className="set-segmented" role="radiogroup" aria-label="Revenue trend range">
+                {[7, 14, 30].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    role="radio"
+                    aria-checked={draft.revenueRange === d}
+                    className={draft.revenueRange === d ? "is-active" : ""}
+                    onClick={() => { setDraft({ ...draft, revenueRange: d }); setPrefNote(""); }}
+                  >
+                    {d} days
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          </Group>
 
           <Note kind="error">{prefError}</Note>
           {!prefError && <Note kind="ok">{prefNote}</Note>}
@@ -737,17 +767,27 @@ export default function AdminSettings({
         </header>
 
         <div className="set-body">
-          <Row label="Company ID" value={currentUser.companyId || claims?.companyId} />
-          <Row
-            label="Data access"
-            value={isSuper ? "All companies" : "This company only"}
-            hint={isSuper
-              ? "Orders and products are not filtered for you"
-              : "Every order and product view is filtered to your company"}
-          />
+          <Group title="Scope" hint="Applied by the API to every admin request">
+            <Row label="Company ID" value={currentUser.companyId || claims?.companyId} />
+            <Row
+              label="Data access"
+              value={isSuper ? "All companies" : "This company only"}
+              hint={isSuper
+                ? "Orders and products are not filtered for you"
+                : "Every order and product view is filtered to your company"}
+            />
+          </Group>
 
           {isSuper && (
-            <>
+            <Group
+              title="Company admins"
+              hint="Read live from the admin API"
+              aside={
+                Array.isArray(companies) && companies.length > 0
+                  ? <span className="set-tag set-tag-soft">{companies.length} registered</span>
+                  : null
+              }
+            >
               <Note kind="error">{coError}</Note>
 
               {Array.isArray(companies) && companies.length > 3 && (
@@ -799,7 +839,7 @@ export default function AdminSettings({
                   ))}
                 </ul>
               )}
-            </>
+            </Group>
           )}
         </div>
         <p className="set-foot">
@@ -844,19 +884,23 @@ export default function AdminSettings({
             </div>
           )}
 
-          <Row label="Signed in as" value={email} hint={role} />
-          <Row
-            label="Scope"
-            value={scope}
-            hint="Enforced by the API on every admin request, not just in the UI"
-          />
+          <Group title="This session" hint="Decoded from the token in this browser">
+            <Row label="Signed in as" value={email} hint={role} />
+            <Row
+              label="Scope"
+              value={scope}
+              hint="Enforced by the API on every admin request, not just in the UI"
+            />
+          </Group>
 
-          <ul className="set-rules">
-            <li><strong>Reset code</strong>Valid 10 minutes, 5 attempts, then it is burnt.</li>
-            <li><strong>Reset requests</strong>At most 3 per account in any 15 minutes.</li>
-            <li><strong>Codes at rest</strong>Stored as SHA-256 hashes and compared in constant time.</li>
-            <li><strong>Sessions</strong>Tokens are issued for 7 days and are not revocable server-side.</li>
-          </ul>
+          <Group title="How recovery works" hint="Enforced server-side, not by this page">
+            <ul className="set-rules">
+              <li><strong>Reset code</strong>Valid 10 minutes, 5 attempts, then it is burnt.</li>
+              <li><strong>Reset requests</strong>At most 3 per account in any 15 minutes.</li>
+              <li><strong>Codes at rest</strong>Stored as SHA-256 hashes and compared in constant time.</li>
+              <li><strong>Sessions</strong>Tokens are issued for 7 days and are not revocable server-side.</li>
+            </ul>
+          </Group>
         </div>
         <div className="set-actions">
           <button type="button" className="set-btn set-btn-danger" onClick={onSignOut}>

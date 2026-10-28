@@ -2773,3 +2773,149 @@ button.stat-card { cursor: pointer; }
 @media (max-width: 768px) {
   .stats-grid .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
+
+/* ==========================================================================
+   Settings, third pass — grouping and alignment.
+
+   Two things were wrong rather than merely plain. Rows were laid out with
+   `justify-content: space-between` across the whole panel, so on a 1440 screen
+   a label sat ~800px from its own value and the pairing was lost; and every
+   control in a section ran together in one flat column with nothing to say
+   which belonged with which. Rows are now a two-column grid with a capped
+   label column, and each section is a stack of titled cards.
+   ========================================================================== */
+
+/* ---- titled sub-cards ---- */
+.set-group {
+  border: 1px solid var(--ad-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fcfdfe, #fff);
+  padding: 15px 18px 16px;
+}
+
+.set-group-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.set-group-head > div { min-width: 0; }
+
+.set-group-head h3 {
+  margin: 0;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--ad-teal);
+}
+
+.set-group-head p {
+  margin: 3px 0 0;
+  font-size: .78rem;
+  line-height: 1.5;
+  color: var(--ad-muted);
+}
+
+.set-group-body { display: flex; flex-direction: column; gap: 12px; }
+
+/* A form reads better on a measure than stretched to the panel. */
+.set-group--form .set-group-body { max-width: 420px; }
+
+/* Rows carry their own dividers, so the body must not add gaps on top. */
+.set-group-body > .set-row { margin: 0; }
+.set-group-body > .set-row + .set-row { margin-top: -12px; }
+
+/* ---- rows: label column, value column ---- */
+.set-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 4px 22px;
+  padding: 11px 2px;
+  border-bottom: 1px dashed #eef2f7;
+}
+
+.set-row-label { font-size: .82rem; }
+
+.set-row-value {
+  align-items: flex-start;
+  text-align: left;
+  font-size: .91rem;
+}
+
+/* ---- the panel ---- */
+.set-panel { padding: 24px 26px 22px; gap: 16px; }
+.set-body { gap: 14px; }
+.set-head h2 { font-size: 1.2rem; }
+
+/* Keep a short section (the first password step) from looking collapsed
+   next to the rail beside it. */
+.settings-shell { min-height: 440px; }
+
+.set-actions {
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid #eef2f7;
+  align-items: center;
+}
+
+/* ---- four security facts make a clean 2x2, never a 3 + orphan ---- */
+.set-rules { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 0; }
+
+/* ---- company list sits flush inside its card ---- */
+.set-group .set-list { margin-top: 0; }
+
+@media (max-width: 900px) {
+  /* The rail was a horizontally scrolling strip, which cut the longest label
+     in half at the right edge with nothing to show it could be scrolled.
+     A wrapping grid fits every section at 390px with no scroll at all. */
+  .settings-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    overflow-x: visible;
+    gap: 6px;
+  }
+  .settings-nav-item { width: 100%; justify-content: flex-start; white-space: normal; }
+  .settings-shell { min-height: 0; }
+}
+
+@media (max-width: 700px) {
+  .set-rules { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .set-panel { padding: 18px 15px; }
+  .set-group { padding: 13px 14px 14px; border-radius: 12px; }
+  .set-group--form .set-group-body { max-width: none; }
+
+  /* Stack label over value, and restore the gap the negative margin removed. */
+  .set-row { grid-template-columns: 1fr; gap: 3px; padding: 10px 0; }
+  .set-group-body > .set-row + .set-row { margin-top: -12px; }
+  .set-field--inline { align-items: flex-start; flex-direction: column; }
+  .set-segmented { width: 100%; }
+  .set-segmented button { flex: 1; min-width: 0; }
+}
+
+/* An inline control sits on the same column as every read-only value, so the
+   page has one alignment rather than two competing ones. */
+.set-group-body > .set-field--inline {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 10px 22px;
+  padding: 2px 2px 0;
+}
+
+.set-group-body > .set-field--inline > span { margin: 0; }
+.set-group-body > .set-field--inline .set-segmented { justify-self: start; }
+
+@media (max-width: 560px) {
+  .set-group-body > .set-field--inline { grid-template-columns: 1fr; gap: 8px; }
+  .set-group-body > .set-field--inline .set-segmented { justify-self: stretch; }
+}
