@@ -717,9 +717,9 @@ button.stat-card { cursor: pointer; }
 .stat-top h3 { display: flex; align-items: center; min-height: 2.1em; }
 .stat-card h3 {
   margin: 0;
-  font-size: .78rem;
+  font-size: .73rem;
   font-weight: 700;
-  letter-spacing: .08em;
+  letter-spacing: .05em;
   text-transform: uppercase;
   color: var(--ad-muted);
 }
@@ -1134,20 +1134,24 @@ button.stat-card { cursor: pointer; }
   /* Sized for the widest real content: a full ORD<13-digit> id, a date like
      "29 Sept 2026", and three action buttons. Below this the wrapper scrolls
      rather than squashing a column into an ellipsis. */
-  min-width: 1110px;
+  min-width: 1080px;
 }
 
 /* Widths come from measuring the real content at 1440px, not from guessing:
    a full ORD id needs 186px with padding, "29 Sept 2026" needs 124px, and the
    three action buttons need 302px between them. The fixed columns total 990px,
    which leaves the elastic Items column the rest of a 1120px content area. */
-.ot-col-id       { width: 190px; }
-.ot-col-customer { width: 132px; }
+.ot-col-id       { width: 160px; }
+.ot-col-customer { width: 120px; }
 .ot-col-items    { width: auto;  }   /* the only elastic column */
 .ot-col-total    { width: 88px;  }
-.ot-col-status   { width: 108px; }
-.ot-col-date     { width: 136px; }
-.ot-col-action   { width: 336px; }
+.ot-col-status   { width: 100px; }
+.ot-col-date     { width: 124px; }
+/* Four actions, not the three this column was measured for: adding "Refused"
+   pushed the PDF button past the right edge of a 1440px screen, where it could
+   only be reached by scrolling the table sideways. The column now fits all
+   four, and the width comes out of the columns that already truncate. */
+.ot-col-action   { width: 414px; }
 
 .orders-table th,
 .orders-table td {
@@ -1205,9 +1209,9 @@ button.stat-card { cursor: pointer; }
 }
 .orders-table .order-action {
   flex: 0 0 auto;
-  min-width: 70px;
+  min-width: 64px;
   height: 32px;
-  padding: 0 8px;
+  padding: 0 7px;
   justify-content: center;
   line-height: 1;
   white-space: nowrap;
@@ -2536,4 +2540,236 @@ button.stat-card { cursor: pointer; }
   font-weight: 600;
   color: var(--ad-muted);
   text-align: right;
+}
+
+/* ==========================================================================
+   LOADING / EMPTY / ERROR STATES
+   Three shapes a panel can take instead of rows. They share the card's
+   padding and type scale so a loading table is the same size as a full one
+   and the page does not jump when the data lands.
+   ========================================================================== */
+
+.ad-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ad-skeleton { display: grid; gap: 10px; margin-top: 10px; }
+.ad-skeleton-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1.2fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.ad-skeleton-cell {
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
+  background-size: 400% 100%;
+  animation: ad-shimmer 1.4s ease-in-out infinite;
+}
+.ad-skeleton-row .ad-skeleton-cell:nth-child(n + 5) { display: none; }
+@keyframes ad-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* The empty and error states are the same block; only the tone changes. */
+.ad-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 44px 20px;
+  text-align: center;
+  border: 1px dashed var(--ad-line);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+.ad-state-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  color: #0f766e;
+  background: #e0f2fe;
+}
+.ad-state h3 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ad-ink);
+}
+.ad-state p {
+  margin: 0;
+  max-width: 44ch;
+  font-size: .86rem;
+  line-height: 1.5;
+  color: var(--ad-muted);
+}
+.ad-state--error {
+  border-color: #fecaca;
+  border-style: solid;
+  background: #fff5f5;
+}
+.ad-state--error .ad-state-icon { color: #b91c1c; background: #fee2e2; }
+.ad-state--error h3 { color: #991b1b; }
+.ad-state-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  box-shadow: 0 8px 18px rgba(234, 88, 12, .25);
+  transition: transform .25s var(--ad-ease), box-shadow .25s var(--ad-ease);
+}
+.ad-state-retry:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(234, 88, 12, .3); }
+.ad-state-retry:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }
+
+/* "nothing matched your search" inside an otherwise healthy table */
+.ad-norows td {
+  padding: 26px 12px;
+  text-align: center;
+  color: var(--ad-muted);
+  font-size: .88rem;
+}
+
+/* The status that had no badge: a cancelled order read as bare text. */
+.status-cancelled { background: #fee2e2; color: #991b1b; }
+.status-unknown { background: #e2e8f0; color: #334155; }
+
+/* ==========================================================================
+   KPI TILES - long values
+   ========================================================================== */
+
+/* Stock value runs to "₹2,56,77,343". At a fixed 1.8rem that reached the edge
+   of its tile and, on a phone, spilled past it - and letting it wrap split the
+   number mid-digit, which is worse. Long values step down a size instead, and
+   every value is tabular so the row of tiles reads as one set. */
+.stat-card p {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stat-card p.is-long { font-size: 1.32rem; letter-spacing: -.01em; }
+@media (max-width: 1200px) {
+  .stat-card p { font-size: 1.6rem; }
+  .stat-card p.is-long { font-size: 1.2rem; }
+}
+
+/* ==========================================================================
+   TABLES ON A PHONE
+   Below 768px a seven-column table cannot be read, and its actions sit off
+   the right edge where a thumb never finds them. Each row becomes a card and
+   every cell carries its own label, so nothing has to scroll sideways.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .ad-stack,
+  .ad-stack thead,
+  .ad-stack tbody,
+  .ad-stack tr,
+  .ad-stack td { display: block; width: auto; }
+
+  .ad-stack { min-width: 0; table-layout: auto; }
+  .ad-stack colgroup { display: none; }
+  /* the header row is replaced by the per-cell labels */
+  .ad-stack thead { display: none; }
+
+  .ad-stack tbody tr {
+    height: auto;
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--ad-line);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .05);
+  }
+  .ad-stack tbody tr:hover { background: #fff; }
+
+  .ad-stack tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 7px 0;
+    border: 0;
+    border-bottom: 1px dashed #eef2f7;
+    text-align: right;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .ad-stack tbody td:last-child { border-bottom: 0; padding-bottom: 0; }
+  .ad-stack tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ad-muted);
+    text-align: left;
+  }
+  /* a cell with no label (the row-spanning "no results" message) stays plain */
+  .ad-stack tbody td:not([data-label])::before { content: none; }
+  .ad-stack .ad-norows td { display: block; text-align: center; }
+
+  /* the id leads the card, so it gets to be the heading */
+  .ad-stack tbody td.ot-id {
+    font-size: .95rem;
+    padding-top: 0;
+  }
+  .ad-stack tbody td.ot-num { font-size: 1rem; }
+
+  /* actions get the full width of the card and wrap onto two rows */
+  .ad-stack tbody td[data-label="Action"] { display: block; text-align: left; }
+  .ad-stack tbody td[data-label="Action"]::before { display: block; margin-bottom: 8px; }
+
+  /* The product thumbnail leads its card, so it needs no label of its own -
+     a row reading "IMAGE" above a picture is a caption for the obvious. */
+  .ad-stack tbody td[data-label="Image"] { padding-top: 0; }
+  .ad-stack tbody td[data-label="Image"]::before { content: none; }
+  .ad-stack tbody td[data-label="Image"] > * { margin-left: auto; }
+
+  /* edit and delete sit together under their label, not spread across the
+     card with the whole width between them */
+  .ad-stack tbody td.product-actions { display: block; text-align: left; }
+  .ad-stack tbody td.product-actions::before { display: block; margin-bottom: 8px; }
+  .ad-stack tbody td.product-actions .edit-btn,
+  .ad-stack tbody td.product-actions .delete-btn { margin-right: 8px; }
+  .ad-stack .order-actions,
+  .ad-stack .product-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .ad-stack .order-action {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    height: 38px;
+  }
+  .orders-table.ad-stack { min-width: 0; }
+}
+
+/* An odd number of tiles leaves the last one alone on its row at phone width;
+   let it take the full width rather than sit beside a gap. */
+@media (max-width: 768px) {
+  .stats-grid .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }

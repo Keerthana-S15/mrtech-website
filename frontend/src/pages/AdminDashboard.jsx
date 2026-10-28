@@ -2603,6 +2603,74 @@ function OrderItemThumb({ item }) {
 }
 
 
+/**
+ * The three things a table can show instead of rows.
+ *
+ * Every tab used to say this differently — a bare "Loading...", a bare "No
+ * orders yet", and nothing at all when a request failed, which left a failed
+ * fetch looking exactly like an empty database. These three say it the same
+ * way everywhere, and the error one can retry the call that failed.
+ */
+function TableSkeleton({ rows = 6, cols = 6 }) {
+  return (
+    <div className="ad-skeleton" aria-busy="true" aria-live="polite">
+      <span className="ad-sr-only">Loading…</span>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div className="ad-skeleton-row" key={r}>
+          {Array.from({ length: cols }).map((__, c) => (
+            <span className="ad-skeleton-cell" key={c} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** A fetch failure in words an admin can act on. */
+const errorText = (err) => {
+  const message = String(err?.message || "").trim();
+  if (!message || /failed to fetch|networkerror|load failed/i.test(message)) {
+    return "The server could not be reached. Check your connection and try again.";
+  }
+  return message;
+};
+
+function EmptyState({ icon, title, hint, action }) {
+  return (
+    <div className="ad-state">
+      <span className="ad-state-icon">{icon}</span>
+      <h3>{title}</h3>
+      {hint && <p>{hint}</p>}
+      {action}
+    </div>
+  );
+}
+
+function ErrorState({ message, onRetry }) {
+  return (
+    <div className="ad-state ad-state--error" role="alert">
+      <span className="ad-state-icon"><FaExclamationTriangle /></span>
+      <h3>Could not load this data</h3>
+      <p>{message}</p>
+      {onRetry && (
+        <button type="button" className="ad-state-retry" onClick={onRetry}>
+          <FaSyncAlt /> Try again
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A KPI value long enough to need the smaller type.
+ *
+ * Stock value reaches "₹2,56,77,343"; at the tile's normal size that ran to
+ * the edge of the tile, and letting it wrap split the number mid-digit.
+ * Measuring the string is the only honest way to know which values need the
+ * step down — CSS cannot shrink text to fit.
+ */
+const statClass = (value) => (String(value).length > 9 ? "is-long" : undefined);
+
 // One definition of "low stock" and "pending" for the whole page, so the KPI
 // cards, the dashboard panels and the filtered tabs can never disagree.
 const LOW_STOCK_THRESHOLD = 5;
@@ -2651,6 +2719,10 @@ export default function AdminDashboard() {
   const [refuseResendIn, setRefuseResendIn] = useState(0);
   const [refuseExpiresIn, setRefuseExpiresIn] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(true);
+  // Why a load failed, per dataset, so a table can say so instead of showing
+  // an empty-state that blames the data.
+  const [loadError, setLoadError] = useState({ orders: null, products: null });
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   // Set from the KPI cards: they hand the matching tab a filter rather than
@@ -2746,9 +2818,18 @@ export default function AdminDashboard() {
     try {
       const res = await authFetch("/api/admin/products");
       const data = await res.json();
-      if (data.success) setProducts(data.products);
+      // A rejected request and a request that answered `success: false` are
+      // both failures; neither should read as "there are no products".
+      if (!res.ok || !data.success) {
+        throw new Error(data?.message || `Request failed (${res.status})`);
+      }
+      setProducts(data.products);
+      setLoadError((prev) => ({ ...prev, products: null }));
     } catch (err) {
       console.error("Error fetching products:", err);
+      setLoadError((prev) => ({ ...prev, products: errorText(err) }));
+    } finally {
+      setProductsLoading(false);
     }
   };
 
@@ -2757,8 +2838,10 @@ export default function AdminDashboard() {
     try {
       const response = await authFetch("/api/orders");
       const data = await response.json();
-      if (data.success) {
-        const formatted = data.orders.map((o) => ({
+      if (!response.ok || !data.success) {
+        throw new Error(data?.message || `Request failed (${response.status})`);
+      }
+      const formatted = data.orders.map((o) => ({
           id: o.orderId,
           companyId: o.companyId,
           customer: o.customerName,
@@ -2780,10 +2863,11 @@ export default function AdminDashboard() {
               : o.shippingAddress,
           fullData: o,
         }));
-        setOrders(formatted);
-      }
+      setOrders(formatted);
+      setLoadError((prev) => ({ ...prev, orders: null }));
     } catch (e) {
       console.error(e);
+      setLoadError((prev) => ({ ...prev, orders: errorText(e) }));
     } finally {
       setLoading(false);
     }
@@ -3427,11 +3511,14 @@ export default function AdminDashboard() {
   }, [orders, products, revenueRange]);
 
 
+  // Cancelled orders were falling through to `undefined`, which rendered the
+  // status as bare text while every other status wore a badge.
   const statusColors = {
     pending: "status-pending",
     processing: "status-processing",
     shipped: "status-shipped",
     delivered: "status-delivered",
+    cancelled: "status-cancelled",
   };
 
   const customers = Object.values(
@@ -3645,7 +3732,7 @@ export default function AdminDashboard() {
                   <span className="stat-icon"><FaShoppingCart /></span>
                   <h3>Total Orders</h3>
                 </div>
-                <p>{totalOrders}</p>
+                <p className={statClass(totalOrders)}>{totalOrders}</p>
                 <div className="stat-foot">
                   <Sparkline points={analytics.sparkOrders} color="#0EA5E9" />
                   <span className="stat-sub">{analytics.customerCount} customers</span>
@@ -3657,7 +3744,7 @@ export default function AdminDashboard() {
                   <span className="stat-icon"><FaRupeeSign /></span>
                   <h3>Total Revenue</h3>
                 </div>
-                <p>₹{totalRevenue.toLocaleString("en-IN")}</p>
+                <p className={statClass(`₹${totalRevenue.toLocaleString("en-IN")}`)}>₹{totalRevenue.toLocaleString("en-IN")}</p>
                 <div className="stat-foot">
                   <Sparkline points={analytics.sparkRevenue} color="#10B981" />
                   {analytics.revenueDelta !== null ? (
@@ -3681,7 +3768,7 @@ export default function AdminDashboard() {
                   <span className="stat-icon"><FaClock /></span>
                   <h3>Pending Orders</h3>
                 </div>
-                <p>{pendingOrders}</p>
+                <p className={statClass(pendingOrders)}>{pendingOrders}</p>
                 <div className="stat-foot">
                   <span className="stat-sub">
                     {totalOrders ? Math.round((pendingOrders / totalOrders) * 100) : 0}% of all orders
@@ -3699,7 +3786,7 @@ export default function AdminDashboard() {
                   <span className="stat-icon"><FaExclamationTriangle /></span>
                   <h3>Low Stock Items</h3>
                 </div>
-                <p>{lowStockItems}</p>
+                <p className={statClass(lowStockItems)}>{lowStockItems}</p>
                 <div className="stat-foot">
                   <span className="stat-sub">{analytics.outOfStock} out of stock</span>
                 </div>
@@ -3710,7 +3797,7 @@ export default function AdminDashboard() {
                   <span className="stat-icon"><FaCubes /></span>
                   <h3>Stock Value</h3>
                 </div>
-                <p>₹{analytics.stockValue.toLocaleString("en-IN")}</p>
+                <p className={statClass(`₹${analytics.stockValue.toLocaleString("en-IN")}`)}>₹{analytics.stockValue.toLocaleString("en-IN")}</p>
                 <div className="stat-foot">
                   <span className="stat-sub">{products.length} products</span>
                 </div>
@@ -3895,12 +3982,24 @@ export default function AdminDashboard() {
               )}
 
               {loading ? (
-                <p>Loading...</p>
+                <TableSkeleton rows={6} cols={7} />
+              ) : loadError.orders ? (
+                <ErrorState
+                  message={loadError.orders}
+                  onRetry={() => {
+                    setLoading(true);
+                    fetchOrders();
+                  }}
+                />
               ) : orders.length === 0 ? (
-                <p>No orders yet</p>
+                <EmptyState
+                  icon={<FaShoppingCart />}
+                  title="No orders yet"
+                  hint="Orders placed by your customers will show up here."
+                />
               ) : (
                 <div className="table-scroll">
-                <table className="admin-table orders-table">
+                <table className="admin-table orders-table ad-stack">
                   {/* fixed widths so a long item list cannot push the other
                       columns around from one row to the next */}
                   <colgroup>
@@ -3925,8 +4024,8 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredOrders.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#888" }}>
+                      <tr className="ad-norows">
+                        <td colSpan={7}>
                           {orderStatusFilter === "all"
                             ? "No orders match your search"
                             : "No pending orders right now"}
@@ -3935,19 +4034,19 @@ export default function AdminDashboard() {
                     ) : (
                       filteredOrders.map((o) => (
                         <tr key={o.id}>
-                          <td className="ot-id" title={o.id}>{o.id}</td>
-                          <td className="ot-customer" title={o.customer}>{o.customer}</td>
+                          <td className="ot-id" data-label="Order ID" title={o.id}>{o.id}</td>
+                          <td className="ot-customer" data-label="Customer" title={o.customer}>{o.customer}</td>
                           {/* the joined item list can be long; clamp it and keep
                               the full text in the tooltip rather than wrapping */}
-                          <td className="ot-items" title={o.items}>{o.items}</td>
-                          <td className="ot-num">₹{o.total}</td>
-                          <td className="ot-mid">
-                            <span className={`status-badge ${statusColors[o.status]}`}>
+                          <td className="ot-items" data-label="Items" title={o.items}>{o.items}</td>
+                          <td className="ot-num" data-label="Total">₹{o.total}</td>
+                          <td className="ot-mid" data-label="Status">
+                            <span className={`status-badge ${statusColors[o.status] || "status-unknown"}`}>
                               {o.status}
                             </span>
                           </td>
-                          <td className="ot-date">{o.date}</td>
-                          <td>
+                          <td className="ot-date" data-label="Date">{o.date}</td>
+                          <td data-label="Action">
                             <div className="order-actions">
                               {/* Only COD needs collecting; Card and UPI are
                                   already paid and keep the status dropdown. */}
@@ -4449,8 +4548,25 @@ export default function AdminDashboard() {
                 </p>
               )}
 
+              {productsLoading ? (
+                <TableSkeleton rows={6} cols={7} />
+              ) : loadError.products ? (
+                <ErrorState
+                  message={loadError.products}
+                  onRetry={() => {
+                    setProductsLoading(true);
+                    fetchProducts();
+                  }}
+                />
+              ) : products.length === 0 ? (
+                <EmptyState
+                  icon={<FaCubes />}
+                  title="No products yet"
+                  hint="Add your first product and it will appear in this list."
+                />
+              ) : (
               <div className="admin-table products-scroll">
-                <table>
+                <table className="ad-stack">
                   <thead>
                     <tr>
                       <th>Image</th>
@@ -4464,8 +4580,8 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {filteredProducts.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ textAlign: "center", padding: 20, color: "#888" }}>
+                      <tr className="ad-norows">
+                        <td colSpan={7}>
                           {lowStockOnly
                             ? "No products are low on stock"
                             : "No products match your search"}
@@ -4474,7 +4590,7 @@ export default function AdminDashboard() {
                     ) : (
                       filteredProducts.map((p) => (
                         <tr key={p.id}>
-                          <td>
+                          <td data-label="Image">
                             {p.image ? (
                               <img
                                 src={p.image}
@@ -4498,18 +4614,18 @@ export default function AdminDashboard() {
                               </div>
                             )}
                           </td>
-                          <td className="product-sku">{p.sku}</td>
-                          <td><strong>{p.name}</strong></td>
-                          <td>
+                          <td className="product-sku" data-label="SKU">{p.sku}</td>
+                          <td data-label="Product"><strong>{p.name}</strong></td>
+                          <td data-label="Category">
                             <span className="category-badge">{p.category}</span>
                           </td>
-                          <td>
-                            <span className={p.stock < 5 ? "stock-low" : "stock-good"}>
+                          <td data-label="Stock">
+                            <span className={isLowStock(p) ? "stock-low" : "stock-good"}>
                               {p.stock}
                             </span>
                           </td>
-                          <td><strong>₹{p.price}</strong></td>
-                          <td>
+                          <td data-label="Price"><strong>₹{p.price}</strong></td>
+                          <td data-label="Action" className="product-actions">
                             <button
                               className="edit-btn"
                               onClick={() => {
@@ -4541,6 +4657,7 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
 
             {showForm && (
@@ -4718,36 +4835,56 @@ export default function AdminDashboard() {
                 </p>
               )}
 
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Total Orders</th>
-                    <th>Total Spent</th>
-                    <th>Last Order Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCustomers.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: "center", padding: 20, color: "#888" }}>
-                        No customers match your search
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredCustomers.map((c) => (
-                      <tr key={c.email}>
-                        <td>{c.name}</td>
-                        <td>{c.email}</td>
-                        <td>{c.totalOrders}</td>
-                        <td>₹{c.totalSpent}</td>
-                        <td>{c.lastDate}</td>
+              {/* Customers are derived from the orders, so they load - and
+                  fail - with them. */}
+              {loading ? (
+                <TableSkeleton rows={5} cols={5} />
+              ) : loadError.orders ? (
+                <ErrorState
+                  message={loadError.orders}
+                  onRetry={() => {
+                    setLoading(true);
+                    fetchOrders();
+                  }}
+                />
+              ) : customers.length === 0 ? (
+                <EmptyState
+                  icon={<FaUsers />}
+                  title="No customers yet"
+                  hint="Anyone who places an order will be listed here with their history."
+                />
+              ) : (
+                <div className="table-scroll">
+                  <table className="admin-table ad-stack">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Total Orders</th>
+                        <th>Total Spent</th>
+                        <th>Last Order Date</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {filteredCustomers.length === 0 ? (
+                        <tr className="ad-norows">
+                          <td colSpan={5}>No customers match your search</td>
+                        </tr>
+                      ) : (
+                        filteredCustomers.map((c) => (
+                          <tr key={c.email}>
+                            <td data-label="Name">{c.name}</td>
+                            <td data-label="Email">{c.email}</td>
+                            <td data-label="Total orders">{c.totalOrders}</td>
+                            <td data-label="Total spent">₹{c.totalSpent}</td>
+                            <td data-label="Last order">{c.lastDate}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

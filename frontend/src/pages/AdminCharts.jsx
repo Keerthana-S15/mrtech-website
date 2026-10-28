@@ -51,6 +51,10 @@ export function RevenueTrend({ data, height = 220 }) {
     : "";
 
   if (!data.length) return <ChartEmpty label="No revenue yet" />;
+  // Every day at zero drew a flat line against a ₹1 axis, which reads as a
+  // broken chart rather than as "nothing was ordered in this window".
+  if (!data.some((d) => d.value > 0))
+    return <ChartEmpty label={`No orders in the last ${data.length} days`} />;
 
   return (
     <div className="chart-wrap">
@@ -213,6 +217,8 @@ export function TopProducts({ items, valueLabel = "units" }) {
 export function Sparkline({ points, color = TEAL }) {
   const d = useMemo(() => {
     if (!points || points.length < 2) return "";
+    // nothing to plot: a flat line would read as a stray rule in the tile
+    if (!points.some((p) => p > 0)) return "";
     const max = Math.max(...points, 1);
     const w = 100;
     const h = 28;
