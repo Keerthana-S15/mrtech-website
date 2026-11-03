@@ -1,15 +1,42 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CustomerDashboard.css";
 import { 
   FaBox, FaTruck, FaWallet, FaShoppingBag, FaMapMarkerAlt, 
-  FaHeadset, FaHeart, FaHistory, FaUser, FaBell, FaSearch,
+  FaHeadset, FaHistory, FaUser, FaBell, FaSearch,
   FaChartLine, FaStar, FaGift, FaClock, FaExclamationCircle,
   FaCheckCircle, FaTimesCircle, FaSpinner, FaBan
 } from "react-icons/fa";
 // Shared with the tracking page so both surfaces offer the button on exactly
 // the same terms. The server remains the authority.
 import { canCancelOrder, cancelTimeLeft } from "../utils/cancelRules";
+
+const API_BASE_URL = "/api";
+
+/* Pure helpers; they read no state, so they live outside the component and
+   stay out of the fetch callbacks' dependency lists. */
+const getNotificationType = (status) => {
+  switch (status) {
+    case "delivered": return "success";
+    case "cancelled": return "error";
+    case "pending": return "warning";
+    default: return "info";
+  }
+};
+
+const getTimeAgo = (dateString) => {
+  if (!dateString) return "Unknown";
+
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - date) / 1000);
+
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+};
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
@@ -36,8 +63,6 @@ export default function CustomerDashboard() {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(null);
 
-  const API_BASE_URL = "/api";
-
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("userData"));
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -49,22 +74,7 @@ export default function CustomerDashboard() {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    if (userData && userData.email) {
-      fetchAllData();
-    }
-  }, [userData]);
-
-  const fetchAllData = async () => {
-    setError(null);
-    await Promise.all([
-      fetchOrders(),
-      fetchStats(),
-      fetchRecentOrdersForNotifications()
-    ]);
-  };
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!userData?.email) return;
     
     setLoading(true);
@@ -91,9 +101,9 @@ export default function CustomerDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userData?.email]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!userData?.email) return;
     
     setStatsLoading(true);
@@ -124,9 +134,9 @@ export default function CustomerDashboard() {
     } finally {
       setStatsLoading(false);
     }
-  };
+  }, [userData?.email]);
 
-  const fetchRecentOrdersForNotifications = async () => {
+  const fetchRecentOrdersForNotifications = useCallback(async () => {
     if (!userData?.email) return;
     
     try {
@@ -162,30 +172,24 @@ export default function CustomerDashboard() {
         }
       ]);
     }
-  };
+  }, [userData?.email]);
 
-  const getNotificationType = (status) => {
-    switch (status) {
-      case "delivered": return "success";
-      case "cancelled": return "error";
-      case "pending": return "warning";
-      default: return "info";
+  const fetchAllData = useCallback(async () => {
+    setError(null);
+    await Promise.all([
+      fetchOrders(),
+      fetchStats(),
+      fetchRecentOrdersForNotifications()
+    ]);
+  }, [fetchOrders, fetchStats, fetchRecentOrdersForNotifications]);
+
+  // Declared after fetchAllData: naming it in the dependency array before its
+  // own initialiser would be a temporal-dead-zone ReferenceError during render.
+  useEffect(() => {
+    if (userData && userData.email) {
+      fetchAllData();
     }
-  };
-
-  const getTimeAgo = (dateString) => {
-    if (!dateString) return "Unknown";
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now - date) / 1000);
-    
-    if (diffInSeconds < 60) return "Just now";
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-  };
+  }, [userData, fetchAllData]);
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
